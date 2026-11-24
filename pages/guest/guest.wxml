@@ -16,9 +16,18 @@
   <!-- 脱敏快照 -->
   <block wx:if="{{!loading && valid}}">
     <view class="guest-hero">
-      <text class="guest-badge">只读快照</text>
+      <text class="guest-badge">访客视图</text>
       <text class="guest-title">果果家庭 · 打卡概览</text>
       <text class="text-small" style="color:#6b7280">{{snapshot.period}} · 生成于 {{snapshot.generatedAt}}</text>
+    </view>
+
+    <!-- 醒目只读提示：非实时、已脱敏、不可写，一次讲清 -->
+    <view class="readonly-banner">
+      <view class="readonly-icon">!</view>
+      <view class="readonly-copy">
+        <text class="readonly-title">这是一份只读快照</text>
+        <text class="readonly-desc">数据停留在生成时刻，不实时更新；内容已脱敏、不含个人明细，无法打卡或修改</text>
+      </view>
     </view>
 
     <view class="stat-row">
@@ -50,7 +59,7 @@
     </view>
 
     <view class="guest-note">{{snapshot.note}}</view>
-    <view class="guest-footer">本页面仅展示脱敏后的聚合信息，不含任何个人明细</view>
+    <view class="guest-footer">快照由创建人生成，如有疑问请联系创建人</view>
   </block>
 
 </view>

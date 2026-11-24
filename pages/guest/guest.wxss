@@ -12,4 +12,11 @@
 .gm-bar-fill { height: 100%; background: #EC5B8C; border-radius: 999rpx; }
 .gm-meta { display: flex; }
 .guest-note { margin-top: 28rpx; text-align: center; font-size: 24rpx; color: #6b7280; }
-.guest-footer { margin-top: 16rpx; text-align: center; font-size: 22rpx; color: #9ca3af; }
+.guest-footer { margin-top: 16rpx; text-align: center; font-size: 22rpx; color: #6b7280; }
+
+/* 只读快照醒目提示：暖色底 + 深色字（对比度达标），左侧色条强化"注意"语义 */
+.readonly-banner { display: flex; align-items: flex-start; padding: 20rpx 22rpx; margin: 8rpx 0 24rpx; background: #FFF4E5; border-left: 8rpx solid #D97706; border-radius: 12rpx; }
+.readonly-icon { width: 36rpx; height: 36rpx; flex-shrink: 0; border-radius: 50%; background: #D97706; color: #FFFFFF; font-size: 24rpx; font-weight: 700; line-height: 36rpx; text-align: center; }
+.readonly-copy { flex: 1; margin-left: 16rpx; display: flex; flex-direction: column; }
+.readonly-title { font-size: 26rpx; font-weight: 700; color: #92400E; }
+.readonly-desc { margin-top: 6rpx; font-size: 22rpx; line-height: 1.5; color: #92400E; }
