@@ -59,7 +59,7 @@ Page({
   onBatchInput(e) { this.setData({ batch: e.detail.value }); },
   selectType(e) { this.setData({ 'form.type': e.currentTarget.dataset.type }); },
 
-  // 拍照/选图：照片作为本周学习资料留存；当前云服务只提供文本模型，不做自动 OCR
+  // 拍照/选图：照片作为本周学习资料留存；点「识别图片内容」交给视觉模型自动读出单词句子
   choosePhoto() {
     const that = this;
     wx.chooseMedia({
