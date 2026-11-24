@@ -2,10 +2,12 @@
 // - gg_families：RLS 仅成员可查，创建由 created_by=auth.uid() 放行
 // - gg_members ：无 RLS，靠 gg_members_guard 触发器收紧写入（首成员 active/admin，其余 pending/parent）
 // - 家庭码 = family_id（fam_xxx），外人查不到 families 表，用外键自动校验码是否存在，不泄露家庭信息
+// - 成员邀请链接：只分享 inv_xxx token（不含家庭码），7 天有效、可撤销、需 admin 批准，和访客只读 token 完全分开
 // - 访客快照：token 随机不可猜 + 7 天有效 + 可撤销；表无 RLS 属已知风险（见设计文档第 14 节）
 const { getCloud, ensureSession } = require('./cloud.js');
 
 const IDENTITY_KEY = 'gg_my_identity';   // 本地缓存的云端家庭身份（不参与云同步）
+const INVITE_KEY = 'gg_invite_link';     // 本地缓存的成员邀请 token（不含家庭码，不参与云同步）
 
 function getIdentity() {
   try {
@@ -138,6 +140,74 @@ async function approveMember(targetUid) {
   return true;
 }
 
+// ---------- 成员邀请链接（只传 inv_xxx token，不传家庭码） ----------
+// 生成邀请：同家庭旧邀请自动失效（保证同时只有一个有效邀请，便于管理）
+async function createInviteLink() {
+  const id = getIdentity();
+  if (!id || !id.familyId || id.role !== 'admin') throw new Error('只有管理员能生成邀请链接');
+  const cloud = getCloud();
+  // 家庭名：admin 是家庭成员，RLS 允许查自己的家庭；查不到就用默认名，不阻塞
+  let familyName = '';
+  try {
+    const { data } = await cloud.database.from('gg_families')
+      .select('name').eq('family_id', id.familyId);
+    familyName = (Array.isArray(data) && data[0] && data[0].name) || '';
+  } catch (e) {}
+  const token = 'inv_' + Date.now().toString(36) + randomCode(20).toLowerCase();
+  const expiresAt = new Date(Date.now() + 7 * 86400000).toISOString();
+  // 旧邀请先失效（只动本家庭，且不碰已撤销的）
+  const { error: e0 } = await cloud.database.from('gg_invite_tokens')
+    .update({ revoked: true })
+    .eq('family_id', id.familyId)
+    .eq('revoked', false);
+  if (e0) throw e0;
+  const { error } = await cloud.database.from('gg_invite_tokens').insert({
+    token, family_id: id.familyId, family_name: familyName || '果果家庭',
+    created_by: id.uid || '', expires_at: expiresAt, revoked: false,
+  });
+  if (error) throw error;
+  try { wx.setStorageSync(INVITE_KEY, { token, expiresAt }); } catch (e) {}
+  return { token, expiresAt, familyName: familyName || '果果家庭' };
+}
+
+// 解析邀请：接收方点卡片进来时调用，不要求登录；只返回展示用信息 + 内部加入用 familyId
+// 注意：familyId 只留在页面内存里用于申请加入，绝不写回分享参数/URL
+async function resolveInvite(token) {
+  const t = String(token || '').trim();
+  if (!/^inv_[0-9a-z]+$/.test(t)) return { valid: false, reason: '邀请链接格式不对' };
+  const cloud = getCloud();
+  const { data, error } = await cloud.database.from('gg_invite_tokens')
+    .select('family_id, family_name, expires_at, revoked')
+    .eq('token', t);
+  if (error) throw error;
+  const row = Array.isArray(data) ? data[0] : null;
+  if (!row) return { valid: false, reason: '邀请链接不存在或已作废' };
+  if (row.revoked) return { valid: false, reason: '邀请链接已失效，请联系创建人重新生成' };
+  if (new Date(row.expires_at).getTime() <= Date.now()) return { valid: false, reason: '邀请链接已过期（7 天有效）' };
+  return { valid: true, familyId: row.family_id, familyName: row.family_name || '果果家庭' };
+}
+
+// 撤销邀请：限本家庭 admin，且只动本家庭 token
+async function revokeInviteLink(token) {
+  const id = getIdentity();
+  if (!id || !id.familyId || id.role !== 'admin') throw new Error('只有管理员能撤销邀请链接');
+  const cloud = getCloud();
+  const { error } = await cloud.database.from('gg_invite_tokens')
+    .update({ revoked: true })
+    .eq('token', token)
+    .eq('family_id', id.familyId);
+  if (error) throw error;
+  try { wx.removeStorageSync(INVITE_KEY); } catch (e) {}
+  return true;
+}
+
+function getCachedInvite() {
+  try {
+    const v = wx.getStorageSync(INVITE_KEY);
+    return v && v.token ? v : null;
+  } catch (e) { return null; }
+}
+
 // 生成访客链接：写入脱敏快照，返回 token + 到期时间（默认 7 天）
 async function createVisitorLink(snapshot, days) {
   const id = getIdentity();
@@ -181,5 +251,6 @@ async function getVisitorSnapshot(token) {
 module.exports = {
   getIdentity, saveIdentity, clearIdentity, refreshIdentity, getMyMembership,
   createFamily, requestJoin, listMembers, approveMember,
+  createInviteLink, resolveInvite, revokeInviteLink, getCachedInvite,
   createVisitorLink, revokeVisitorLink, getVisitorSnapshot, randomCode, generateFamilyId,
 };

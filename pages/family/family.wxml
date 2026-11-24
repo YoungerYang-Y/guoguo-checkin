@@ -5,6 +5,29 @@
     <text class="text-muted">正在读取家庭状态…</text>
   </view>
 
+  <!-- 收到邀请（点微信卡片进来）：优先展示，不依赖登录 -->
+  <view class="card invite-card" wx:if="{{incomingInvite}}">
+    <text class="section-title">家庭邀请</text>
+    <text class="invite-desc">「{{incomingInvite.familyName}}」邀请你加入家庭打卡</text>
+    <text class="text-muted text-small">加入后可查看全家打卡数据，并帮家人代签。需创建人同意后生效。</text>
+    <view class="form-field">
+      <text class="field-label">你的称谓</text>
+      <input class="field-input" value="{{joinName}}" bindinput="onJoinName" placeholder="如：爸爸" maxlength="12" />
+    </view>
+    <view class="form-field">
+      <text class="field-label">你的身份</text>
+      <view class="chip-row">
+        <view class="chip {{joinRole === 'papa' ? 'active' : ''}}" data-key="papa" hover-class="ui-hover" bindtap="pickJoinRole">爸爸</view>
+        <view class="chip {{joinRole === 'mama' ? 'active' : ''}}" data-key="mama" hover-class="ui-hover" bindtap="pickJoinRole">妈妈</view>
+      </view>
+    </view>
+    <button class="btn btn-primary btn-block" style="margin-top:20rpx" loading="{{busy}}" bindtap="acceptInvite">接受邀请并申请加入</button>
+  </view>
+  <view class="card" wx:if="{{incomingError}}">
+    <text class="text-small" style="color:#d93026">{{incomingError}}</text>
+    <text class="text-muted text-small">请让创建人重新转发邀请卡片给你。</text>
+  </view>
+
   <!-- 未登录 -->
   <view class="card" wx:if="{{status === 'noauth'}}">
     <text class="section-title">家庭管理</text>
@@ -16,7 +39,7 @@
   <block wx:if="{{status === 'none'}}">
     <view class="card">
       <text class="section-title">创建家庭</text>
-      <text class="text-muted text-small">你是第一个成员，将成为管理员，可批准成员、生成访客链接。</text>
+      <text class="text-muted text-small">你是第一个成员，将成为管理员，可批准成员、生成邀请与访客链接。</text>
       <view class="form-field">
         <text class="field-label">家庭名称</text>
         <input class="field-input" value="{{createName}}" bindinput="onCreateName" placeholder="果果家庭" maxlength="20" />
@@ -32,8 +55,8 @@
     </view>
 
     <view class="card">
-      <text class="section-title">加入家庭</text>
-      <text class="text-muted text-small">输入创建人分享的家庭码（fam 开头），申请后需创建人同意。</text>
+      <text class="section-title">手动输入家庭码加入</text>
+      <text class="text-muted text-small">若对方不方便发邀请卡片，可让他复制家庭码给你。申请后需创建人同意。</text>
       <view class="form-field">
         <text class="field-label">家庭码</text>
         <input class="field-input" value="{{joinCode}}" bindinput="onJoinCode" placeholder="fam_xxxx" maxlength="40" />
@@ -41,13 +64,6 @@
       <view class="form-field">
         <text class="field-label">你的称谓</text>
         <input class="field-input" value="{{joinName}}" bindinput="onJoinName" placeholder="如：爸爸" maxlength="12" />
-      </view>
-      <view class="form-field">
-        <text class="field-label">你的身份</text>
-        <view class="chip-row">
-          <view class="chip {{joinRole === 'papa' ? 'active' : ''}}" data-key="papa" hover-class="ui-hover" bindtap="pickJoinRole">爸爸</view>
-          <view class="chip {{joinRole === 'mama' ? 'active' : ''}}" data-key="mama" hover-class="ui-hover" bindtap="pickJoinRole">妈妈</view>
-        </view>
       </view>
       <button class="btn btn-ghost btn-block" style="margin-top:20rpx" loading="{{busy}}" bindtap="doJoin">申请加入</button>
     </view>
@@ -71,7 +87,7 @@
       <text class="section-title">我的家庭</text>
       <view class="row-between" style="margin-top:16rpx">
         <view>
-          <text class="text-muted text-small">家庭码 · 发给家人加入</text>
+          <text class="text-muted text-small">家庭码 · 备用（手动输入加入）</text>
           <view class="fam-code">{{identity.familyId}}</view>
         </view>
         <button class="btn btn-ghost" size="mini" bindtap="copyFamilyCode">复制</button>
@@ -94,16 +110,38 @@
       </view>
     </view>
 
-    <!-- 访客链接（管理员） -->
+    <!-- 成员邀请（管理员）：微信卡片直接转发，对方点开即可申请加入 -->
+    <view class="card" wx:if="{{identity.role === 'admin'}}">
+      <text class="section-title">邀请家人加入</text>
+      <text class="text-muted text-small">点下面的分享按钮，直接转发到微信聊天；家人点开卡片就能申请加入，仍需你批准。邀请 7 天有效，重新生成会让旧邀请失效。</text>
+      <button wx:if="{{inviteToken}}" class="btn btn-primary btn-block" style="margin-top:20rpx"
+              open-type="share" data-kind="invite">分享邀请卡片给家人</button>
+      <view wx:else style="margin-top:20rpx">
+        <text class="text-muted text-small">邀请生成中…若一直不出现，可点下方重试。</text>
+        <button class="btn btn-ghost btn-block" style="margin-top:12rpx" loading="{{busy}}" bindtap="doCreateInvite">重试生成邀请</button>
+      </view>
+      <view class="link-tools" wx:if="{{inviteToken}}">
+        <text class="text-muted text-small">有效期至 {{inviteExpires}} · 邀请码隐藏在卡片里，不包含家庭码</text>
+        <view class="tool-row">
+          <button class="btn btn-ghost btn-mini" bindtap="copyInviteLink">复制路径</button>
+          <button class="btn btn-ghost btn-mini" bindtap="doCreateInvite" loading="{{busy}}">重新生成</button>
+          <button class="btn btn-danger btn-mini" bindtap="revokeInviteLink">撤销</button>
+        </view>
+      </view>
+    </view>
+
+    <!-- 访客只读链接（管理员）：微信卡片直接转发 -->
     <view class="card" wx:if="{{identity.role === 'admin'}}">
       <text class="section-title">访客只读链接</text>
-      <text class="text-muted text-small">生成 7 天有效的只读链接，亲友可查看脱敏报表快照，不能打卡、不含家庭码。链接不含任何明细。</text>
+      <text class="text-muted text-small">生成 7 天有效的只读链接，点分享转发给亲友；对方点开即可查看脱敏报表快照，不能打卡、不含家庭码与任何明细。</text>
       <button class="btn btn-primary btn-block" style="margin-top:20rpx" loading="{{busy}}" bindtap="doCreateVisitorLink">生成访客链接</button>
       <view class="visitor-box" wx:if="{{visitorToken}}">
-        <text class="text-muted text-small">链接（复制到微信发给亲友）：</text>
-        <text class="visitor-link" bindtap="copyVisitorLink">{{visitorToken}}</text>
-        <text class="text-muted text-small">有效期至 {{visitorExpires}} · 点链接文本可复制完整路径</text>
-        <button class="btn btn-danger btn-block" style="margin-top:16rpx" bindtap="revokeVisitorLink">撤销链接</button>
+        <button class="btn btn-primary btn-block" open-type="share" data-kind="visitor">分享访客卡片给微信好友</button>
+        <text class="text-muted text-small" style="margin-top:12rpx">有效期至 {{visitorExpires}} · 也可复制路径发给对方</text>
+        <view class="tool-row">
+          <button class="btn btn-ghost btn-mini" bindtap="copyVisitorLink">复制路径</button>
+          <button class="btn btn-danger btn-mini" bindtap="revokeVisitorLink">撤销链接</button>
+        </view>
       </view>
     </view>
   </block>

@@ -1,4 +1,4 @@
-// 家庭管理页：创建家庭 / 家庭码加入 / 成员审批 / 访客只读链接
+// 家庭管理页：创建家庭 / 家庭码加入 / 邀请卡片分享 / 成员审批 / 访客只读卡片分享
 const family = require('../../utils/family.js');
 const cloudstore = require('../../utils/cloudstore.js');
 const store = require('../../utils/store.js');
@@ -27,17 +27,41 @@ Page({
     joinRole: 'papa',
     joinName: '家人',
     busy: false,
-    // 访客链接
+    // 成员邀请（卡片分享用，只有 inv_xxx token，不含家庭码）
+    inviteToken: '',
+    inviteExpires: '',
+    // 点邀请卡片进入时解析出的邀请信息（familyId 只留内存，不写回任何分享参数）
+    incomingInvite: null,
+    incomingError: '',
+    // 访客链接（卡片分享用）
     visitorToken: '',
     visitorExpires: '',
   },
 
-  onLoad() { this.refresh(); },
+  onLoad(options) {
+    // 微信卡片 path: /pages/family/family?invite=inv_xxx
+    this._incomingToken = (options && options.invite) || '';
+    this.refresh();
+  },
   onShow() { this.refresh(); },
 
   async refresh() {
     const s = cloudstore.getState();
     this.setData({ loggedIn: !!s.loggedIn });
+
+    // 解析邀请（不依赖登录：先让用户看到"谁邀请我"，再引导登录/加入）
+    if (this._incomingToken && !this.data.incomingInvite) {
+      const token = this._incomingToken;
+      this._incomingToken = ''; // 只解析一次，避免 onShow 重复请求
+      try {
+        const r = await family.resolveInvite(token);
+        if (r.valid) this.setData({ incomingInvite: r, incomingError: '' });
+        else this.setData({ incomingError: r.reason });
+      } catch (e) {
+        this.setData({ incomingError: '邀请链接读取失败，请检查网络' });
+      }
+    }
+
     if (!s.loggedIn) { this.setData({ status: 'noauth' }); return; }
     try {
       const membership = await family.getMyMembership();
@@ -46,6 +70,7 @@ Page({
         this.setData({ status: 'active', identity: id, errorMsg: '' });
         await this.loadMembers();
         this.loadVisitorToken();
+        if (id.role === 'admin') await this.ensureInvite();
       } else if (membership && membership.status === 'pending') {
         this.setData({ status: 'pending', pendingFamilyId: membership.family_id, identity: null });
       } else {
@@ -53,6 +78,72 @@ Page({
       }
     } catch (e) {
       this.setData({ status: 'none', errorMsg: (e && e.message) || '读取家庭状态失败' });
+    }
+  },
+
+  // 确保有一个可用的成员邀请 token：优先用本地缓存（校验有效），失效则新建
+  async ensureInvite() {
+    if (this.data.inviteToken) return;
+    try {
+      const cached = family.getCachedInvite();
+      if (cached && cached.token) {
+        const r = await family.resolveInvite(cached.token);
+        if (r.valid) {
+          this.setData({ inviteToken: cached.token, inviteExpires: this.fmtDate(cached.expiresAt) });
+          return;
+        }
+      }
+      const res = await family.createInviteLink();
+      this.setData({ inviteToken: res.token, inviteExpires: this.fmtDate(res.expiresAt) });
+    } catch (e) {
+      // 不阻塞主流程：分享按钮在 token 为空时不渲染，可下拉重试
+    }
+  },
+
+  // 微信卡片转发：用 e.target.dataset.kind 区分「邀请家人」和「访客只读」
+  // 家庭码 fam_xxx 绝不出现在任何 path / query 里，只传 inv_ / vis_ token
+  onShareAppMessage(e) {
+    const kind = e && e.from === 'button' && e.target && e.target.dataset ? e.target.dataset.kind : '';
+    if (kind === 'invite') {
+      const token = this.data.inviteToken;
+      if (!token) return { title: '果果家庭打卡 · 一起坚持每一天', path: '/pages/family/family' };
+      return {
+        title: '邀请你加入果果家庭打卡 · 一起坚持每一天',
+        path: '/pages/family/family?invite=' + encodeURIComponent(token),
+      };
+    }
+    if (kind === 'visitor') {
+      const token = this.data.visitorToken;
+      if (!token) return { title: '果果家庭打卡 · 一起坚持每一天', path: '/pages/family/family' };
+      return {
+        title: '果果家庭打卡 · 本周概览（只读）',
+        path: '/pages/guest/guest?token=' + encodeURIComponent(token),
+      };
+    }
+    // 右上角菜单默认转发：引导到家庭页，不带任何 token / 家庭码
+    return { title: '果果家庭打卡 · 一起坚持每一天', path: '/pages/family/family' };
+  },
+
+  // 点邀请卡片后「接受邀请」：用内存里的 familyId 直接申请，不展示给用户也不写入链接
+  async acceptInvite() {
+    const inv = this.data.incomingInvite;
+    if (!inv || !inv.familyId) return;
+    if (!this.data.loggedIn) { this.goLoginHint(); return; }
+    if (this.data.status === 'active' && this.data.identity && this.data.identity.familyId === inv.familyId) {
+      toast('你已经在这个家庭里了');
+      return;
+    }
+    if (this.data.busy) return;
+    this.setData({ busy: true });
+    try {
+      await family.requestJoin(inv.familyId, this.data.joinRole, this.data.joinName.trim() || '家人');
+      toast('已申请，等待创建人同意', 'success');
+      this.setData({ incomingInvite: null });
+      await this.refresh();
+    } catch (err) {
+      toast((err && err.message) || '加入失败');
+    } finally {
+      this.setData({ busy: false });
     }
   },
 
@@ -104,7 +195,7 @@ Page({
     }
   },
 
-  // ---------- 申请加入 ----------
+  // ---------- 申请加入（手动输入家庭码） ----------
   async doJoin() {
     if (this.data.busy) return;
     const code = this.data.joinCode.trim();
@@ -140,14 +231,55 @@ Page({
     });
   },
 
-  // ---------- 复制家庭码 ----------
+  // ---------- 复制家庭码（备用：对方手动输入） ----------
   copyFamilyCode() {
     const fid = (this.data.identity && this.data.identity.familyId) || '';
     if (!fid) return;
     wx.setClipboardData({ data: fid, success: () => toast('家庭码已复制') });
   },
 
-  // ---------- 访客链接 ----------
+  // ---------- 成员邀请链接 ----------
+  async doCreateInvite() {
+    if (this.data.busy) return;
+    this.setData({ busy: true });
+    try {
+      const res = await family.createInviteLink();
+      this.setData({ inviteToken: res.token, inviteExpires: this.fmtDate(res.expiresAt) });
+      toast('新邀请已生成，旧邀请已失效', 'success');
+    } catch (e) {
+      toast((e && e.message) || '生成失败');
+    } finally {
+      this.setData({ busy: false });
+    }
+  },
+
+  copyInviteLink() {
+    const token = this.data.inviteToken;
+    if (!token) return;
+    const link = '/pages/family/family?invite=' + encodeURIComponent(token);
+    wx.setClipboardData({ data: link, success: () => toast('邀请路径已复制（也可直接点分享按钮转发卡片）') });
+  },
+
+  revokeInviteLink() {
+    const token = this.data.inviteToken;
+    if (!token) return;
+    wx.showModal({
+      title: '撤销家庭邀请',
+      content: '撤销后该邀请链接立即失效，对方将无法通过它申请加入。',
+      success: async (res) => {
+        if (!res.confirm) return;
+        try {
+          await family.revokeInviteLink(token);
+          this.setData({ inviteToken: '', inviteExpires: '' });
+          toast('邀请已撤销', 'success');
+        } catch (err) {
+          toast((err && err.message) || '撤销失败');
+        }
+      },
+    });
+  },
+
+  // ---------- 访客只读链接 ----------
   // 脱敏快照：称谓映射「孩子/家长A/家长B」，只留聚合指标，无任何明细/备注/主题/家庭码
   buildVisitorSnapshot() {
     const d = D.today();
@@ -191,7 +323,7 @@ Page({
       const res = await family.createVisitorLink(snap, 7);
       try { wx.setStorageSync('gg_visitor_link', res); } catch (e) {}
       this.setData({ visitorToken: res.token, visitorExpires: this.fmtDate(res.expiresAt) });
-      toast('访客链接已生成（7 天有效）', 'success');
+      toast('访客链接已生成（7 天有效），点分享转发', 'success');
     } catch (e) {
       toast((e && e.message) || '生成失败');
     } finally {
@@ -203,7 +335,7 @@ Page({
     const token = this.data.visitorToken;
     if (!token) return;
     const link = '/pages/guest/guest?token=' + encodeURIComponent(token);
-    wx.setClipboardData({ data: link, success: () => toast('访客链接已复制，可发给亲友查看') });
+    wx.setClipboardData({ data: link, success: () => toast('访客路径已复制（也可直接点分享按钮转发卡片）') });
   },
 
   revokeVisitorLink() {
