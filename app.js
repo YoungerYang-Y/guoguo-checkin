@@ -8,14 +8,14 @@ wxCompat.install();
 App({
   globalData: {
     appName: '果果家庭打卡',
-    version: '1.2.0',
+    version: '1.3.0',
     cloud: true,
   },
   onLaunch() {
     wxCompat.install();
     // 本地初始化保证首屏立即可用
     store.initFamily();
-    // 异步引导云同步：登录 + 拉取云端数据覆盖本地
+    // 异步引导云同步：登录 + 判定家庭身份 + 按家庭合并云端数据
     this.cloudReady = cloudstore.bootstrap();
   },
 });

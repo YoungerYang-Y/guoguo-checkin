@@ -24,6 +24,9 @@ Page({
       { key: 'all', label: '全部' },
     ],
     menuGroups: [
+      { key: 'family', title: '家庭', items: [
+        { key: 'family', text: '家庭管理（创建 / 加入 / 成员 / 访客链接）', path: '/pages/family/family' },
+      ]},
       { key: 'data', title: '数据', items: [
         { key: 'settings', text: '设置（排期 / 目标 / 成员）', path: '/pages/settings/settings' },
         { key: 'targets', text: '自定义目标管理', path: '/pages/target-edit/target-edit?list=1' },
@@ -166,6 +169,18 @@ Page({
   },
 
   onShareAppMessage() {
-    return { title: '果果家庭打卡 · 一起坚持每一天', path: '/pages/index/index' };
+    // 分享默认指向访客只读快照，绝不把可写首页/家庭码分享出去
+    let token = '';
+    try { const t = wx.getStorageSync('gg_visitor_link'); token = t && t.token ? t.token : ''; } catch (e) {}
+    if (token) {
+      return {
+        title: '果果家庭打卡 · 本周概览（只读）',
+        path: '/pages/guest/guest?token=' + encodeURIComponent(token),
+      };
+    }
+    return {
+      title: '果果家庭打卡 · 一起坚持每一天',
+      path: '/pages/family/family',
+    };
   },
 });

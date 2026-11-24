@@ -45,7 +45,7 @@
   <view class="card">
     <text class="section-title">分享</text>
     <button class="btn btn-ghost btn-block" open-type="share">转发给家人</button>
-    <text class="text-muted text-small">接收方仅可查看，不可修改数据</text>
+    <text class="text-muted text-small">转发的是只读概览快照，接收方不可修改数据；完整的访客链接请在「家庭管理」中生成</text>
   </view>
 
   <!-- 功能入口 -->

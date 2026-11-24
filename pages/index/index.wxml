@@ -118,7 +118,7 @@
       </view>
 
       <!-- 家长区一键完成 -->
-      <view class="quick-row" wx:if="{{group.role !== 'child' && group.id === 'mama'}}">
+      <view class="quick-row" wx:if="{{group.role !== 'child' && group.id === operatorKey}}">
         <button class="btn btn-ghost btn-block" bindtap="finishAll" data-member="{{group.id}}">本区全部完成</button>
       </view>
     </view>

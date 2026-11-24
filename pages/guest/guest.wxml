@@ -1,0 +1,56 @@
+<view class="page">
+
+  <view class="card" wx:if="{{loading}}">
+    <text class="text-muted">正在读取分享的报表…</text>
+  </view>
+
+  <!-- 失效 -->
+  <view class="card invalid-card" wx:if="{{!loading && !valid}}">
+    <view class="invalid-icon">⌁</view>
+    <text class="invalid-title">链接不可查看</text>
+    <text class="text-muted text-small">{{reason}}</text>
+    <text class="text-muted text-small" style="margin-top:16rpx">访客链接 7 天有效，创建人可随时撤销。</text>
+    <button class="btn btn-ghost btn-block" style="margin-top:24rpx" bindtap="retry">重试</button>
+  </view>
+
+  <!-- 脱敏快照 -->
+  <block wx:if="{{!loading && valid}}">
+    <view class="guest-hero">
+      <text class="guest-badge">只读快照</text>
+      <text class="guest-title">果果家庭 · 打卡概览</text>
+      <text class="text-small" style="color:#6b7280">{{snapshot.period}} · 生成于 {{snapshot.generatedAt}}</text>
+    </view>
+
+    <view class="stat-row">
+      <view class="stat-item">
+        <text class="stat-num">{{snapshot.totalDone}}</text>
+        <text class="stat-label">本周打卡次数</text>
+      </view>
+      <view class="stat-item">
+        <text class="stat-num">{{snapshot.streak}}</text>
+        <text class="stat-label">连续全勤天数</text>
+      </view>
+    </view>
+
+    <view class="card">
+      <text class="section-title">成员概览</text>
+      <view class="guest-member" wx:for="{{snapshot.members}}" wx:key="label">
+        <view class="gm-head">
+          <text class="gm-label">{{item.label}}</text>
+          <text class="text-muted text-small" wx:if="{{!item.valid}}">样本不足</text>
+          <text class="gm-index" wx:else>综合 {{item.indexText}}</text>
+        </view>
+        <view class="gm-bar">
+          <view class="gm-bar-fill" style="width:{{item.completion || 0}}%"></view>
+        </view>
+        <view class="gm-meta">
+          <text class="text-muted text-small">完成率 {{item.completionText}} · 有效打卡 {{item.effectiveDays}} 天 · 全勤 {{item.fullDays}} 天</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="guest-note">{{snapshot.note}}</view>
+    <view class="guest-footer">本页面仅展示脱敏后的聚合信息，不含任何个人明细</view>
+  </block>
+
+</view>

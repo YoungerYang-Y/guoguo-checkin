@@ -1,0 +1,111 @@
+<view class="page">
+
+  <!-- 加载态 -->
+  <view class="card" wx:if="{{status === 'loading'}}">
+    <text class="text-muted">正在读取家庭状态…</text>
+  </view>
+
+  <!-- 未登录 -->
+  <view class="card" wx:if="{{status === 'noauth'}}">
+    <text class="section-title">家庭管理</text>
+    <text class="text-muted text-small">当前是预览环境，无法获取微信登录凭证。请用微信扫码打开小程序后，再创建或加入家庭。</text>
+    <button class="btn btn-ghost btn-block" style="margin-top:24rpx" bindtap="goLoginHint">如何登录？</button>
+  </view>
+
+  <!-- 已登录但未入家庭：创建 / 加入 -->
+  <block wx:if="{{status === 'none'}}">
+    <view class="card">
+      <text class="section-title">创建家庭</text>
+      <text class="text-muted text-small">你是第一个成员，将成为管理员，可批准成员、生成访客链接。</text>
+      <view class="form-field">
+        <text class="field-label">家庭名称</text>
+        <input class="field-input" value="{{createName}}" bindinput="onCreateName" placeholder="果果家庭" maxlength="20" />
+      </view>
+      <view class="form-field">
+        <text class="field-label">你的身份</text>
+        <view class="chip-row">
+          <view wx:for="{{roleOptions}}" wx:key="key" class="chip {{createRole === item.key ? 'active' : ''}}"
+                data-key="{{item.key}}" hover-class="ui-hover" bindtap="pickCreateRole">{{item.label}}</view>
+        </view>
+      </view>
+      <button class="btn btn-primary btn-block" style="margin-top:20rpx" loading="{{busy}}" bindtap="doCreate">创建家庭</button>
+    </view>
+
+    <view class="card">
+      <text class="section-title">加入家庭</text>
+      <text class="text-muted text-small">输入创建人分享的家庭码（fam 开头），申请后需创建人同意。</text>
+      <view class="form-field">
+        <text class="field-label">家庭码</text>
+        <input class="field-input" value="{{joinCode}}" bindinput="onJoinCode" placeholder="fam_xxxx" maxlength="40" />
+      </view>
+      <view class="form-field">
+        <text class="field-label">你的称谓</text>
+        <input class="field-input" value="{{joinName}}" bindinput="onJoinName" placeholder="如：爸爸" maxlength="12" />
+      </view>
+      <view class="form-field">
+        <text class="field-label">你的身份</text>
+        <view class="chip-row">
+          <view class="chip {{joinRole === 'papa' ? 'active' : ''}}" data-key="papa" hover-class="ui-hover" bindtap="pickJoinRole">爸爸</view>
+          <view class="chip {{joinRole === 'mama' ? 'active' : ''}}" data-key="mama" hover-class="ui-hover" bindtap="pickJoinRole">妈妈</view>
+        </view>
+      </view>
+      <button class="btn btn-ghost btn-block" style="margin-top:20rpx" loading="{{busy}}" bindtap="doJoin">申请加入</button>
+    </view>
+
+    <view class="card" wx:if="{{errorMsg}}">
+      <text class="text-small" style="color:#d93026">{{errorMsg}}</text>
+    </view>
+  </block>
+
+  <!-- 待批准 -->
+  <view class="card" wx:if="{{status === 'pending'}}">
+    <text class="section-title">申请已提交</text>
+    <text class="text-muted text-small">你申请的家庭码：{{pendingFamilyId}}</text>
+    <text class="text-muted text-small" style="margin-top:16rpx">等待创建人同意后，下拉或重新进入本页面即可自动同步家庭数据。</text>
+    <button class="btn btn-ghost btn-block" style="margin-top:24rpx" bindtap="refresh">刷新状态</button>
+  </view>
+
+  <!-- 已入家庭 -->
+  <block wx:if="{{status === 'active'}}">
+    <view class="card">
+      <text class="section-title">我的家庭</text>
+      <view class="row-between" style="margin-top:16rpx">
+        <view>
+          <text class="text-muted text-small">家庭码 · 发给家人加入</text>
+          <view class="fam-code">{{identity.familyId}}</view>
+        </view>
+        <button class="btn btn-ghost" size="mini" bindtap="copyFamilyCode">复制</button>
+      </view>
+      <text class="text-muted text-small" style="margin-top:16rpx">你：{{identity.name}} · {{identity.role === 'admin' ? '管理员' : (identity.role === 'child' ? '孩子' : '家长')}}</text>
+    </view>
+
+    <!-- 成员列表 -->
+    <view class="card">
+      <text class="section-title">家庭成员（{{members.length}}）</text>
+      <view class="member-row" wx:for="{{members}}" wx:key="uid">
+        <view class="member-avatar">{{item.name[0]}}</view>
+        <view class="member-info">
+          <text class="text-bold">{{item.name}}<text wx:if="{{item.isSelf}}" class="text-muted text-small">（我）</text></text>
+          <text class="text-muted text-small">{{item.roleLabel}} · {{item.member_key}}</text>
+        </view>
+        <view class="approve-btn" wx:if="{{item.status === 'pending' && identity.role === 'admin'}}"
+              hover-class="ui-hover" data-uid="{{item.uid}}" bindtap="onApprove">批准</view>
+        <text wx:else class="tag {{item.status === 'active' ? 'tag-success' : 'tag-warn'}}">{{item.statusLabel}}</text>
+      </view>
+    </view>
+
+    <!-- 访客链接（管理员） -->
+    <view class="card" wx:if="{{identity.role === 'admin'}}">
+      <text class="section-title">访客只读链接</text>
+      <text class="text-muted text-small">生成 7 天有效的只读链接，亲友可查看脱敏报表快照，不能打卡、不含家庭码。链接不含任何明细。</text>
+      <button class="btn btn-primary btn-block" style="margin-top:20rpx" loading="{{busy}}" bindtap="doCreateVisitorLink">生成访客链接</button>
+      <view class="visitor-box" wx:if="{{visitorToken}}">
+        <text class="text-muted text-small">链接（复制到微信发给亲友）：</text>
+        <text class="visitor-link" bindtap="copyVisitorLink">{{visitorToken}}</text>
+        <text class="text-muted text-small">有效期至 {{visitorExpires}} · 点链接文本可复制完整路径</text>
+        <button class="btn btn-danger btn-block" style="margin-top:16rpx" bindtap="revokeVisitorLink">撤销链接</button>
+      </view>
+    </view>
+  </block>
+
+</view>

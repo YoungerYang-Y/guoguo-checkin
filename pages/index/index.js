@@ -2,6 +2,7 @@ const store = require('../../utils/store.js');
 const stats = require('../../utils/stats.js');
 const D = require('../../utils/date.js');
 const privacy = require('../../utils/privacy.js');
+const family = require('../../utils/family.js');
 
 Page({
   data: {
@@ -36,12 +37,30 @@ Page({
     // 隐私指引同意
     showPrivacy: false,
     privacyPoints: privacy.POINTS,
+    // 当前操作者（家庭内 member_key）与角色：本地预览默认 mama/admin，登录后由家庭身份覆盖
+    operatorKey: 'mama',
+    operatorRole: 'admin',
+    operatorName: '妈妈',
   },
 
   onLoad(options) {
     store.initFamily();
+    this.loadIdentity();
     const d = options && options.date ? options.date : D.today();
     this.setData({ date: d });
+  },
+
+  // 读取当前操作者身份：入家庭后按云端 member_key/role；未入家庭维持本机默认（兼容 H5 预览）
+  loadIdentity() {
+    const id = family.getIdentity();
+    if (id && id.status === 'active' && id.memberKey) {
+      const group = (this.data.groups || []).find(x => x.id === id.memberKey);
+      this.setData({
+        operatorKey: id.memberKey,
+        operatorRole: id.role || 'parent',
+        operatorName: (group && group.name) || id.name || '家人',
+      });
+    }
   },
 
   onShow() {
@@ -72,6 +91,7 @@ Page({
       app.cloudReady.then(() => {
         if (this.data && this.data.date !== undefined) {
           this._cloudRefreshed = true;
+          this.loadIdentity();
           this.refresh();
         }
       });
@@ -139,9 +159,13 @@ Page({
       return;
     }
     if (!this.canEditDate()) return;
-    // 代打卡二次确认
-    const currentOperator = 'mama';
+    // 代打卡二次确认：当前操作者 = 登录家庭成员；代签需 admin/parent 权限
+    const currentOperator = this.data.operatorKey;
     if (member !== currentOperator) {
+      if (['admin', 'parent'].indexOf(this.data.operatorRole) < 0) {
+        wx.showToast({ title: '当前角色不能代签', icon: 'none' });
+        return;
+      }
       this.setData({ confirmMember: member, confirmName: this.memberName(member), pending: { code, kind, isCustom, standard } });
       return;
     }
@@ -235,7 +259,7 @@ Page({
       biz_date: this.data.date,
       status: 1,
       source: isBackfill ? 2 : 1,
-      operator: 'mama',
+      operator: this.data.operatorKey,
     }, patch));
     this.closeSheet();
     this.refresh();
@@ -286,14 +310,14 @@ Page({
     const member = e.currentTarget.dataset.member;
     const g = this.data.groups.find(x => x.id === member);
     if (!g) return;
-    if (member !== 'mama') {
+    if (member !== this.data.operatorKey) {
       wx.showToast({ title: '代打卡需二次确认', icon: 'none' });
       return;
     }
     g.rows.forEach(r => {
       if (r.done) return;
       const patch = r.kind === 'word' ? { metric_value: 20 } : {};
-      store.saveRecord(Object.assign({ member_id: member, item_code: r.code, biz_date: this.data.date, status: 1, source: this.data.date === D.today() ? 1 : 2, operator: 'mama' }, patch));
+      store.saveRecord(Object.assign({ member_id: member, item_code: r.code, biz_date: this.data.date, status: 1, source: this.data.date === D.today() ? 1 : 2, operator: this.data.operatorKey }, patch));
     });
     this.refresh();
     wx.showToast({ title: '本区已全部完成', icon: 'success' });
@@ -319,6 +343,12 @@ Page({
     wx.navigateTo({ url: '/pages/target-edit/target-edit' });
   },
   onShareAppMessage() {
-    return { title: '果果家庭打卡 · 一起坚持每一天', path: '/pages/index/index' };
+    // 绝不把可写首页/家庭码分享出去：有访客链接则分享只读快照，否则引导到家庭管理页
+    let token = '';
+    try { const t = wx.getStorageSync('gg_visitor_link'); token = t && t.token ? t.token : ''; } catch (e) {}
+    if (token) {
+      return { title: '果果家庭打卡 · 本周概览（只读）', path: '/pages/guest/guest?token=' + encodeURIComponent(token) };
+    }
+    return { title: '果果家庭打卡 · 一起坚持每一天', path: '/pages/family/family' };
   },
 });

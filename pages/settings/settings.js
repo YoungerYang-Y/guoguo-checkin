@@ -1,5 +1,6 @@
 const store = require('../../utils/store.js');
 const { ITEMS, GUOGUO_ITEMS, PARENT_ITEMS } = require('../../utils/constants.js');
+const family = require('../../utils/family.js');
 
 const DOWS = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
 
@@ -14,9 +15,20 @@ Page({
     weekRemind: true,
     editNameId: '',
     editNameValue: '',
+    canManage: true,   // 是否管理员：H5 预览无身份时默认可管理，入家庭后按角色判定
   },
 
-  onShow() { this.build(); },
+  onShow() {
+    const id = family.getIdentity();
+    this.setData({ canManage: !(id && id.status === 'active') || id.role === 'admin' });
+    this.build();
+  },
+
+  requireAdmin() {
+    if (this.data.canManage) return true;
+    wx.showToast({ title: '仅管理员可修改排期/目标', icon: 'none' });
+    return false;
+  },
 
   build() {
     const sched = store.getSchedule();
@@ -38,6 +50,7 @@ Page({
   },
 
   toggleRequired(e) {
+    if (!this.requireAdmin()) return;
     const { code, d } = e.currentTarget.dataset;
     const row = this.data.scheduleRows.find(r => r.code === code);
     const day = row.days.find(x => x.d === d);
@@ -53,6 +66,7 @@ Page({
     this.setData({ targetRows: rows });
   },
   saveTarget(e) {
+    if (!this.requireAdmin()) return;
     const code = e.currentTarget.dataset.code;
     const row = this.data.targetRows.find(r => r.code === code);
     store.setTarget(code, row.value);
@@ -84,6 +98,7 @@ Page({
   goCustomTargets() { wx.navigateTo({ url: '/pages/target-edit/target-edit?list=1' }); },
 
   resetData() {
+    if (!this.requireAdmin()) return;
     wx.showModal({
       title: '清空所有数据',
       content: '将删除全部打卡记录、排期与目标，且不可恢复。确定继续吗？',
