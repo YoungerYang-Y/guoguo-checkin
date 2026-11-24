@@ -54,7 +54,7 @@ async function getSession() {
   }
 }
 
-// 微信静默登录：wx.login 换 session。家庭共用一台手机，一个微信号=一个家庭数据空间。
+// 微信静默登录：wx.login 换 session，云端会话用于识别当前用户身份。
 // 注意：官方规范明确 H5 预览面板无法获得真实 wx.login code，也不能在该环境
 // 用 mock / 匿名登录替代；此流程只能在微信客户端内（试用版/体验版/正式版）完成。
 function signInWithWechat() {

@@ -29,12 +29,12 @@ Page({
         id: m.id, name: m.name, color: COLORS[m.id],
         valid: r.valid, index: dims ? dims.index : null,
         effectiveDays: r.effectiveDays || 0,
-        minDays: r.minDays || (type === 'week' ? 3 : (type === 'month' ? 10 : 90)),
+        minDays: r.minDays || (this.data.type === 'week' ? 3 : (this.data.type === 'month' ? 10 : 90)),
         gap: dims ? dims.gap : null,
         delta: r.delta, trend: r.trend,
         dims: dims ? [dims.completion, dims.continuity, dims.goal, dims.breadth] : [0, 0, 0, 0],
         advice: r.advice ? r.advice.texts : [],
-        low: r.advice ? r.advice.low : [],
+        low: r.advice && r.advice.low ? r.advice.low.join('、') : '',
       };
     });
     // 排行（有效样本）
