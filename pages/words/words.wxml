@@ -3,9 +3,9 @@
   <view class="card">
     <text class="section-title">果果单词句子与复习</text>
     <view class="rv-tabs">
-      <view class="rv-tab {{tab === 'add' ? 'on' : ''}}" data-tab="add" bindtap="switchTab">本周录入</view>
-      <view class="rv-tab {{tab === 'review' ? 'on' : ''}}" data-tab="review" bindtap="switchTab">每周复习</view>
-      <view class="rv-tab {{tab === 'bank' ? 'on' : ''}}" data-tab="bank" bindtap="switchTab">复习库</view>
+      <view class="rv-tab {{tab === 'add' ? 'on' : ''}}" data-tab="add" hover-class="ui-hover" bindtap="switchTab">本周录入</view>
+      <view class="rv-tab {{tab === 'review' ? 'on' : ''}}" data-tab="review" hover-class="ui-hover" bindtap="switchTab">每周复习</view>
+      <view class="rv-tab {{tab === 'bank' ? 'on' : ''}}" data-tab="bank" hover-class="ui-hover" bindtap="switchTab">复习库</view>
     </view>
   </view>
 
@@ -36,8 +36,8 @@
       <view class="form-field">
         <text class="field-label">类型</text>
         <view class="rv-actions" style="margin-top:0">
-          <view class="rv-btn ok {{form.type === 'word' ? 'chosen' : ''}}" data-type="word" bindtap="selectType">单词</view>
-          <view class="rv-btn no {{form.type === 'sentence' ? 'chosen' : ''}}" data-type="sentence" bindtap="selectType">句子</view>
+          <view class="rv-btn ok {{form.type === 'word' ? 'chosen' : ''}}" data-type="word" hover-class="ui-hover" bindtap="selectType">单词</view>
+          <view class="rv-btn no {{form.type === 'sentence' ? 'chosen' : ''}}" data-type="sentence" hover-class="ui-hover" bindtap="selectType">句子</view>
         </view>
       </view>
       <view class="form-field">
@@ -91,8 +91,8 @@
         </view>
         <text class="rv-meta">{{item.typeLabel}} · {{item.originLabel}} 录入 · {{item.stateText}}<text wx:if="{{item.failCount > 0}}"> · 未通过 {{item.failCount}} 次</text></text>
         <view class="rv-actions">
-          <view class="rv-btn ok {{item.state === 'passed' ? 'chosen' : ''}}" data-id="{{item.id}}" data-ok="1" bindtap="mark">能完整背诵</view>
-          <view class="rv-btn no {{item.state === 'failed' ? 'chosen' : ''}}" data-id="{{item.id}}" data-ok="0" bindtap="mark">需复习</view>
+          <view class="rv-btn ok {{item.state === 'passed' ? 'chosen' : ''}}" data-id="{{item.id}}" data-ok="1" hover-class="ui-hover" bindtap="mark">能完整背诵</view>
+          <view class="rv-btn no {{item.state === 'failed' ? 'chosen' : ''}}" data-id="{{item.id}}" data-ok="0" hover-class="ui-hover" bindtap="mark">需复习</view>
         </view>
       </view>
     </view>
@@ -107,7 +107,7 @@
         <view class="rv-item-head"><text class="rv-label">{{item.label}}</text></view>
         <text class="rv-meta">{{item.typeLabel}} · {{item.originLabel}} 录入 · 未通过 {{item.failCount}} 次</text>
         <view class="rv-actions">
-          <view class="rv-btn ok" data-id="{{item.id}}" data-ok="1" data-bank="1" bindtap="mark">已能完整背诵，移出复习库</view>
+          <view class="rv-btn ok" data-id="{{item.id}}" data-ok="1" data-bank="1" hover-class="ui-hover" bindtap="mark">已能完整背诵，移出复习库</view>
         </view>
       </view>
     </view>

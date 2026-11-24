@@ -15,7 +15,7 @@
 .summary-grid { display: flex; flex-wrap: wrap; }
 .summary-item { width: 50%; box-sizing: border-box; padding: 20rpx 0; display: flex; flex-direction: column; align-items: center; }
 .summary-value { font-size: 52rpx; font-weight: 700; color: #EC5B8C; line-height: 1.1; }
-.summary-label { font-size: 24rpx; color: #8a9099; margin-top: 8rpx; }
+.summary-label { font-size: 24rpx; color: #6b7280; margin-top: 8rpx; }
 
 .member-card { display: flex; align-items: center; padding: 20rpx 0; border-bottom: 2rpx solid #f2f3f5; }
 .member-card:last-child { border-bottom: none; }

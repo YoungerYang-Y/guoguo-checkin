@@ -3,7 +3,7 @@
 .month-title { font-size: 34rpx; font-weight: 600; }
 
 .week-head, .week-row { display: flex; }
-.week-head text { flex: 1; text-align: center; font-size: 24rpx; color: #9aa0a6; padding: 12rpx 0; }
+.week-head text { flex: 1; text-align: center; font-size: 24rpx; color: #6b7280; padding: 12rpx 0; }
 .day-cell {
   position: relative; flex: 1; height: 92rpx; box-sizing: border-box;
   display: flex; flex-direction: column; align-items: center; justify-content: center;

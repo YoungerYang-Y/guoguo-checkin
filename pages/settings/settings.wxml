@@ -10,7 +10,7 @@
     <view class="sched-row" wx:for="{{scheduleRows}}" wx:key="code">
       <text class="sched-name-col">{{item.name}}</text>
       <view wx:for="{{item.days}}" wx:for-item="day" wx:key="d" class="sched-cell {{day.on ? 'on' : ''}}"
-            data-code="{{item.code}}" data-d="{{day.d}}" bindtap="toggleRequired">
+            data-code="{{item.code}}" data-d="{{day.d}}" hover-class="ui-hover" bindtap="toggleRequired">
         <text wx:if="{{day.on}}">✓</text>
       </view>
     </view>

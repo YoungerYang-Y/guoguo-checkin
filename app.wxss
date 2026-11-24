@@ -44,7 +44,7 @@ button::after { border: none; }
 }
 
 /* ---------- 文字 ---------- */
-.text-muted { color: #8a93a3; }
+.text-muted { color: #6b7280; }
 .text-small { font-size: 24rpx; }
 .text-bold { font-weight: 600; }
 .row { display: flex; align-items: center; }
@@ -77,7 +77,7 @@ button::after { border: none; }
   letter-spacing: 0.3rpx;
 }
 .tag-required { background: #FFEAF2; color: #EC5B8C; }
-.tag-optional { background: #f1f3f6; color: #8a93a3; }
+.tag-optional { background: #f1f3f6; color: #6b7280; }
 .tag-custom { background: #FDECF5; color: #8b5cf6; }
 .tag-warn { background: #fff1e0; color: #d97706; }
 .tag-success { background: #e3f8ef; color: #0b8a5f; }
@@ -116,11 +116,14 @@ button::after { border: none; }
 .btn-block, button.btn-block { display: flex; width: 100%; box-sizing: border-box; }
 .btn-hover { opacity: 0.86; transform: translateY(1rpx); }
 
+/* 通用按下态：bindtap 的 view 挂 hover-class="ui-hover"；禁用态传 none */
+.ui-hover { opacity: 0.82; transform: scale(0.98); transition: opacity 0.1s, transform 0.1s; }
+
 /* ---------- 空态 ---------- */
 .empty {
   padding: 90rpx 0;
   text-align: center;
-  color: #9aa3b2;
+  color: #6b7280;
   font-size: 26rpx;
   letter-spacing: 0.5rpx;
 }
@@ -179,13 +182,13 @@ button::after { border: none; }
   line-height: 1.6;
   color: #33262E;
 }
-.field-label { display: block; font-size: 26rpx; color: #6c7688; margin-bottom: 14rpx; font-weight: 500; }
+.field-label { display: block; font-size: 26rpx; color: #6b7280; margin-bottom: 14rpx; font-weight: 500; }
 
 /* ---------- 每周复习模块（古诗 / 单词句子共用） ---------- */
 .rv-tabs { display: flex; }
 .rv-tab {
   flex: 1; text-align: center; padding: 16rpx 0; margin-right: 12rpx;
-  border-radius: 14rpx; background: #f4f5f7; font-size: 26rpx; color: #7a8290;
+  border-radius: 14rpx; background: #f4f5f7; font-size: 26rpx; color: #6b7280;
 }
 .rv-tab:last-child { margin-right: 0; }
 .rv-tab.on { background: #FFEAF2; color: #EC5B8C; font-weight: 600; }
@@ -197,13 +200,13 @@ button::after { border: none; }
   display: flex; flex-direction: column; align-items: center;
 }
 .rv-stat > view:last-child { margin-right: 0; }
-.rv-stat-lab { font-size: 22rpx; color: #8a93a3; }
+.rv-stat-lab { font-size: 22rpx; color: #6b7280; }
 .rv-stat-num { font-size: 32rpx; font-weight: 600; color: #EC5B8C; margin-top: 6rpx; }
 .rv-item { padding: 20rpx 0; border-bottom: 1rpx solid #f2f3f5; }
 .rv-item:last-child { border-bottom: none; }
 .rv-item-head { display: flex; align-items: center; justify-content: space-between; }
 .rv-label { flex: 1; font-size: 28rpx; font-weight: 600; color: #33262E; }
-.rv-meta { display: block; font-size: 23rpx; color: #8a93a3; margin-top: 8rpx; }
+.rv-meta { display: block; font-size: 23rpx; color: #6b7280; margin-top: 8rpx; }
 .rv-badge { font-size: 20rpx; color: #d97706; background: #fff1e0; border-radius: 8rpx; padding: 4rpx 12rpx; margin-left: 12rpx; }
 .rv-del { font-size: 24rpx; color: #d93026; margin-left: 12rpx; }
 .rv-actions { display: flex; margin-top: 16rpx; }
@@ -215,7 +218,7 @@ button::after { border: none; }
 .rv-btn.ok { background: #FFF3F8; color: #EC5B8C; }
 .rv-btn.no { background: #FFF7EC; color: #B26A0A; }
 .rv-btn.chosen { border-color: currentColor; font-weight: 600; }
-.rv-empty { padding: 60rpx 0; text-align: center; color: #9aa3b2; font-size: 26rpx; }
+.rv-empty { padding: 60rpx 0; text-align: center; color: #6b7280; font-size: 26rpx; }
 .rv-photo { width: 100%; height: 300rpx; border-radius: 16rpx; margin-top: 16rpx; background: #FDF6F9; }
 .rv-textarea {
   width: 100%; box-sizing: border-box; min-height: 200rpx;

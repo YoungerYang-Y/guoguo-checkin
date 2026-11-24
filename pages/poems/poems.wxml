@@ -3,9 +3,9 @@
   <view class="card">
     <text class="section-title">果果古诗记录与复习</text>
     <view class="rv-tabs">
-      <view class="rv-tab {{tab === 'add' ? 'on' : ''}}" data-tab="add" bindtap="switchTab">本周录入</view>
-      <view class="rv-tab {{tab === 'review' ? 'on' : ''}}" data-tab="review" bindtap="switchTab">每周复习</view>
-      <view class="rv-tab {{tab === 'bank' ? 'on' : ''}}" data-tab="bank" bindtap="switchTab">复习库</view>
+      <view class="rv-tab {{tab === 'add' ? 'on' : ''}}" data-tab="add" hover-class="ui-hover" bindtap="switchTab">本周录入</view>
+      <view class="rv-tab {{tab === 'review' ? 'on' : ''}}" data-tab="review" hover-class="ui-hover" bindtap="switchTab">每周复习</view>
+      <view class="rv-tab {{tab === 'bank' ? 'on' : ''}}" data-tab="bank" hover-class="ui-hover" bindtap="switchTab">复习库</view>
     </view>
   </view>
 
@@ -43,7 +43,7 @@
           <text class="rv-del" data-id="{{item.id}}" bindtap="remove">删除</text>
         </view>
         <text class="rv-meta" wx:if="{{item.note}}">{{item.note}}</text>
-        <view class="rv-content-toggle" wx:if="{{item.content}}" data-id="{{item.id}}" bindtap="toggleContent">{{item.expanded ? '收起诗文' : '查看诗文（对照背诵）'}}</view>
+        <view class="rv-content-toggle" wx:if="{{item.content}}" data-id="{{item.id}}" hover-class="ui-hover" bindtap="toggleContent">{{item.expanded ? '收起诗文' : '查看诗文（对照背诵）'}}</view>
         <view class="rv-poem-content" wx:if="{{item.expanded && item.content}}">{{item.content}}</view>
       </view>
     </view>
@@ -75,11 +75,11 @@
           <text class="rv-badge" wx:if="{{item.inBank}}">复习库</text>
         </view>
         <text class="rv-meta">{{item.originLabel}} 录入 · {{item.stateText}}<text wx:if="{{item.failCount > 0}}"> · 未通过 {{item.failCount}} 次</text></text>
-        <view class="rv-content-toggle" wx:if="{{item.content}}" data-id="{{item.id}}" bindtap="toggleContent">{{item.expanded ? '收起诗文' : '查看诗文（对照背诵）'}}</view>
+        <view class="rv-content-toggle" wx:if="{{item.content}}" data-id="{{item.id}}" hover-class="ui-hover" bindtap="toggleContent">{{item.expanded ? '收起诗文' : '查看诗文（对照背诵）'}}</view>
         <view class="rv-poem-content" wx:if="{{item.expanded && item.content}}">{{item.content}}</view>
         <view class="rv-actions">
-          <view class="rv-btn ok {{item.state === 'passed' ? 'chosen' : ''}}" data-id="{{item.id}}" data-ok="1" bindtap="mark">能完整背诵</view>
-          <view class="rv-btn no {{item.state === 'failed' ? 'chosen' : ''}}" data-id="{{item.id}}" data-ok="0" bindtap="mark">需复习</view>
+          <view class="rv-btn ok {{item.state === 'passed' ? 'chosen' : ''}}" data-id="{{item.id}}" data-ok="1" hover-class="ui-hover" bindtap="mark">能完整背诵</view>
+          <view class="rv-btn no {{item.state === 'failed' ? 'chosen' : ''}}" data-id="{{item.id}}" data-ok="0" hover-class="ui-hover" bindtap="mark">需复习</view>
         </view>
       </view>
     </view>
@@ -93,10 +93,10 @@
       <view class="rv-item" wx:for="{{bank.items}}" wx:key="id">
         <view class="rv-item-head"><text class="rv-label">{{item.label}}</text></view>
         <text class="rv-meta">{{item.originLabel}} 录入 · 未通过 {{item.failCount}} 次</text>
-        <view class="rv-content-toggle" wx:if="{{item.content}}" data-id="{{item.id}}" bindtap="toggleContent">{{item.expanded ? '收起诗文' : '查看诗文（对照背诵）'}}</view>
+        <view class="rv-content-toggle" wx:if="{{item.content}}" data-id="{{item.id}}" hover-class="ui-hover" bindtap="toggleContent">{{item.expanded ? '收起诗文' : '查看诗文（对照背诵）'}}</view>
         <view class="rv-poem-content" wx:if="{{item.expanded && item.content}}">{{item.content}}</view>
         <view class="rv-actions">
-          <view class="rv-btn ok" data-id="{{item.id}}" data-ok="1" data-bank="1" bindtap="mark">已能完整背诵，移出复习库</view>
+          <view class="rv-btn ok" data-id="{{item.id}}" data-ok="1" data-bank="1" hover-class="ui-hover" bindtap="mark">已能完整背诵，移出复习库</view>
         </view>
       </view>
     </view>

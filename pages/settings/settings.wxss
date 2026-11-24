@@ -1,7 +1,7 @@
 .sched-head, .sched-row { display: flex; align-items: center; }
 .sched-name-col { width: 180rpx; flex-shrink: 0; font-size: 24rpx; }
-.sched-head .sched-name-col { font-size: 22rpx; color: #9aa0a6; }
-.sched-day { flex: 1; text-align: center; font-size: 21rpx; color: #9aa0a6; }
+.sched-head .sched-name-col { font-size: 22rpx; color: #6b7280; }
+.sched-day { flex: 1; text-align: center; font-size: 21rpx; color: #6b7280; }
 .sched-row { padding: 12rpx 0; border-bottom: 2rpx solid #f5f6f7; }
 .sched-cell {
   flex: 1; height: 52rpx; margin: 0 4rpx; border-radius: 10rpx;

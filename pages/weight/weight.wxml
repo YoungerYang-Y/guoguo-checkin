@@ -3,12 +3,12 @@
   <view class="card">
     <text class="section-title">体重与身高记录</text>
     <view class="mode-row">
-      <view class="mode-chip {{metric === 'weight' ? 'active' : ''}}" data-metric="weight" bindtap="switchMetric">体重</view>
-      <view class="mode-chip {{metric === 'height' ? 'active' : ''}}" data-metric="height" bindtap="switchMetric">身高（果果）</view>
+      <view class="mode-chip {{metric === 'weight' ? 'active' : ''}}" data-metric="weight" hover-class="ui-hover" bindtap="switchMetric">体重</view>
+      <view class="mode-chip {{metric === 'height' ? 'active' : ''}}" data-metric="height" hover-class="ui-hover" bindtap="switchMetric">身高（果果）</view>
     </view>
     <view class="mode-row">
-      <view class="mode-chip {{mode === 'year' ? 'active' : ''}}" data-mode="year" bindtap="switchMode">本年度</view>
-      <view class="mode-chip {{mode === 'cross' ? 'active' : ''}}" data-mode="cross" bindtap="switchMode">跨年度</view>
+      <view class="mode-chip {{mode === 'year' ? 'active' : ''}}" data-mode="year" hover-class="ui-hover" bindtap="switchMode">本年度</view>
+      <view class="mode-chip {{mode === 'cross' ? 'active' : ''}}" data-mode="cross" hover-class="ui-hover" bindtap="switchMode">跨年度</view>
     </view>
     <view class="year-nav" wx:if="{{mode === 'year'}}">
       <text class="year-btn" bindtap="prevYear">‹</text>
@@ -26,7 +26,7 @@
       <text class="field-label">成员</text>
       <view class="chip-row">
         <view wx:for="{{members}}" wx:key="id" class="chip {{form.memberId === item.id ? 'active' : ''}}"
-              data-id="{{item.id}}" bindtap="chooseMember">{{item.name}}</view>
+              data-id="{{item.id}}" hover-class="ui-hover" bindtap="chooseMember">{{item.name}}</view>
       </view>
     </view>
     <view class="form-field">
@@ -49,7 +49,7 @@
     <text class="section-title">{{chartTitle}}</text>
     <view class="legend">
       <view class="legend-item {{item.on ? '' : 'off'}}" wx:for="{{legend}}" wx:key="id"
-            data-id="{{item.id}}" bindtap="toggleMember">
+            data-id="{{item.id}}" hover-class="ui-hover" bindtap="toggleMember">
         <view class="legend-dot" style="background:{{item.color}}"></view>
         <text>{{item.name}}</text>
       </view>

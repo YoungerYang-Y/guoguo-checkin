@@ -2,7 +2,7 @@
 .mode-chip {
   padding: 12rpx 30rpx; margin-right: 16rpx;
   border-radius: 30rpx; background: #f4f5f7;
-  font-size: 26rpx; color: #7a8290;
+  font-size: 26rpx; color: #6b7280;
 }
 .mode-chip.active { background: #FFEAF2; color: #EC5B8C; font-weight: 600; }
 
@@ -21,7 +21,7 @@
 .chip {
   padding: 12rpx 30rpx; margin: 0 14rpx 8rpx 0;
   border-radius: 30rpx; background: #f4f5f7;
-  font-size: 26rpx; color: #7a8290;
+  font-size: 26rpx; color: #6b7280;
 }
 .chip.active { background: #FFEAF2; color: #EC5B8C; font-weight: 600; }
 
@@ -45,12 +45,12 @@
 .y-label {
   position: absolute; left: 0;
   transform: translateY(-50%);
-  font-size: 20rpx; color: #a2aab5;
+  font-size: 20rpx; color: #6b7280;
 }
 .x-label {
   position: absolute; top: 332rpx;
   transform: translateX(-50%);
-  font-size: 20rpx; color: #a2aab5;
+  font-size: 20rpx; color: #6b7280;
   white-space: nowrap;
 }
 .line-seg {
@@ -77,7 +77,7 @@
 .w-tr:last-child { border-bottom: none; }
 .w-th { background: #FFF6FA; font-weight: 600; color: #6c5a64; border-radius: 10rpx; }
 .w-td { flex: 1; text-align: center; }
-.w-month { color: #8a93a3; }
+.w-month { color: #6b7280; }
 
 .rec-row {
   display: flex; align-items: center;

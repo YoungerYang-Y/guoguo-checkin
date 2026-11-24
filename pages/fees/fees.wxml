@@ -3,9 +3,9 @@
   <view class="card">
     <text class="section-title">果果培训费</text>
     <view class="tab-row">
-      <view class="tab-chip {{tab === 'add' ? 'active' : ''}}" data-tab="add" bindtap="switchTab">记一笔</view>
-      <view class="tab-chip {{tab === 'month' ? 'active' : ''}}" data-tab="month" bindtap="switchTab">月度分析</view>
-      <view class="tab-chip {{tab === 'year' ? 'active' : ''}}" data-tab="year" bindtap="switchTab">年度分析</view>
+      <view class="tab-chip {{tab === 'add' ? 'active' : ''}}" data-tab="add" hover-class="ui-hover" bindtap="switchTab">记一笔</view>
+      <view class="tab-chip {{tab === 'month' ? 'active' : ''}}" data-tab="month" hover-class="ui-hover" bindtap="switchTab">月度分析</view>
+      <view class="tab-chip {{tab === 'year' ? 'active' : ''}}" data-tab="year" hover-class="ui-hover" bindtap="switchTab">年度分析</view>
     </view>
   </view>
 

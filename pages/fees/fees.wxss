@@ -3,7 +3,7 @@
   flex: 1; text-align: center;
   padding: 16rpx 0; margin-right: 12rpx;
   border-radius: 14rpx; background: #f4f5f7;
-  font-size: 26rpx; color: #7a8290;
+  font-size: 26rpx; color: #6b7280;
 }
 .tab-chip:last-child { margin-right: 0; }
 .tab-chip.active { background: #FFEAF2; color: #EC5B8C; font-weight: 600; }
@@ -50,7 +50,7 @@
   display: flex; flex-direction: column; align-items: center; justify-content: center;
 }
 .pie-total { font-size: 28rpx; font-weight: 600; color: #EC5B8C; }
-.pie-cap { font-size: 20rpx; color: #9aa3b2; margin-top: 4rpx; }
+.pie-cap { font-size: 20rpx; color: #6b7280; margin-top: 4rpx; }
 .pie-legend { flex: 1; min-width: 0; margin-left: 24rpx; }
 .pl-row { display: flex; align-items: center; margin-bottom: 12rpx; font-size: 23rpx; }
 .pl-name { flex: 1; min-width: 0; }
@@ -64,7 +64,7 @@
   display: flex; flex-direction: column; align-items: center;
 }
 .stat-box:last-child { margin-right: 0; }
-.stat-lab { font-size: 22rpx; color: #8a93a3; }
+.stat-lab { font-size: 22rpx; color: #6b7280; }
 .stat-num { font-size: 30rpx; font-weight: 600; color: #EC5B8C; margin-top: 8rpx; }
 
 .bars { display: flex; align-items: flex-end; margin: 12rpx 0 16rpx; }
@@ -73,7 +73,7 @@
 .bar-area { width: 100%; height: 180rpx; display: flex; align-items: flex-end; justify-content: center; }
 .bar { width: 46rpx; border-radius: 8rpx 8rpx 0 0; }
 .bar-year { font-size: 22rpx; color: #4a525e; margin-top: 10rpx; }
-.bar-diff { font-size: 20rpx; color: #9aa3b2; margin-top: 2rpx; }
+.bar-diff { font-size: 20rpx; color: #6b7280; margin-top: 2rpx; }
 
 .birth-row { display: flex; align-items: center; }
 .birth-row .field-input { flex: 1; }

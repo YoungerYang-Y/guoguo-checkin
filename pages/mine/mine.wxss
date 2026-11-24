@@ -22,7 +22,7 @@
 .stat-row { display: flex; background: #ffffff; border-radius: 20rpx; margin: 20rpx 0; padding: 24rpx 0; }
 .stat-item { flex: 1; display: flex; flex-direction: column; align-items: center; }
 .stat-num { font-size: 40rpx; font-weight: 700; color: #EC5B8C; }
-.stat-label { font-size: 22rpx; color: #8a9099; margin-top: 6rpx; }
+.stat-label { font-size: 22rpx; color: #6b7280; margin-top: 6rpx; }
 
 .sync-card { padding: 24rpx 28rpx; }
 .sync-head { display: flex; align-items: center; }
@@ -45,7 +45,7 @@
 .menu-item { display: flex; align-items: center; justify-content: space-between; padding: 22rpx 0; border-bottom: 2rpx solid #f5f6f7; font-size: 28rpx; }
 .menu-item:last-child { border-bottom: none; }
 .menu-arrow { color: #c0c4c9; font-size: 36rpx; }
-.version { text-align: center; color: #b0b4ba; font-size: 22rpx; padding: 32rpx 0 8rpx; }
+.version { text-align: center; color: #6b7280; font-size: 22rpx; padding: 32rpx 0 8rpx; }
 .privacy-footer { text-align: center; color: #EC5B8C; font-size: 24rpx; padding: 8rpx 0 24rpx; }
 
 /* ========== 我的页视觉增强 ========== */

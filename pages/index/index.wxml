@@ -1,6 +1,6 @@
 <view class="page pb-sheet">
 
-  <!-- 顶部横幅：断档提示 -->
+  <!-- 顶部横幅：全勤鼓励（连续全勤时显示） -->
   <view class="banner" wx:if="{{!loading && summary.full && summary.streak >= 1}}">
     <text class="banner-icon">✦</text>
     <text>今日完成，连续 {{summary.streak}} 天全勤</text>
@@ -8,12 +8,12 @@
 
   <!-- 日期条 -->
   <view class="date-bar">
-    <view class="date-nav {{canPrev ? '' : 'disabled'}}" bindtap="changeDate" data-step="-1">‹</view>
+    <view class="date-nav {{canPrev ? '' : 'disabled'}}" hover-class="{{canPrev ? 'ui-hover' : 'none'}}" bindtap="changeDate" data-step="-1">‹</view>
     <view class="date-center">
       <text class="date-label">{{dateLabel}}</text>
       <text class="date-full">{{date}}</text>
     </view>
-    <view class="date-nav {{canNext ? '' : 'disabled'}}" bindtap="changeDate" data-step="1">›</view>
+    <view class="date-nav {{canNext ? '' : 'disabled'}}" hover-class="{{canNext ? 'ui-hover' : 'none'}}" bindtap="changeDate" data-step="1">›</view>
   </view>
 
   <view class="subbar" wx:if="{{!isToday}}">
@@ -66,7 +66,7 @@
           class="item-row {{row.done ? 'done' : ''}} {{row.underTarget ? 'warn' : ''}}"
           data-member="{{group.id}}" data-code="{{row.code}}" data-kind="{{row.kind}}"
           data-custom="{{row.custom}}" data-standard="{{row.standard}}"
-          bindtap="onRowTap" bindlongpress="onRowLongPress">
+          hover-class="ui-hover" bindtap="onRowTap" bindlongpress="onRowLongPress">
           <view class="check {{row.done ? 'checked' : ''}}" style="{{row.done ? 'background:'+group.accent.c+';border-color:'+group.accent.c : ''}}">
             <text wx:if="{{row.done}}" class="check-mark">✓</text>
           </view>
@@ -100,7 +100,7 @@
           class="item-row {{row.done ? 'done' : ''}}"
           data-member="{{group.id}}" data-code="{{row.code}}" data-kind="custom"
           data-custom="true" data-standard="{{row.standard}}"
-          bindtap="onRowTap" bindlongpress="onRowLongPress">
+          hover-class="ui-hover" bindtap="onRowTap" bindlongpress="onRowLongPress">
           <view class="check {{row.done ? 'checked' : ''}}" style="{{row.done ? 'background:'+group.accent.c+';border-color:'+group.accent.c : ''}}">
             <text wx:if="{{row.done}}" class="check-mark">✓</text>
           </view>
@@ -152,8 +152,8 @@
   <text class="sheet-title">会员课 · 选择本次节数</text>
   <text class="text-muted text-small">必须选择 2 节或 3 节，每次需显式点选</text>
   <view class="session-btns">
-    <view class="session-btn {{sessionChoice === 2 ? 'active' : ''}}" data-n="2" bindtap="onSessionChoose">2 节</view>
-    <view class="session-btn {{sessionChoice === 3 ? 'active' : ''}}" data-n="3" bindtap="onSessionChoose">3 节</view>
+    <view class="session-btn {{sessionChoice === 2 ? 'active' : ''}}" data-n="2" hover-class="ui-hover" bindtap="onSessionChoose">2 节</view>
+    <view class="session-btn {{sessionChoice === 3 ? 'active' : ''}}" data-n="3" hover-class="ui-hover" bindtap="onSessionChoose">3 节</view>
   </view>
   <button class="btn btn-primary btn-block" bindtap="confirmSession">确认完成</button>
 </view>
