@@ -1,0 +1,38 @@
+.detail-header { display: flex; flex-direction: column; padding: 8rpx 8rpx 24rpx; }
+.detail-title { font-size: 38rpx; font-weight: 700; }
+.sample-banner { padding: 20rpx 24rpx; margin-bottom: 20rpx; border-radius: 14rpx; background: #fff6dc; color: #a67c00; font-size: 26rpx; }
+
+.overview-row { display: flex; }
+.ov-item { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 16rpx 0; }
+.ov-num { font-size: 48rpx; font-weight: 700; color: #EC5B8C; line-height: 1; }
+.ov-label { font-size: 22rpx; color: #8a9099; margin-top: 10rpx; }
+.ov-warn { padding: 16rpx; margin: 12rpx 0; background: #fff6dc; color: #a67c00; border-radius: 10rpx; font-size: 24rpx; }
+
+.detail-row { display: flex; align-items: center; justify-content: space-between; padding: 16rpx 0; border-bottom: 2rpx solid #f5f6f7; }
+.detail-row:last-child { border-bottom: none; }
+.dr-label { font-size: 28rpx; }
+.dr-extra { font-size: 22rpx; color: #9aa0a6; margin-left: auto; margin-right: 16rpx; }
+.dr-value { font-size: 28rpx; font-weight: 600; color: #33262E; }
+.dr-value.accent { color: #EC5B8C; }
+.dr-value.theme { font-size: 22rpx; color: #646a73; max-width: 60%; text-align: right; }
+
+.parent-block { margin-bottom: 20rpx; }
+.parent-block:last-child { margin-bottom: 0; }
+.parent-name { display: block; font-size: 28rpx; font-weight: 600; color: #EC5B8C; padding: 12rpx 0; }
+
+.chart { display: flex; align-items: flex-end; height: 260rpx; padding: 20rpx 0 0; }
+.bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.bar-wrap { height: 210rpx; display: flex; align-items: flex-end; }
+.bar { width: 28rpx; background: #EC5B8C; border-radius: 6rpx 6rpx 0 0; min-height: 8rpx; }
+.bar-empty { background: transparent; border: 2rpx dashed #c0c4c9; }
+.bar-label { font-size: 18rpx; color: #9aa0a6; margin-top: 8rpx; }
+
+.custom-block { margin-bottom: 16rpx; }
+.custom-row { padding: 14rpx 0; border-bottom: 2rpx solid #f5f6f7; }
+.advice-block { padding: 16rpx 0; border-bottom: 2rpx solid #f2f3f5; }
+.advice-block:last-child { border-bottom: none; }
+.dims-mini { display: flex; flex-wrap: wrap; justify-content: flex-end; }
+.dim-chip { font-size: 20rpx; color: #646a73; background: #f2f3f5; padding: 4rpx 10rpx; border-radius: 8rpx; margin-left: 8rpx; }
+.advice-item { display: flex; align-items: flex-start; margin-top: 14rpx; font-size: 26rpx; color: #4e5359; line-height: 1.6; }
+.advice-dot { color: #EC5B8C; margin-right: 10rpx; font-size: 32rpx; line-height: 1; }
+.highlight { padding: 12rpx 0; font-size: 28rpx; }

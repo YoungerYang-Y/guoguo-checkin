@@ -1,0 +1,32 @@
+<view class="page">
+  <view class="privacy-hero">
+    <view class="ph-badge">隐私</view>
+    <text class="ph-title">用户隐私保护指引</text>
+    <text class="ph-meta">版本 {{version}} · 更新于 {{updatedAt}}</text>
+  </view>
+
+  <view class="card">
+    <text class="privacy-lead">{{intro}}</text>
+  </view>
+
+  <view class="card privacy-sec" wx:for="{{sections}}" wx:for-item="sec" wx:key="no">
+    <view class="ps-head">
+      <view class="ps-no">{{sec.no}}</view>
+      <text class="ps-title">{{sec.title}}</text>
+    </view>
+    <text class="privacy-p" wx:for="{{sec.paras}}" wx:for-item="p" wx:key="*this">{{p}}</text>
+  </view>
+
+  <view class="card">
+    <text class="section-title">同意状态</text>
+    <view class="status-pill {{agreed ? 'ok' : 'pending'}}">
+      <view class="status-dot"></view>
+      <text>{{agreed ? '已同意本指引' : '尚未同意本指引'}}</text>
+    </view>
+    <view wx:if="{{!agreed}}" class="pf-btn pf-btn-primary" hover-class="pf-btn-hover" bindtap="agree">同意并继续</view>
+    <view wx:else class="pf-btn pf-btn-ghost" hover-class="pf-btn-hover" bindtap="revoke">撤回同意</view>
+    <text class="text-muted text-small privacy-hint">你也可以在微信小程序的账号设置中管理授权。</text>
+  </view>
+
+  <view class="version">果果家庭打卡 · 家庭内部使用</view>
+</view>

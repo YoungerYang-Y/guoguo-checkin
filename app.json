@@ -1,0 +1,40 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/calendar/calendar",
+    "pages/report/report",
+    "pages/report-detail/report-detail",
+    "pages/compare/compare",
+    "pages/settings/settings",
+    "pages/target-edit/target-edit",
+    "pages/mine/mine",
+    "pages/privacy/privacy",
+    "pages/weight/weight",
+    "pages/fees/fees",
+    "pages/poems/poems",
+    "pages/words/words"
+  ],
+  "window": {
+    "navigationBarTitleText": "果果家庭打卡",
+    "navigationBarBackgroundColor": "#FFF7FA",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#FFF8FA",
+    "backgroundTextStyle": "light"
+  },
+  "tabBar": {
+    "color": "#A99BA2",
+    "selectedColor": "#EC5B8C",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "black",
+    "list": [
+      { "pagePath": "pages/index/index", "text": "今日打卡", "iconPath": "assets/tab/index.png", "selectedIconPath": "assets/tab/index_on.png" },
+      { "pagePath": "pages/calendar/calendar", "text": "日历", "iconPath": "assets/tab/calendar.png", "selectedIconPath": "assets/tab/calendar_on.png" },
+      { "pagePath": "pages/report/report", "text": "报表", "iconPath": "assets/tab/report.png", "selectedIconPath": "assets/tab/report_on.png" },
+      { "pagePath": "pages/compare/compare", "text": "对比", "iconPath": "assets/tab/compare.png", "selectedIconPath": "assets/tab/compare_on.png" },
+      { "pagePath": "pages/mine/mine", "text": "我的", "iconPath": "assets/tab/mine.png", "selectedIconPath": "assets/tab/mine_on.png" }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents"
+}

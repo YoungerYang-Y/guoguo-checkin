@@ -1,0 +1,108 @@
+<view class="page">
+  <view class="empty" wx:if="{{loading}}">正在生成报表…</view>
+
+  <block wx:if="{{!loading && report}}">
+    <view class="detail-header">
+      <text class="detail-title">{{report.title}} · {{typeLabel}}</text>
+      <text class="text-muted text-small">生成于 {{report.generatedAt}}</text>
+    </view>
+
+    <view class="sample-banner" wx:if="{{!report.members.guoguo.valid}}">
+      样本不足，暂不作结论（果果有效打卡日 {{report.members.guoguo.effectiveDays}} 天，需至少 {{report.members.guoguo.minDays}} 天）
+    </view>
+
+    <!-- 概览 -->
+    <view class="card">
+      <text class="section-title">一、概览</text>
+      <view class="overview-row">
+        <view class="ov-item"><text class="ov-num">{{report.totalDone}}</text><text class="ov-label">完成项总数</text></view>
+        <view class="ov-item"><text class="ov-num">{{report.fullDays}}</text><text class="ov-label">果果全勤天数</text></view>
+        <view class="ov-item"><text class="ov-num">{{report.backfillRate}}%</text><text class="ov-label">补卡比例</text></view>
+      </view>
+      <view class="ov-warn" wx:if="{{report.backfillRate > 30}}">本期补卡比例偏高，参考价值有限</view>
+      <button class="btn btn-ghost btn-block" bindtap="goCompare">查看三人对比与指数 ›</button>
+    </view>
+
+    <!-- 果果明细 -->
+    <view class="card">
+      <text class="section-title">二、果果明细</text>
+      <view class="detail-row" wx:for="{{ggDetailRows}}" wx:key="label">
+        <text class="dr-label">{{item.label}}</text>
+        <text class="dr-extra" wx:if="{{item.extra}}">{{item.extra}}</text>
+        <text class="dr-value">{{item.value}} {{item.unit}}</text>
+      </view>
+      <view class="detail-row"><text class="dr-label">会员课节数合计</text><text class="dr-value accent">{{report.members.guoguo.detail.sessions}} 节</text></view>
+      <view class="detail-row"><text class="dr-label">全勤天数</text><text class="dr-value">{{report.members.guoguo.detail.fullDays}} 天</text></view>
+      <view class="detail-row"><text class="dr-label">最长连续天数</text><text class="dr-value">{{report.members.guoguo.detail.longestStreak}} 天</text></view>
+      <view class="detail-row"><text class="dr-label">周末自主完成项</text><text class="dr-value">{{report.members.guoguo.detail.weekendExtra}} 项</text></view>
+    </view>
+
+    <!-- 家长明细 -->
+    <view class="card">
+      <text class="section-title">三、家长明细</text>
+      <view class="parent-block" wx:for="{{parentDetails}}" wx:key="id">
+        <text class="parent-name">{{item.name}}</text>
+        <view class="detail-row"><text class="dr-label">AI 学习天数</text><text class="dr-value">{{item.aiDays}} / {{item.aiTarget}} 天</text></view>
+        <view class="detail-row"><text class="dr-label">单词达标天数</text><text class="dr-value">{{item.wordDays}} / {{item.wordTarget}} 天</text></view>
+        <view class="detail-row"><text class="dr-label">实际总词数</text><text class="dr-value">{{item.wordTotal}} 个</text></view>
+        <view class="detail-row"><text class="dr-label">游泳次数</text><text class="dr-value">{{item.swimTimes}} / {{item.swimTarget}} 次</text></view>
+        <view class="detail-row" wx:if="{{item.themes.length > 0}}"><text class="dr-label">AI 学习主题</text><text class="dr-value theme">{{item.themes}}</text></view>
+      </view>
+    </view>
+
+    <!-- 趋势 -->
+    <view class="card">
+      <text class="section-title">四、趋势（每日完成项）</text>
+      <view class="chart">
+        <view class="bar-col" wx:for="{{trend}}" wx:key="date">
+          <view class="bar-wrap">
+            <view class="bar {{item.hasAny ? '' : 'bar-empty'}}"
+                  style="height:{{item.total ? item.total/trendMax*200 : 8}}rpx"></view>
+          </view>
+          <text class="bar-label">{{item.label}}</text>
+        </view>
+      </view>
+      <text class="text-muted text-small">空心柱表示当日未打卡</text>
+    </view>
+
+    <!-- 自定义目标区 -->
+    <view class="card" wx:if="{{customBlocks.length > 0}}">
+      <text class="section-title">自定义目标</text>
+      <view class="custom-block" wx:for="{{customBlocks}}" wx:for-item="block" wx:key="name">
+        <text class="parent-name">{{block.name}}</text>
+        <view class="custom-row" wx:for="{{block.rows}}" wx:for-item="row" wx:key="target_id">
+          <view class="row-between">
+            <text class="dr-label">{{row.name}} <text class="tag tag-custom">自定义</text></text>
+            <text class="tag {{row.achieved ? 'tag-success' : (row.executed ? 'tag-warn' : 'tag-optional')}}">
+              {{row.achieved ? '达标' : (row.executed ? '未达标' : '未执行')}}
+            </text>
+          </view>
+          <text class="text-muted text-small">要求 {{row.need}} · 实际 {{row.actual}} · 计入{{row.count_mode ? '必修' : '选修'}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 进步空间与建议 -->
+    <view class="card">
+      <text class="section-title">五、进步空间与建议</text>
+      <view class="advice-block" wx:for="{{advices}}" wx:for-item="ad" wx:key="id">
+        <view class="row-between">
+          <text class="parent-name">{{ad.name}} · 指数 {{ad.index}}</text>
+          <view class="dims-mini">
+            <text wx:for="{{ad.dims}}" wx:for-item="dim" wx:key="name" class="dim-chip">{{dim.name}} {{dim.v}}</text>
+          </view>
+        </view>
+        <view class="advice-item" wx:for="{{ad.texts}}" wx:for-item="txt" wx:key="*this">
+          <text class="advice-dot">•</text><text>{{txt}}</text>
+        </view>
+      </view>
+      <view class="empty" wx:if="{{advices.length === 0}}">样本不足，暂不作结论</view>
+    </view>
+
+    <!-- 亮点 -->
+    <view class="card" wx:if="{{report.highlights.length > 0}}">
+      <text class="section-title">本期亮点</text>
+      <view class="highlight" wx:for="{{report.highlights}}" wx:key="*this">✦ {{item}}</view>
+    </view>
+  </block>
+</view>

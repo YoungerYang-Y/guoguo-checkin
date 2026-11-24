@@ -1,0 +1,24 @@
+.sched-head, .sched-row { display: flex; align-items: center; }
+.sched-name-col { width: 180rpx; flex-shrink: 0; font-size: 24rpx; }
+.sched-head .sched-name-col { font-size: 22rpx; color: #9aa0a6; }
+.sched-day { flex: 1; text-align: center; font-size: 21rpx; color: #9aa0a6; }
+.sched-row { padding: 12rpx 0; border-bottom: 2rpx solid #f5f6f7; }
+.sched-cell {
+  flex: 1; height: 52rpx; margin: 0 4rpx; border-radius: 10rpx;
+  background: #f2f3f5; color: #ffffff; display: flex; align-items: center; justify-content: center;
+  font-size: 26rpx;
+}
+.sched-cell.on { background: #EC5B8C; }
+
+.target-row { display: flex; align-items: center; padding: 14rpx 0; border-bottom: 2rpx solid #f5f6f7; }
+.target-name { width: 200rpx; font-size: 26rpx; }
+.target-input { width: 100rpx; text-align: center; background: #f2f3f5; border-radius: 8rpx; padding: 8rpx; font-size: 26rpx; }
+.target-row .btn { margin-left: 16rpx; }
+
+.member-row { display: flex; align-items: center; padding: 16rpx 0; border-bottom: 2rpx solid #f5f6f7; }
+.member-avatar { width: 64rpx; height: 64rpx; border-radius: 50%; background: #FFEDF4; color: #EC5B8C; display: flex; align-items: center; justify-content: center; font-size: 28rpx; font-weight: 600; }
+.member-info { display: flex; flex-direction: column; flex: 1; margin-left: 16rpx; }
+
+.setting-row { display: flex; align-items: center; justify-content: space-between; padding: 20rpx 0; border-bottom: 2rpx solid #f5f6f7; }
+.picker-val { color: #EC5B8C; font-size: 28rpx; }
+.field-input { width: 100%; box-sizing: border-box; padding: 20rpx 24rpx; background: #f7f8fa; border-radius: 12rpx; font-size: 30rpx; }

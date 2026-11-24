@@ -1,0 +1,37 @@
+.type-tabs { display: flex; background: #ffffff; border-radius: 16rpx; padding: 8rpx; margin-bottom: 20rpx; }
+.type-tab { flex: 1; text-align: center; padding: 18rpx 0; font-size: 28rpx; color: #646a73; border-radius: 12rpx; }
+.type-tab.active { background: #EC5B8C; color: #ffffff; font-weight: 600; }
+
+.period-nav { display: flex; align-items: center; justify-content: space-between; padding: 8rpx 16rpx 20rpx; }
+.nav-btn { width: 64rpx; text-align: center; font-size: 48rpx; color: #EC5B8C; }
+.nav-btn.disabled { color: #d0d3d6; }
+.period-title { font-size: 34rpx; font-weight: 600; }
+
+.sample-banner {
+  padding: 20rpx 24rpx; margin-bottom: 20rpx; border-radius: 14rpx;
+  background: #fff6dc; color: #a67c00; font-size: 26rpx; line-height: 1.5;
+}
+
+.summary-grid { display: flex; flex-wrap: wrap; }
+.summary-item { width: 50%; box-sizing: border-box; padding: 20rpx 0; display: flex; flex-direction: column; align-items: center; }
+.summary-value { font-size: 52rpx; font-weight: 700; color: #EC5B8C; line-height: 1.1; }
+.summary-label { font-size: 24rpx; color: #8a9099; margin-top: 8rpx; }
+
+.member-card { display: flex; align-items: center; padding: 20rpx 0; border-bottom: 2rpx solid #f2f3f5; }
+.member-card:last-child { border-bottom: none; }
+.mem-rank {
+  width: 64rpx; height: 64rpx; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: #FFEDF4; color: #EC5B8C; font-size: 30rpx; font-weight: 600;
+}
+.mem-info { margin-left: 20rpx; display: flex; flex-direction: column; flex: 1; }
+.mem-name { font-size: 30rpx; font-weight: 600; }
+.mem-score { display: flex; flex-direction: column; align-items: flex-end; }
+.score-num { font-size: 44rpx; font-weight: 700; color: #EC5B8C; line-height: 1; }
+.score-delta { font-size: 22rpx; margin-top: 6rpx; }
+.score-delta.up { color: #d93026; }
+.score-delta.down { color: #0b8a5f; }
+.score-delta.basic { color: #9aa0a6; }
+
+.highlight { display: flex; align-items: center; padding: 14rpx 0; font-size: 28rpx; }
+.highlight-icon { color: #f6bd16; margin-right: 14rpx; font-size: 32rpx; }

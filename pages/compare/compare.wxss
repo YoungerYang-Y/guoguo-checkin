@@ -1,0 +1,37 @@
+.type-tabs { display: flex; background: #ffffff; border-radius: 16rpx; padding: 8rpx; margin-bottom: 20rpx; }
+.type-tab { flex: 1; text-align: center; padding: 18rpx 0; font-size: 28rpx; color: #646a73; border-radius: 12rpx; }
+.type-tab.active { background: #EC5B8C; color: #ffffff; font-weight: 600; }
+.period-title { font-size: 28rpx; color: #646a73; padding: 4rpx 8rpx 20rpx; }
+.sample-banner { padding: 20rpx 24rpx; margin-bottom: 20rpx; border-radius: 14rpx; background: #fff6dc; color: #a67c00; font-size: 26rpx; }
+
+.radar-card { padding-bottom: 20rpx; }
+.radar-wrap { display: flex; justify-content: center; }
+.radar { width: 260rpx; height: 260rpx; }
+.legend { display: flex; justify-content: center; margin-top: 12rpx; }
+.legend-item { display: flex; align-items: center; margin: 0 16rpx; }
+.legend-dot { width: 16rpx; height: 16rpx; border-radius: 50%; margin-right: 8rpx; }
+
+.rank-row { display: flex; align-items: center; padding: 18rpx 0; border-bottom: 2rpx solid #f2f3f5; }
+.rank-row:last-child { border-bottom: none; }
+.rank-badge { width: 56rpx; height: 56rpx; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #ffffff; font-size: 26rpx; font-weight: 600; flex-shrink: 0; }
+.rank-info { margin-left: 18rpx; display: flex; flex-direction: column; flex: 1; }
+.rank-name { font-size: 30rpx; font-weight: 600; }
+.rank-score { display: flex; flex-direction: column; align-items: flex-end; }
+.rank-num { font-size: 46rpx; font-weight: 700; line-height: 1; }
+.rank-delta { font-size: 20rpx; margin-top: 6rpx; }
+.rank-delta.up { color: #d93026; }
+.rank-delta.down { color: #0b8a5f; }
+.rank-delta.basic { color: #9aa0a6; }
+
+.dim-block { padding: 16rpx 0; border-bottom: 2rpx solid #f5f6f7; }
+.dim-block:last-child { border-bottom: none; }
+.dim-title { font-size: 26rpx; font-weight: 600; color: #4e5359; }
+.dim-line { display: flex; align-items: center; margin-top: 12rpx; }
+.dim-name { width: 70rpx; font-size: 24rpx; color: #646a73; }
+.dim-bar { flex: 1; height: 16rpx; background: #F4ECEF; border-radius: 10rpx; margin: 0 16rpx; overflow: hidden; }
+.dim-fill { height: 100%; border-radius: 10rpx; }
+.dim-val { width: 64rpx; text-align: right; font-size: 24rpx; color: #646a73; }
+
+.advice-block { padding: 14rpx 0; border-bottom: 2rpx solid #f2f3f5; }
+.parent-name { font-size: 28rpx; font-weight: 600; }
+.advice-item { font-size: 25rpx; color: #4e5359; line-height: 1.6; margin-top: 10rpx; }

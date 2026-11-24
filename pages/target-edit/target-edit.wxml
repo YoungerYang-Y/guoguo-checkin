@@ -1,0 +1,98 @@
+<view class="page">
+  <!-- 列表模式 -->
+  <block wx:if="{{mode === 'list'}}">
+    <view class="row-between" style="padding:4rpx 8rpx 20rpx">
+      <text class="section-title" style="margin:0">自定义目标（{{list.length}}）</text>
+      <button class="btn btn-primary" size="mini" bindtap="switchToCreate">+ 新增</button>
+    </view>
+    <view class="card" wx:for="{{list}}" wx:key="target_id">
+      <view class="row-between">
+        <view class="row">
+          <text class="tag tag-custom">自定义</text>
+          <text class="target-title">{{item.name}}</text>
+        </view>
+        <text class="tag {{item.status === 1 ? 'tag-success' : 'tag-optional'}}">{{item.status === 1 ? '进行中' : '已归档'}}</text>
+      </view>
+      <view class="target-meta">
+        <text class="text-muted text-small">{{item.memberNames}}（{{item.memberCount}} 人） · {{item.cycleLabel}} · {{item.count_mode ? '计入必修' : '计入选修'}}</text>
+      </view>
+      <view class="standard-card">
+        <text class="text-muted text-small">达标标准</text>
+        <text class="standard-text">{{item.standard_note}}</text>
+      </view>
+      <view class="target-dates text-muted text-small">生效：{{item.start_date}} 至 {{item.end_date || '长期'}}</view>
+      <view class="row" style="margin-top:16rpx" wx:if="{{item.status === 1}}">
+        <button class="btn" size="mini" data-id="{{item.target_id}}" bindtap="editTarget">编辑</button>
+        <button class="btn btn-danger" size="mini" style="margin-left:16rpx" data-id="{{item.target_id}}" bindtap="archiveTarget">归档</button>
+      </view>
+    </view>
+    <view class="empty" wx:if="{{list.length === 0}}">还没有自定义目标</view>
+    <button class="btn btn-ghost btn-block" bindtap="switchToCreate">新增自定义目标</button>
+    <button class="btn btn-primary btn-block" style="margin-top:16rpx" bindtap="goIndex">返回打卡首页</button>
+  </block>
+
+  <!-- 创建/编辑模式 -->
+  <block wx:else>
+    <view class="card">
+      <text class="section-title">{{editingId ? '编辑目标' : '新增自定义目标'}}</text>
+      <text class="text-muted text-small">标准要写成可验证的短句，包含动作与数量或时长</text>
+
+      <view class="form-field">
+        <text class="field-label">目标名称（不超过 10 字）</text>
+        <input class="field-input" value="{{form.name}}" data-field="name" bindinput="onFieldInput" placeholder="如：每天练琴15分钟" maxlength="10" />
+      </view>
+
+      <view class="form-field">
+        <text class="field-label">所属成员（可多选，至少 1 人）</text>
+        <view class="chip-row">
+          <view wx:for="{{memberChips}}" wx:key="id" class="chip {{item.on ? 'active' : ''}}"
+                data-id="{{item.id}}" bindtap="selectMember">{{item.name}}</view>
+        </view>
+        <text class="text-small" style="display:block;margin-top:10rpx;color:#EC5B8C">已选 {{selectedMemberCount}} 人：{{selectedMemberLabel}}</text>
+        <text class="text-muted text-small" style="display:block;margin-top:6rpx">同一目标会同时出现在这些成员的今日打卡页，各自独立打卡</text>
+      </view>
+
+      <view class="form-field">
+        <text class="field-label">周期类型</text>
+        <view class="chip-row">
+          <view wx:for="{{cycleTypes}}" wx:key="key" class="chip {{form.cycle_type === item.key ? 'active' : ''}}"
+                data-key="{{item.key}}" bindtap="selectCycle">{{item.label}}</view>
+        </view>
+      </view>
+
+      <view class="form-field" wx:if="{{showCountValue}}">
+        <text class="field-label">每周/每月次数</text>
+        <input class="field-input" type="number" value="{{form.cycle_value}}" bindinput="onCountInput" placeholder="如：3" />
+      </view>
+
+      <view class="form-field">
+        <text class="field-label">达标标准备注（不超过 50 字，必填）</text>
+        <textarea class="field-textarea" value="{{form.standard_note}}" data-field="standard_note" bindinput="onFieldInput"
+                  placeholder="如：完成 1 幅完整作品，不少于 30 分钟" maxlength="50" />
+      </view>
+
+      <view class="form-field">
+        <text class="field-label">计入方式</text>
+        <view class="chip-row">
+          <view class="chip {{form.count_mode === 0 ? 'active' : ''}}" data-v="0" bindtap="selectCountMode">计入选修</view>
+          <view class="chip {{form.count_mode === 1 ? 'active' : ''}}" data-v="1" bindtap="selectCountMode">计入必修</view>
+        </view>
+      </view>
+
+      <view class="form-field">
+        <text class="field-label">生效日期</text>
+        <view class="row">
+          <picker mode="date" value="{{form.start_date}}" bindchange="onStartDate">
+            <view class="picker-val">起：{{form.start_date}}</view>
+          </picker>
+          <picker mode="date" value="{{form.end_date}}" bindchange="onEndDate">
+            <view class="picker-val" style="margin-left:32rpx">止：{{form.end_date || '长期'}}</view>
+          </picker>
+        </view>
+      </view>
+
+      <button class="btn btn-primary btn-block" style="margin-top:32rpx" bindtap="save">{{editingId ? '保存修改' : '创建目标'}} · {{selectedMemberLabel}}</button>
+      <button class="btn btn-block" style="margin-top:16rpx" bindtap="switchToCreate" wx:if="{{editingId}}">取消编辑</button>
+    </view>
+  </block>
+</view>

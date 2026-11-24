@@ -1,0 +1,234 @@
+/* ============================================================
+   果果家庭打卡 · 全局设计系统
+   品牌色 #EC5B8C，浅色家庭向；统一圆角、阴影层级与字阶
+   ============================================================ */
+
+page {
+  box-sizing: border-box;
+  min-height: 100%;
+  color: #33262E;
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", sans-serif;
+  font-size: 28rpx;
+  background-color: #FFF7FA;
+  background-image: linear-gradient(180deg, #FFE9F2 0rpx, #FFF2F7 320rpx, #FFF7FA 640rpx);
+  background-repeat: no-repeat;
+}
+
+/* 微信原生 button 的默认内联样式会破坏自定义尺寸，这里统一重置 */
+button {
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: 15rpx;
+  line-height: 1.5;
+  font-size: 28rpx;
+  background: transparent;
+}
+button::after { border: none; }
+
+.page {
+  box-sizing: border-box;
+  min-height: 100vh;
+  padding: 28rpx 24rpx 100rpx;
+}
+
+/* ---------- 卡片 ---------- */
+.card {
+  box-sizing: border-box;
+  padding: 30rpx;
+  margin-bottom: 24rpx;
+  border-radius: 26rpx;
+  background: #ffffff;
+  border: 1rpx solid rgba(236, 91, 140, 0.05);
+  box-shadow: 0 12rpx 32rpx rgba(150, 80, 110, 0.07), 0 2rpx 8rpx rgba(150, 80, 110, 0.035);
+}
+
+/* ---------- 文字 ---------- */
+.text-muted { color: #8a93a3; }
+.text-small { font-size: 24rpx; }
+.text-bold { font-weight: 600; }
+.row { display: flex; align-items: center; }
+.row-between { display: flex; align-items: center; justify-content: space-between; }
+.col { display: flex; flex-direction: column; }
+.center { display: flex; align-items: center; justify-content: center; }
+
+/* 带左侧强调条的小节标题 */
+.section-title {
+  display: block;
+  font-size: 30rpx;
+  font-weight: 700;
+  letter-spacing: 0.5rpx;
+  line-height: 1.35;
+  padding-left: 18rpx;
+  margin: 4rpx 0 24rpx;
+  border-left: 7rpx solid #EC5B8C;
+  border-radius: 4rpx;
+  color: #33262E;
+}
+
+/* ---------- 标签 ---------- */
+.tag {
+  display: inline-block;
+  padding: 5rpx 14rpx;
+  border-radius: 9rpx;
+  font-size: 20rpx;
+  font-weight: 500;
+  line-height: 1.45;
+  letter-spacing: 0.3rpx;
+}
+.tag-required { background: #FFEAF2; color: #EC5B8C; }
+.tag-optional { background: #f1f3f6; color: #8a93a3; }
+.tag-custom { background: #FDECF5; color: #8b5cf6; }
+.tag-warn { background: #fff1e0; color: #d97706; }
+.tag-success { background: #e3f8ef; color: #0b8a5f; }
+
+/* ---------- 按钮 ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-height: 72rpx;
+  padding: 12rpx 26rpx;
+  border-radius: 14rpx;
+  font-size: 27rpx;
+  font-weight: 600;
+  letter-spacing: 0.5rpx;
+  text-align: center;
+  background: #f1f3f6;
+  color: #333c4d;
+  border: none;
+  transition: opacity 0.15s, transform 0.15s;
+}
+.btn-primary {
+  background: linear-gradient(135deg, #FF8FB4 0%, #EC5B8C 100%);
+  color: #ffffff;
+  box-shadow: 0 10rpx 22rpx rgba(236, 91, 140, 0.26);
+}
+.btn-ghost {
+  background: #ffffff;
+  color: #EC5B8C;
+  border: 2rpx solid rgba(236, 91, 140, 0.35);
+  box-shadow: 0 4rpx 12rpx rgba(236, 91, 140, 0.06);
+}
+.btn-danger { background: #fff0ef; color: #d93026; }
+/* 提高选择器优先级，覆盖微信 button 默认宽度，避免「同意」按钮只显示一小块 */
+.btn-block, button.btn-block { display: flex; width: 100%; box-sizing: border-box; }
+.btn-hover { opacity: 0.86; transform: translateY(1rpx); }
+
+/* ---------- 空态 ---------- */
+.empty {
+  padding: 90rpx 0;
+  text-align: center;
+  color: #9aa3b2;
+  font-size: 26rpx;
+  letter-spacing: 0.5rpx;
+}
+
+/* ---------- 遮罩与底部弹层 ---------- */
+.mask {
+  position: fixed;
+  left: 0; top: 0; right: 0; bottom: 0;
+  background: rgba(60, 35, 50, 0.42);
+  z-index: 100;
+}
+.sheet {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  background: #ffffff;
+  border-radius: 32rpx 32rpx 0 0;
+  padding: 44rpx 32rpx 60rpx;
+  z-index: 101;
+  max-height: 86vh;
+  overflow-y: auto;
+  box-shadow: 0 -12rpx 40rpx rgba(60, 35, 50, 0.12);
+}
+.sheet::before {
+  content: "";
+  display: block;
+  width: 72rpx;
+  height: 8rpx;
+  border-radius: 8rpx;
+  background: #e2e6ee;
+  margin: -20rpx auto 24rpx;
+}
+.sheet-title { display: block; font-size: 34rpx; font-weight: 700; margin-bottom: 26rpx; letter-spacing: 0.5rpx; }
+
+/* ---------- 通用输入 ---------- */
+.field-input {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 96rpx;
+  padding: 22rpx 26rpx;
+  background: #FDF6F9;
+  border: 2rpx solid #F3EAEF;
+  border-radius: 15rpx;
+  font-size: 29rpx;
+  line-height: 1.5;
+  color: #33262E;
+}
+.field-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 22rpx 26rpx;
+  min-height: 220rpx;
+  background: #FDF6F9;
+  border: 2rpx solid #F3EAEF;
+  border-radius: 15rpx;
+  font-size: 29rpx;
+  line-height: 1.6;
+  color: #33262E;
+}
+.field-label { display: block; font-size: 26rpx; color: #6c7688; margin-bottom: 14rpx; font-weight: 500; }
+
+/* ---------- 每周复习模块（古诗 / 单词句子共用） ---------- */
+.rv-tabs { display: flex; }
+.rv-tab {
+  flex: 1; text-align: center; padding: 16rpx 0; margin-right: 12rpx;
+  border-radius: 14rpx; background: #f4f5f7; font-size: 26rpx; color: #7a8290;
+}
+.rv-tab:last-child { margin-right: 0; }
+.rv-tab.on { background: #FFEAF2; color: #EC5B8C; font-weight: 600; }
+.rv-picker { display: flex; align-items: center; justify-content: space-between; }
+.rv-stat { display: flex; margin-top: 20rpx; }
+.rv-stat > view {
+  flex: 1; background: #FFF6FA; border-radius: 14rpx;
+  padding: 16rpx 8rpx; margin-right: 12rpx;
+  display: flex; flex-direction: column; align-items: center;
+}
+.rv-stat > view:last-child { margin-right: 0; }
+.rv-stat-lab { font-size: 22rpx; color: #8a93a3; }
+.rv-stat-num { font-size: 32rpx; font-weight: 600; color: #EC5B8C; margin-top: 6rpx; }
+.rv-item { padding: 20rpx 0; border-bottom: 1rpx solid #f2f3f5; }
+.rv-item:last-child { border-bottom: none; }
+.rv-item-head { display: flex; align-items: center; justify-content: space-between; }
+.rv-label { flex: 1; font-size: 28rpx; font-weight: 600; color: #33262E; }
+.rv-meta { display: block; font-size: 23rpx; color: #8a93a3; margin-top: 8rpx; }
+.rv-badge { font-size: 20rpx; color: #d97706; background: #fff1e0; border-radius: 8rpx; padding: 4rpx 12rpx; margin-left: 12rpx; }
+.rv-del { font-size: 24rpx; color: #d93026; margin-left: 12rpx; }
+.rv-actions { display: flex; margin-top: 16rpx; }
+.rv-btn {
+  flex: 1; text-align: center; padding: 14rpx 0; margin-right: 14rpx;
+  border-radius: 12rpx; font-size: 25rpx; border: 2rpx solid transparent;
+}
+.rv-btn:last-child { margin-right: 0; }
+.rv-btn.ok { background: #FFF3F8; color: #EC5B8C; }
+.rv-btn.no { background: #FFF7EC; color: #B26A0A; }
+.rv-btn.chosen { border-color: currentColor; font-weight: 600; }
+.rv-empty { padding: 60rpx 0; text-align: center; color: #9aa3b2; font-size: 26rpx; }
+.rv-photo { width: 100%; height: 300rpx; border-radius: 16rpx; margin-top: 16rpx; background: #FDF6F9; }
+.rv-textarea {
+  width: 100%; box-sizing: border-box; min-height: 200rpx;
+  padding: 22rpx 26rpx; background: #FDF6F9;
+  border: 2rpx solid #F3EAEF; border-radius: 15rpx;
+  font-size: 28rpx; line-height: 1.6; color: #33262E;
+}
+.rv-content-toggle {
+  display: inline-block; margin-top: 12rpx;
+  font-size: 23rpx; color: #EC5B8C;
+}
+.rv-poem-content {
+  white-space: pre-wrap; margin-top: 12rpx; padding: 20rpx 24rpx;
+  background: #FFF6FA; border-radius: 12rpx;
+  font-size: 27rpx; line-height: 1.9; color: #4a3b44;
+}

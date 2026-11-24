@@ -1,0 +1,248 @@
+<view class="page pb-sheet">
+
+  <!-- 顶部横幅：断档提示 -->
+  <view class="banner" wx:if="{{!loading && summary.full && summary.streak >= 1}}">
+    <text class="banner-icon">✦</text>
+    <text>今日完成，连续 {{summary.streak}} 天全勤</text>
+  </view>
+
+  <!-- 日期条 -->
+  <view class="date-bar">
+    <view class="date-nav {{canPrev ? '' : 'disabled'}}" bindtap="changeDate" data-step="-1">‹</view>
+    <view class="date-center">
+      <text class="date-label">{{dateLabel}}</text>
+      <text class="date-full">{{date}}</text>
+    </view>
+    <view class="date-nav {{canNext ? '' : 'disabled'}}" bindtap="changeDate" data-step="1">›</view>
+  </view>
+
+  <view class="subbar" wx:if="{{!isToday}}">
+    <text class="tag tag-warn">历史日期 · {{date}}</text>
+    <text class="text-muted text-small" wx:if="{{readOnly}}">超 7 天补卡期 · 仅可查看</text>
+    <text class="text-muted text-small" wx:elif="{{summary.backfill > 0}}">含补卡 {{summary.backfill}} 项</text>
+  </view>
+
+  <!-- 进度环 -->
+  <view class="progress-card" wx:if="{{!loading && summary}}">
+    <view class="ring" style="{{progressStyle}}">
+      <view class="ring-inner">
+        <text class="ring-num">{{progress}}</text>
+        <text class="ring-unit">%</text>
+      </view>
+    </view>
+    <view class="progress-info">
+      <text class="prog-title">今天还差 {{summary.totalRequired - summary.totalDone}} 项</text>
+      <text class="prog-sub">已完成 {{summary.totalDone}} 项 / 应完成 {{summary.totalRequired}} 项</text>
+      <view class="prog-tags">
+        <text class="tag tag-success" wx:if="{{summary.full}}">今日全勤</text>
+        <text class="tag tag-warn" wx:if="{{summary.backfill > 0}}">含补卡 {{summary.backfill}}</text>
+        <text class="tag tag-optional" wx:if="{{summary.totalRequired === 0}}">无必修</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 加载态 -->
+  <view class="empty" wx:if="{{loading}}">正在加载…</view>
+
+  <!-- 成员分区 -->
+  <block wx:for="{{groups}}" wx:for-item="group" wx:key="id">
+    <view class="card group-card">
+      <view class="group-head">
+        <view class="avatar" style="background:{{group.accent.l}};color:{{group.accent.c}}">{{group.name[0]}}</view>
+        <view class="group-head-info">
+          <text class="group-name">{{group.name}}</text>
+          <text class="text-muted text-small">{{group.role === 'child' ? '家长代打卡' : (group.role === 'admin' ? '管理员' : '本人打卡')}}</text>
+        </view>
+        <view class="group-stat">
+          <text class="text-bold" style="color:{{group.accent.c}}">{{group.stat.doneRequired}}/{{group.stat.required}}</text>
+          <text class="text-muted text-small">必修</text>
+        </view>
+      </view>
+
+      <!-- 内置打卡项 -->
+      <view class="item-list">
+        <view
+          wx:for="{{group.rows}}" wx:for-item="row" wx:key="code"
+          class="item-row {{row.done ? 'done' : ''}} {{row.underTarget ? 'warn' : ''}}"
+          data-member="{{group.id}}" data-code="{{row.code}}" data-kind="{{row.kind}}"
+          data-custom="{{row.custom}}" data-standard="{{row.standard}}"
+          bindtap="onRowTap" bindlongpress="onRowLongPress">
+          <view class="check {{row.done ? 'checked' : ''}}" style="{{row.done ? 'background:'+group.accent.c+';border-color:'+group.accent.c : ''}}">
+            <text wx:if="{{row.done}}" class="check-mark">✓</text>
+          </view>
+          <view class="item-body">
+            <view class="row-between">
+              <view class="item-name-wrap">
+                <text class="item-name">{{row.name}}</text>
+                <text wx:if="{{row.required}}" class="tag tag-required">必修</text>
+                <text wx:elif="{{group.id === 'guoguo' && row.kind !== 'toggle' && row.kind !== 'session'}}" class="tag tag-optional">选修</text>
+                <text wx:if="{{row.source === 2}}" class="tag tag-warn">补卡</text>
+              </view>
+              <text wx:if="{{row.sessionCount}}" class="item-value">{{row.sessionCount}} 节</text>
+              <text wx:elif="{{row.value !== null}}" class="item-value">{{row.value}}</text>
+            </view>
+            <view class="item-meta" wx:if="{{row.note || row.theme || row.underTarget || row.unverified}}">
+              <text wx:if="{{row.theme}}" class="text-muted text-small">主题：{{row.themeShort}} · </text>
+              <text wx:if="{{row.note}}" class="text-muted text-small">备注：{{row.noteShort}} · </text>
+              <text wx:if="{{row.underTarget}}" class="text-small" style="color:#e65100">未达标</text>
+              <text wx:if="{{row.unverified}}" class="text-small" style="color:#e65100">未核实</text>
+            </view>
+          </view>
+          <text class="item-arrow" wx:if="{{!row.done && row.kind !== 'toggle'}}">›</text>
+        </view>
+      </view>
+
+      <!-- 自定义目标 -->
+      <view class="custom-section" wx:if="{{group.custom.length > 0}}">
+        <view class="custom-divider"><text class="text-muted text-small">自定义目标 · {{group.custom.length}}</text></view>
+        <view
+          wx:for="{{group.custom}}" wx:for-item="row" wx:key="code"
+          class="item-row {{row.done ? 'done' : ''}}"
+          data-member="{{group.id}}" data-code="{{row.code}}" data-kind="custom"
+          data-custom="true" data-standard="{{row.standard}}"
+          bindtap="onRowTap" bindlongpress="onRowLongPress">
+          <view class="check {{row.done ? 'checked' : ''}}" style="{{row.done ? 'background:'+group.accent.c+';border-color:'+group.accent.c : ''}}">
+            <text wx:if="{{row.done}}" class="check-mark">✓</text>
+          </view>
+          <view class="item-body">
+            <view class="row-between">
+              <view class="item-name-wrap">
+                <text class="item-name">{{row.name}}</text>
+                <text class="tag tag-custom">自定义</text>
+                <text wx:if="{{row.required}}" class="tag tag-required">必修</text>
+              </view>
+            </view>
+            <text class="text-muted text-small">标准：{{row.standard}}</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 家长区一键完成 -->
+      <view class="quick-row" wx:if="{{group.role !== 'child' && group.id === 'mama'}}">
+        <button class="btn btn-ghost btn-block" bindtap="finishAll" data-member="{{group.id}}">本区全部完成</button>
+      </view>
+    </view>
+  </block>
+
+  <!-- 新增目标入口 -->
+  <button class="btn btn-ghost btn-block add-target" bindtap="goAddTarget">+ 新增自定义目标</button>
+
+</view>
+
+<!-- 撤销提示条 -->
+<view class="undo-bar" wx:if="{{showUndo}}">
+  <text>已撤销，可恢复</text>
+  <text class="undo-link" bindtap="undoRevoke">恢复</text>
+</view>
+
+<!-- 代打卡二次确认 -->
+<view class="mask" wx:if="{{confirmMember}}" bindtap="cancelCheckin"></view>
+<view class="confirm-card" wx:if="{{confirmMember}}">
+  <text class="sheet-title">代打卡确认</text>
+  <text class="confirm-text">正在为「{{confirmName}}」打卡</text>
+  <view class="row" style="margin-top:32rpx">
+    <button class="btn" style="flex:1;margin-right:16rpx" bindtap="cancelCheckin">取消</button>
+    <button class="btn btn-primary" style="flex:1" bindtap="confirmCheckin">确认打卡</button>
+  </view>
+</view>
+
+<!-- 会员课节数弹层 -->
+<view class="mask" wx:if="{{sheet === 'session'}}" bindtap="closeSheet"></view>
+<view class="sheet" wx:if="{{sheet === 'session'}}">
+  <text class="sheet-title">会员课 · 选择本次节数</text>
+  <text class="text-muted text-small">必须选择 2 节或 3 节，每次需显式点选</text>
+  <view class="session-btns">
+    <view class="session-btn {{sessionChoice === 2 ? 'active' : ''}}" data-n="2" bindtap="onSessionChoose">2 节</view>
+    <view class="session-btn {{sessionChoice === 3 ? 'active' : ''}}" data-n="3" bindtap="onSessionChoose">3 节</view>
+  </view>
+  <button class="btn btn-primary btn-block" bindtap="confirmSession">确认完成</button>
+</view>
+
+<!-- 单词数量弹层 -->
+<view class="mask" wx:if="{{sheet === 'word'}}" bindtap="closeSheet"></view>
+<view class="sheet" wx:if="{{sheet === 'word'}}">
+  <text class="sheet-title">今日背诵单词数</text>
+  <text class="text-muted text-small">达标线 20 个，小于 20 显示未达标</text>
+  <input class="input-big" type="number" value="{{inputValue}}" bindinput="onWordInput" placeholder="20" />
+  <view class="quick-nums">
+    <text class="chip" data-n="15" bindtap="setWord15">15</text>
+    <text class="chip" data-n="20" bindtap="setWord20">20</text>
+    <text class="chip" data-n="25" bindtap="setWord25">25</text>
+    <text class="chip" data-n="30" bindtap="setWord30">30</text>
+  </view>
+  <button class="btn btn-primary btn-block" bindtap="confirmWord">确认</button>
+</view>
+
+<!-- 数量/主题/备注弹层 -->
+<view class="mask" wx:if="{{sheet === 'metric'}}" bindtap="closeSheet"></view>
+<view class="sheet" wx:if="{{sheet === 'metric'}}">
+  <text class="sheet-title">{{sheetCtx.code === 'G-ART' ? '绘画课' : (sheetCtx.code === 'P-AI' ? 'AI 学习' : '运动打卡')}}</text>
+  <view class="form-field" wx:if="{{sheetCtx.code === 'G-ART' || sheetCtx.code === 'P-AI'}}">
+    <text class="field-label">主题（选填，可写多行）</text>
+    <textarea class="field-textarea field-textarea-sm" value="{{inputTheme}}" bindinput="onThemeInput"
+      placeholder="{{sheetCtx.code === 'G-ART' ? '如：今天画了什么、用了哪些颜色' : '如：今天用的提示词、学到的知识点'}}"
+      maxlength="100" cursor-spacing="24" show-confirm-bar="{{false}}" placeholder-class="field-placeholder" />
+    <text class="field-count">{{inputThemeLen}}/100</text>
+  </view>
+  <view class="form-field" wx:if="{{sheetCtx.code === 'G-ART' || sheetCtx.code === 'G-SKATE' || sheetCtx.code === 'G-SWIM' || sheetCtx.code === 'P-SWIM'}}">
+    <text class="field-label">{{sheetCtx.code === 'G-ART' ? '本次时长（分钟，选填）' : (sheetCtx.code === 'G-SKATE' || sheetCtx.code === 'P-SWIM' ? '时长 / 距离（选填）' : '距离或时长（选填）')}}</text>
+    <input class="field-input" type="number" value="{{inputValue}}" bindinput="onValueInput" placeholder="留空也可完成" />
+  </view>
+  <view class="form-field" wx:if="{{sheetCtx.code === 'G-SWIM' || sheetCtx.code === 'P-SWIM'}}">
+    <text class="field-label">单位</text>
+    <input class="field-input" value="{{inputValue2}}" bindinput="onValue2Input" placeholder="米 / 分钟" />
+  </view>
+  <view class="form-field">
+    <text class="field-label">备注（选填，支持多行）</text>
+    <textarea class="field-textarea" value="{{inputNote}}" bindinput="onNoteInput"
+      placeholder="可以换行记录：完成情况、遇到的问题、下次改进…"
+      maxlength="200" cursor-spacing="24" show-confirm-bar="{{false}}" placeholder-class="field-placeholder" />
+    <text class="field-count">{{inputNoteLen}}/200</text>
+  </view>
+  <button class="btn btn-primary btn-block" bindtap="confirmMetric">确认完成</button>
+</view>
+
+<!-- 自定义目标标准确认弹层 -->
+<view class="mask" wx:if="{{sheet === 'custom'}}" bindtap="closeSheet"></view>
+<view class="sheet" wx:if="{{sheet === 'custom'}}">
+  <text class="sheet-title">{{sheetCtx.name || '自定义目标'}} · 达标标准</text>
+  <view class="standard-card">
+    <text class="text-muted text-small">成员填写的标准原文</text>
+    <text class="standard-text">{{sheetCtx.standard}}</text>
+  </view>
+  <view class="form-field">
+    <text class="field-label">备注（选填，支持多行）</text>
+    <textarea class="field-textarea" value="{{inputNote}}" bindinput="onNoteInput"
+      placeholder="本次完成情况，可以写多行"
+      maxlength="200" cursor-spacing="24" show-confirm-bar="{{false}}" placeholder-class="field-placeholder" />
+    <text class="field-count">{{inputNoteLen}}/200</text>
+  </view>
+  <button class="btn btn-primary btn-block" bindtap="confirmCustom">按标准完成</button>
+</view>
+
+<!-- 用户隐私保护指引 · 首次使用同意 -->
+<view class="mask" wx:if="{{showPrivacy}}" bindtap="laterPrivacy"></view>
+<view class="privacy-dialog" wx:if="{{showPrivacy}}">
+  <view class="pd-head">
+    <view class="pd-badge">隐私</view>
+    <text class="pd-title">用户隐私保护指引</text>
+    <text class="pd-sub">使用前，请了解我们如何处理你的信息</text>
+  </view>
+
+  <view class="pd-body">
+    <view class="pd-point" wx:for="{{privacyPoints}}" wx:key="*this">
+      <text class="pd-point-dot">•</text>
+      <text class="pd-point-text">{{item}}</text>
+    </view>
+  </view>
+
+  <view class="pd-link-row" hover-class="pd-link-hover" bindtap="openPrivacy">
+    <text>查看完整《用户隐私保护指引》</text>
+    <text class="pd-link-arrow">›</text>
+  </view>
+
+  <view class="pd-actions">
+    <view class="pd-btn pd-btn-ghost" hover-class="pd-btn-hover" bindtap="laterPrivacy">暂不</view>
+    <view class="pd-btn pd-btn-primary" hover-class="pd-btn-hover" bindtap="agreePrivacy">同意并继续</view>
+  </view>
+</view>

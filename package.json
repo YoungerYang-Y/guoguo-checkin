@@ -1,0 +1,9 @@
+{
+  "name": "guoguo-family-checkin",
+  "version": "1.1.0",
+  "description": "果果家庭打卡小程序",
+  "main": "app.js",
+  "dependencies": {
+    "@tencent-ai/workbuddy-cloud-sdk": "^0.1.4-dev.71e5d1e.202611161655"
+  }
+}

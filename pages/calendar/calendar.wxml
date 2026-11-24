@@ -1,0 +1,45 @@
+<view class="page">
+  <view class="card">
+    <view class="month-nav">
+      <text class="nav-btn" bindtap="prevMonth">‹</text>
+      <text class="month-title">{{title}}</text>
+      <text class="nav-btn" bindtap="nextMonth">›</text>
+    </view>
+    <view class="week-head">
+      <text wx:for="{{['一','二','三','四','五','六','日']}}" wx:key="*this">{{item}}</text>
+    </view>
+    <view class="week-row" wx:for="{{weeks}}" wx:for-item="week" wx:key="key">
+      <block wx:for="{{week.days}}" wx:for-item="day" wx:key="key">
+        <view wx:if="{{day.empty}}" class="day-cell empty"></view>
+        <view wx:else class="day-cell {{day.cls}} {{day.isToday ? 'today' : ''}} {{selected === day.date ? 'selected' : ''}}"
+              data-date="{{day.date}}" bindtap="selectDay">
+          <text class="day-num">{{day.day}}</text>
+          <view wx:if="{{day.cls === 'full'}}" class="day-dot full"></view>
+          <view wx:elif="{{day.cls === 'partial'}}" class="day-dot partial"></view>
+          <view wx:if="{{day.hasBackfill}}" class="backfill-mark">补</view>
+        </view>
+      </block>
+    </view>
+    <view class="legend">
+      <view class="legend-item" wx:for="{{legend}}" wx:key="cls">
+        <view class="day-dot {{item.cls}}"></view><text class="text-muted text-small">{{item.text}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="card" wx:if="{{selectedStat}}">
+    <text class="section-title">{{selectedStat.date}} 完成情况</text>
+    <view class="stat-line"><text>完成项</text><text class="text-bold">{{selectedStat.total}} 项</text></view>
+    <view class="stat-line"><text>全勤成员</text><text class="text-bold">{{selectedStat.full}} / 3</text></view>
+    <view class="stat-line" wx:if="{{selectedStat.backfill > 0}}"><text>补卡</text><text class="tag tag-warn">{{selectedStat.backfill}} 项</text></view>
+    <view class="member-progress" wx:for="{{selectedStat.members}}" wx:key="name">
+      <text class="mp-name">{{item.name}}</text>
+      <view class="mp-bar"><view class="mp-fill" style="width:{{item.req ? item.done/item.req*100 : 0}}%;background:{{item.color}}"></view></view>
+      <text class="mp-val">{{item.done}}/{{item.req}}</text>
+    </view>
+    <button class="btn btn-primary btn-block" style="margin-top:28rpx" bindtap="goCheckin"
+            wx:if="{{!selectedStat.isFuture}}">
+      {{selectedStat.canBackfill ? '查看/补卡' : '仅查看（超过补卡期）'}}
+    </button>
+  </view>
+</view>

@@ -1,0 +1,65 @@
+<view class="page">
+  <!-- 周期类型切换 -->
+  <view class="type-tabs">
+    <view wx:for="{{types}}" wx:key="key" class="type-tab {{type === item.key ? 'active' : ''}}"
+          data-key="{{item.key}}" bindtap="setType">{{item.label}}</view>
+  </view>
+
+  <!-- 周期翻页 -->
+  <view class="period-nav">
+    <text class="nav-btn" bindtap="prevPeriod">‹</text>
+    <text class="period-title">{{title}}</text>
+    <text class="nav-btn {{canNext ? '' : 'disabled'}}" bindtap="nextPeriod">›</text>
+  </view>
+
+  <view class="empty" wx:if="{{loading}}">正在生成报表…</view>
+
+  <block wx:if="{{!loading && report}}">
+    <!-- 样本不足提示 -->
+    <view class="sample-banner" wx:if="{{sampleNote}}">{{sampleNote}}</view>
+
+    <!-- 概览 -->
+    <view class="card">
+      <text class="section-title">本期概览</text>
+      <view class="summary-grid">
+        <view class="summary-item" wx:for="{{summaryCards}}" wx:key="label">
+          <text class="summary-value">{{item.value}}</text>
+          <text class="summary-label">{{item.label}}（{{item.unit}}）</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 三人指数 -->
+    <view class="card">
+      <view class="row-between">
+        <text class="section-title" style="margin:0">三人进步空间指数</text>
+        <text class="text-muted text-small" bindtap="goCompare">查看对比 ›</text>
+      </view>
+      <view class="member-card" wx:for="{{memberCards}}" wx:key="id">
+        <view class="mem-rank">{{item.id === 'guoguo' ? '果' : (item.id === 'papa' ? '爸' : '妈')}}</view>
+        <view class="mem-info">
+          <text class="mem-name">{{item.name}}</text>
+          <text class="text-muted text-small" wx:if="{{item.valid}}">有效打卡 {{item.effectiveDays}} 天</text>
+          <text class="text-muted text-small" wx:else>样本不足</text>
+        </view>
+        <view class="mem-score">
+          <text class="score-num" wx:if="{{item.valid}}">{{item.index}}</text>
+          <text class="score-num text-muted" wx:else>—</text>
+          <text class="score-delta {{item.trend}}" wx:if="{{item.delta !== null}}">
+            {{item.delta > 0 ? '↑' : (item.delta < 0 ? '↓' : '—')}} {{item.delta > 0 ? '+' : ''}}{{item.delta}}
+          </text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 亮点事件 -->
+    <view class="card" wx:if="{{report.highlights.length > 0}}">
+      <text class="section-title">亮点事件</text>
+      <view class="highlight" wx:for="{{report.highlights}}" wx:key="*this">
+        <text class="highlight-icon">✦</text><text>{{item}}</text>
+      </view>
+    </view>
+
+    <button class="btn btn-primary btn-block" bindtap="goDetail">查看完整报表详情</button>
+  </block>
+</view>

@@ -1,0 +1,99 @@
+.mode-row { display: flex; margin-bottom: 20rpx; }
+.mode-chip {
+  padding: 12rpx 30rpx; margin-right: 16rpx;
+  border-radius: 30rpx; background: #f4f5f7;
+  font-size: 26rpx; color: #7a8290;
+}
+.mode-chip.active { background: #FFEAF2; color: #EC5B8C; font-weight: 600; }
+
+.year-nav { display: flex; align-items: center; justify-content: center; margin: 4rpx 0 24rpx; }
+.year-btn {
+  width: 64rpx; height: 64rpx; line-height: 58rpx; text-align: center;
+  border-radius: 50%; background: #FFF3F8; color: #EC5B8C; font-size: 44rpx;
+}
+.year-label { margin: 0 40rpx; font-size: 32rpx; font-weight: 600; }
+
+.form-field { margin-top: 24rpx; }
+.picker-view { display: flex; align-items: center; justify-content: space-between; }
+.picker-arrow { color: #EC5B8C; font-size: 36rpx; }
+
+.chip-row { display: flex; flex-wrap: wrap; }
+.chip {
+  padding: 12rpx 30rpx; margin: 0 14rpx 8rpx 0;
+  border-radius: 30rpx; background: #f4f5f7;
+  font-size: 26rpx; color: #7a8290;
+}
+.chip.active { background: #FFEAF2; color: #EC5B8C; font-weight: 600; }
+
+.legend { display: flex; flex-wrap: wrap; margin-bottom: 8rpx; }
+.legend-item {
+  display: flex; align-items: center; margin: 0 28rpx 10rpx 0;
+  font-size: 25rpx; color: #4a525e;
+}
+.legend-item.off { opacity: 0.35; }
+.legend-dot { width: 18rpx; height: 18rpx; border-radius: 50%; margin-right: 10rpx; }
+
+.chart-box {
+  position: relative;
+  width: 100%; height: 360rpx;
+  margin-top: 8rpx;
+}
+.grid-line {
+  position: absolute; left: 60rpx; right: 0;
+  height: 1rpx; background: #f0f2f6;
+}
+.y-label {
+  position: absolute; left: 0;
+  transform: translateY(-50%);
+  font-size: 20rpx; color: #a2aab5;
+}
+.x-label {
+  position: absolute; top: 332rpx;
+  transform: translateX(-50%);
+  font-size: 20rpx; color: #a2aab5;
+  white-space: nowrap;
+}
+.line-seg {
+  position: absolute; height: 4rpx;
+  border-radius: 2rpx;
+  transform-origin: 0 50%;
+}
+.dot {
+  position: absolute;
+  width: 16rpx; height: 16rpx;
+  border-radius: 50%;
+  border: 2rpx solid #ffffff;
+  box-sizing: border-box;
+  transform: translate(-50%, -50%);
+}
+
+.w-table { margin-top: 8rpx; }
+.w-tr {
+  display: flex; align-items: center;
+  padding: 14rpx 8rpx;
+  border-bottom: 1rpx solid #f2f3f5;
+  font-size: 25rpx;
+}
+.w-tr:last-child { border-bottom: none; }
+.w-th { background: #FFF6FA; font-weight: 600; color: #6c5a64; border-radius: 10rpx; }
+.w-td { flex: 1; text-align: center; }
+.w-month { color: #8a93a3; }
+
+.rec-row {
+  display: flex; align-items: center;
+  padding: 18rpx 0;
+  border-bottom: 1rpx solid #f2f3f5;
+}
+.rec-row:last-child { border-bottom: none; }
+.rec-row .col { flex: 1; min-width: 0; }
+.rec-value { color: #EC5B8C; font-weight: 600; font-size: 28rpx; margin: 0 20rpx; }
+.rec-del { color: #d93026; font-size: 24rpx; }
+
+/* 身高年度对比柱状图 */
+.bars { display: flex; align-items: flex-end; margin: 24rpx 0 12rpx; }
+.bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; min-width: 0; }
+.bar-top { font-size: 20rpx; color: #6c5a64; margin-bottom: 8rpx; }
+.bar-area { width: 100%; height: 180rpx; display: flex; align-items: flex-end; justify-content: center; }
+.bar { width: 46rpx; border-radius: 8rpx 8rpx 0 0; background: #FF8FB4; }
+.bar-year { font-size: 22rpx; color: #4a525e; margin-top: 10rpx; }
+.bar-diff { font-size: 20rpx; color: #EC5B8C; margin-top: 2rpx; }
