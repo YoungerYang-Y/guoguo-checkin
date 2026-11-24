@@ -104,7 +104,8 @@ async function pullAll(fresh) {
   if (!_familyId) return {};
   const cloud = getCloud();
   const { data, error } = await cloud.database.from('gg_docs')
-    .select('doc_key, doc_value, family_id');
+    .select('doc_key, doc_value, family_id')
+    .eq('family_id', _familyId);
   if (error) throw error;
   const rows = Array.isArray(data) ? data : [];
   const map = {};
