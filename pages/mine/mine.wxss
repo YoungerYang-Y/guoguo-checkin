@@ -79,3 +79,7 @@
 .sync-card { background: linear-gradient(135deg, #ffffff 0%, #FFF8FB 100%); }
 .menu-item { font-size: 28rpx; }
 .chip.active { box-shadow: 0 4rpx 12rpx rgba(236, 91, 140, 0.14); }
+
+/* 数据卡内导出区的分隔与次级标题（合并「数据 / 数据导出」后新增） */
+.card-divider { margin: 6rpx 0 22rpx; border-top: 2rpx solid #f0f1f3; }
+.sub-title { display: block; font-size: 26rpx; font-weight: 600; color: #2b2f36; margin-bottom: 8rpx; }

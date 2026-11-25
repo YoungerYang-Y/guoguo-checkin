@@ -2,6 +2,7 @@ const store = require('../../utils/store.js');
 const D = require('../../utils/date.js');
 const cloudstore = require('../../utils/cloudstore.js');
 const privacy = require('../../utils/privacy.js');
+const family = require('../../utils/family.js');
 
 const app = getApp();
 
@@ -16,6 +17,7 @@ Page({
     syncing: false,
     recordCount: 0,
     targetCount: 0,
+    memberCount: 1,   // 家庭成员数：未入家庭默认 1（仅本机），入家庭后按 active 成员统计
     exportRange: 'month',
     ranges: [
       { key: 'week', label: '本周' },
@@ -54,6 +56,7 @@ Page({
       targetCount: store.getCustomTargets().length,
     });
     this.refreshSyncState();
+    this.loadMemberCount();
   },
 
   refreshSyncState(state) {
@@ -142,6 +145,20 @@ Page({
       return;
     }
     wx.setClipboardData({ data: this.data.exportPath, success: () => wx.showToast({ title: '路径已复制', icon: 'success' }) });
+  },
+
+  // 家庭成员数：已入家庭按云端 active 成员统计，失败静默保持原值，不打扰用户
+  async loadMemberCount() {
+    const id = family.getIdentity();
+    if (!id || id.status !== 'active' || !id.familyId) {
+      this.setData({ memberCount: 1 });
+      return;
+    }
+    try {
+      const list = await family.listMembers();
+      const active = list.filter(m => m && m.status === 'active').length;
+      this.setData({ memberCount: active || 1 });
+    } catch (e) {}
   },
 
   goFamily() {
