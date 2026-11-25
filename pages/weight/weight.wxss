@@ -1,7 +1,7 @@
 .mode-row { display: flex; margin-bottom: 20rpx; }
 .mode-chip {
   padding: 12rpx 30rpx; margin-right: 16rpx;
-  border-radius: 30rpx; background: #f4f5f7;
+  border-radius: 999rpx; background: #f4f5f7;
   font-size: 26rpx; color: var(--c-muted);
 }
 .mode-chip.active { background: var(--c-brand-soft); color: var(--c-brand); font-weight: 600; }
@@ -49,7 +49,7 @@
 }
 .line-seg {
   position: absolute; height: 4rpx;
-  border-radius: 2rpx;
+  border-radius: 4rpx;
   transform-origin: 0 50%;
 }
 .dot {
@@ -70,7 +70,7 @@
   font-feature-settings: "tnum"; font-variant-numeric: tabular-nums;
 }
 .w-tr:last-child { border-bottom: none; }
-.w-th { background: #FFF6FA; font-weight: 600; color: #6c5a64; border-radius: 10rpx; }
+.w-th { background: #FFF6FA; font-weight: 600; color: #6c5a64; border-radius: 8rpx; }
 .w-td { flex: 1; text-align: center; }
 .w-month { color: var(--c-muted); }
 

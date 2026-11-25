@@ -7,7 +7,7 @@
    2) 间距只允许 8 的倍数（8 / 16 / 24 / 32 / 40），页面内边距成对写；
    3) 字阶只走 2rpx 步进的一档：20(角标) / 22-24(辅助) / 26-28-30(正文) /
      32(小标题) / 36(标题) / 44-52-56(数字展示)，不再出现 18/21/23/25/27/34/38/46 这类临时值；
-   4) 圆角只有 4 档：sm12 / md16 / lg24 / xl32，胶囊用 pill；
+   4) 圆角只有 6 档：4(细线/进度条) / 8(微圆) / 12(sm) / 16(md) / 24(lg) / 32(xl)，胶囊与圆点用 pill；
    5) 图标按钮可点区域不小于 88rpx（约 44pt），否则拇指点不准。
    ============================================================ */
 
@@ -150,7 +150,7 @@ button::after { border: none; }
 .tag {
   display: inline-block;
   padding: 5rpx 14rpx;
-  border-radius: 9rpx;
+  border-radius: 8rpx;
   font-size: var(--fs-caption, 20rpx);
   font-weight: 500;
   line-height: 1.45;
@@ -380,14 +380,14 @@ button::after { border: none; }
 .rv-tabs { display: flex; }
 .rv-tab {
   flex: 1; text-align: center; padding: 16rpx 0; margin-right: 12rpx;
-  border-radius: 14rpx; background: #f4f5f7; font-size: 26rpx; color: var(--c-muted, #6b7280);
+  border-radius: 12rpx; background: #f4f5f7; font-size: 26rpx; color: var(--c-muted, #6b7280);
 }
 .rv-tab:last-child { margin-right: 0; }
 .rv-tab.on { background: var(--c-brand-soft, #FFEAF2); color: var(--c-brand, #EC5B8C); font-weight: 600; }
 .rv-picker { display: flex; align-items: center; justify-content: space-between; }
 .rv-stat { display: flex; margin-top: 20rpx; }
 .rv-stat > view {
-  flex: 1; background: #FFF6FA; border-radius: 14rpx;
+  flex: 1; background: #FFF6FA; border-radius: 12rpx;
   padding: 16rpx 8rpx; margin-right: 12rpx;
   display: flex; flex-direction: column; align-items: center;
 }
@@ -440,7 +440,7 @@ button::after { border: none; }
   background-size: 300% 100%;
   animation: sk-shimmer 1.5s ease-in-out infinite;
 }
-.sk-line { height: 24rpx; border-radius: 10rpx; margin-bottom: 18rpx; }
+.sk-line { height: 24rpx; border-radius: 8rpx; margin-bottom: 18rpx; }
 .sk-line:last-child { margin-bottom: 0; }
 .sk-circle { border-radius: 50%; }
 .sk-w40 { width: 40%; }

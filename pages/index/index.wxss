@@ -6,7 +6,7 @@
   padding: 22rpx 26rpx; margin-bottom: 20rpx;
   background: linear-gradient(90deg, var(--c-brand-chip), #FFEAF6);
   border: 1rpx solid rgba(236, 91, 140, 0.12);
-  border-radius: 18rpx; color: var(--c-brand); font-size: 26rpx; font-weight: 600;
+  border-radius: 16rpx; color: var(--c-brand); font-size: 26rpx; font-weight: 600;
   box-shadow: 0 8rpx 20rpx rgba(236, 91, 140, 0.1);
 }
 .banner-icon { margin-right: 10rpx; }
@@ -152,7 +152,7 @@
 }
 .sheet .btn-block { margin-top: 32rpx; }
 .standard-card {
-  padding: 28rpx; background: var(--c-accent-soft); border-radius: 14rpx; margin: 16rpx 0 8rpx;
+  padding: 28rpx; background: var(--c-accent-soft); border-radius: 12rpx; margin: 16rpx 0 8rpx;
 }
 .standard-text { display: block; margin-top: 12rpx; font-size: 32rpx; color: var(--c-accent); line-height: 1.6; }
 
@@ -164,7 +164,7 @@
   box-sizing: border-box;
   padding: 40rpx 32rpx 34rpx;
   background: var(--c-surface);
-  border-radius: 28rpx;
+  border-radius: 32rpx;
   z-index: 102;
   box-shadow: 0 24rpx 64rpx rgba(60, 35, 50, 0.2);
   overflow: hidden;
@@ -180,7 +180,7 @@
 .pd-badge {
   padding: 6rpx 18rpx;
   margin-bottom: 18rpx;
-  border-radius: 20rpx;
+  border-radius: 16rpx;
   background: var(--c-brand-soft);
   color: var(--c-brand);
   font-size: 22rpx;
@@ -203,7 +203,7 @@
   padding: 22rpx 24rpx;
   margin: 20rpx 0 28rpx;
   background: #FFF5F9;
-  border-radius: 14rpx;
+  border-radius: 12rpx;
   color: var(--c-brand);
   font-size: 26rpx;
 }
@@ -219,7 +219,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 15rpx;
+  border-radius: 16rpx;
   font-size: 28rpx;
   font-weight: 600;
   letter-spacing: 0.5rpx;

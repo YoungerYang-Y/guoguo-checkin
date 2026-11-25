@@ -2,7 +2,7 @@
 .tab-chip {
   flex: 1; text-align: center;
   padding: 16rpx 0; margin-right: 12rpx;
-  border-radius: 14rpx; background: #f4f5f7;
+  border-radius: 12rpx; background: #f4f5f7;
   font-size: 26rpx; color: var(--c-muted);
 }
 .tab-chip:last-child { margin-right: 0; }
@@ -37,10 +37,10 @@
   font-feature-settings: "tnum"; font-variant-numeric: tabular-nums;
 }
 .f-tr:last-child { border-bottom: none; }
-.f-th { background: #FFF6FA; border-radius: 10rpx; font-weight: 600; color: #6c5a64; }
+.f-th { background: #FFF6FA; border-radius: 8rpx; font-weight: 600; color: #6c5a64; }
 .f-td { flex: 1; text-align: center; }
 .f-td.f-wide { flex: 1.6; display: flex; align-items: center; justify-content: flex-start; text-align: left; }
-.f-total { background: #FFF9FC; font-weight: 600; color: var(--c-brand); border-radius: 10rpx; }
+.f-total { background: #FFF9FC; font-weight: 600; color: var(--c-brand); border-radius: 8rpx; }
 .pl-dot { width: 16rpx; height: 16rpx; border-radius: 50%; margin-right: 12rpx; flex-shrink: 0; }
 
 .pie-wrap { display: flex; align-items: center; margin-top: 12rpx; }
@@ -67,7 +67,7 @@
 
 .stat-grid { display: flex; margin: 8rpx 0 16rpx; }
 .stat-box {
-  flex: 1; background: #FFF6FA; border-radius: 14rpx;
+  flex: 1; background: #FFF6FA; border-radius: 12rpx;
   padding: 18rpx 10rpx; margin-right: 12rpx;
   display: flex; flex-direction: column; align-items: center;
 }

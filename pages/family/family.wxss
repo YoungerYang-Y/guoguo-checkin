@@ -7,9 +7,9 @@
 .approve-btn {
   min-height: 64rpx; padding: 0 26rpx;
   display: flex; align-items: center; justify-content: center;
-  background: var(--c-brand); color: var(--c-surface); border-radius: 10rpx; font-size: 26rpx;
+  background: var(--c-brand); color: var(--c-surface); border-radius: 8rpx; font-size: 26rpx;
 }
-.visitor-box { margin-top: 24rpx; padding: 20rpx; background: #faf7f9; border-radius: 14rpx; display: flex; flex-direction: column; }
+.visitor-box { margin-top: 24rpx; padding: 20rpx; background: #faf7f9; border-radius: 12rpx; display: flex; flex-direction: column; }
 .visitor-link { display: block; margin: 12rpx 0; font-size: 26rpx; color: #8b5cf6; word-break: break-all; }
 
 /* 收到的家庭邀请卡片 */
@@ -37,7 +37,7 @@
 .mini-action {
   min-height: 64rpx; padding: 0 20rpx;
   display: flex; align-items: center; justify-content: center;
-  border-radius: 10rpx; font-size: 24rpx;
+  border-radius: 8rpx; font-size: 24rpx;
   background: #f3f4f6; color: #374151; white-space: nowrap;
 }
 .mini-action.primary { background: var(--c-brand); color: var(--c-surface); }
