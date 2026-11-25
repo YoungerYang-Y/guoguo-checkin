@@ -19,6 +19,9 @@ Page({
     targetCount: 0,
     memberCount: 1,   // 家庭成员数：未入家庭默认 1（仅本机），入家庭后按 active 成员统计
     exportRange: 'month',
+    exportReady: false,      // 导出结果区块是否可见
+    exportPath: '',          // 生成的文件路径（预览环境为空）
+    exportFallback: false,   // 无文件系统时退化为剪贴板
     ranges: [
       { key: 'week', label: '本周' },
       { key: 'month', label: '本月' },
@@ -26,7 +29,7 @@ Page({
       { key: 'all', label: '全部' },
     ],
     menuGroups: [
-      { key: 'data', title: '数据', items: [
+      { key: 'data', title: '记录与设置', items: [
         { key: 'settings', text: '设置（排期 / 目标 / 成员）', path: '/pages/settings/settings' },
         { key: 'targets', text: '自定义目标管理', path: '/pages/target-edit/target-edit?list=1' },
         { key: 'weight', text: '体重记录与年度曲线', path: '/pages/weight/weight' },

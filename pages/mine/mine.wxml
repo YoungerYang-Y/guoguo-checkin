@@ -34,30 +34,31 @@
     <text class="text-muted text-small" style="margin-top:12rpx">也可直接用右上角「···」转发只读概览给微信好友</text>
   </view>
 
-  <!-- 功能入口：数据卡内含导出区，避免「数据 / 数据导出」两个标题并列重复 -->
-  <view class="card" wx:for="{{menuGroups}}" wx:key="key">
-    <text class="section-title">{{item.title}}</text>
-    <view class="menu-item" wx:for="{{item.items}}" wx:for-item="mi" wx:key="key"
-          data-key="{{mi.key}}" data-path="{{mi.path}}" hover-class="ui-hover" bindtap="handleMenu">
-      <text>{{mi.text}}</text><text class="menu-arrow">›</text>
+  <!-- 功能入口与导出：导航归导航、操作归操作，各自独立成卡，形态不混 -->
+  <block wx:for="{{menuGroups}}" wx:key="key">
+    <view class="card">
+      <text class="section-title">{{item.title}}</text>
+      <view class="menu-item" wx:for="{{item.items}}" wx:for-item="mi" wx:key="key"
+            data-key="{{mi.key}}" data-path="{{mi.path}}" hover-class="ui-hover" bindtap="handleMenu">
+        <text>{{mi.text}}</text><text class="menu-arrow">›</text>
+      </view>
     </view>
 
-    <!-- 导出明细：低频动作收在数据卡底部，与上方功能入口用分隔线区隔 -->
-    <block wx:if="{{item.key === 'data'}}">
-      <view class="card-divider"></view>
-      <text class="sub-title">导出明细</text>
-      <text class="text-muted text-small">CSV 字段：日期、成员、打卡项、状态、节数、数量、备注、来源</text>
-      <view class="chip-row" style="margin-top:16rpx">
+    <!-- 导出明细：本次是就地操作而非跳转，单独成卡，与导航行的列表形态区分开 -->
+    <view class="card" wx:if="{{item.key === 'data'}}">
+      <text class="section-title">导出明细</text>
+      <text class="text-muted text-small export-desc">CSV 包含日期、成员、打卡项、状态、节数、数量、备注与来源</text>
+      <view class="chip-row">
         <view wx:for="{{ranges}}" wx:for-item="rg" wx:key="key" class="chip {{exportRange === rg.key ? 'active' : ''}}"
               data-key="{{rg.key}}" hover-class="ui-hover" bindtap="setRange">{{rg.label}}</view>
       </view>
-      <button class="btn btn-ghost btn-block" style="margin-top:8rpx" bindtap="exportCSV">导出 CSV 明细</button>
+      <button class="btn btn-ghost btn-block" bindtap="exportCSV">导出 CSV 明细</button>
       <view class="export-result" wx:if="{{exportReady}}">
         <text class="text-small">{{exportFallback ? '当前环境不支持写文件，CSV 明细已复制到剪贴板' : '文件已生成（点分享可转发）'}}</text>
         <text class="text-small export-path" wx:if="{{!exportFallback}}" bindtap="copyExportPath">{{exportPath}}</text>
       </view>
-    </block>
-  </view>
+    </view>
+  </block>
 
   <view class="version">果果家庭打卡 v{{version}} · 家庭内部使用</view>
   <view class="privacy-footer" data-key="privacy" data-path="/pages/privacy/privacy" hover-class="ui-hover" bindtap="handleMenu">《用户隐私保护指引》</view>
