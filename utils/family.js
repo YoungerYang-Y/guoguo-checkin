@@ -4,7 +4,7 @@
 //   （首成员 active/admin；凡持有凭证——邀请 token 或家庭码——的加入者一律直接 active/member）
 // - 家庭码 = family_id（fam_xxx），外人查不到 families 表，用外键自动校验码是否存在，不泄露家庭信息
 // - 成员邀请链接：只分享 inv_xxx token（不含家庭码），7 天有效、可撤销；token 即创建人授权，接受即加入，
-//   不需要再批准。手动输家庭码属于申请，仍要 admin 批准。两种入口完全分开，和访客只读 token 也分开
+//   不需要再批准。手动输家庭码同样是凭证、同样直接生效。两种入口和访客只读 token 完全分开
 // - 访客快照：token 随机不可猜 + 7 天有效 + 可撤销；表无 RLS 属已知风险（见设计文档第 14 节）
 const { getCloud, ensureSession } = require('./cloud.js');
 
@@ -13,6 +13,12 @@ const { getCloud, ensureSession } = require('./cloud.js');
 // 旧数据 role=parent/child 一律按 member 兼容。
 const ROLES = { ADMIN: 'admin', MEMBER: 'member' };
 const ROLE_LABELS = { admin: '管理员', member: '成员', parent: '成员', child: '成员' };
+// 身份 → 显示名：用户没填显示名时按所选身份推导，绝不用「我/家人」这类相对代词
+// （换个账号看会变成「我」和「家人（我）」，像同一个人出现两次）
+const IDENTITY_LABELS = { mama: '妈妈', papa: '爸爸', guoguo: '孩子' };
+function identityLabel(memberKey) {
+  return IDENTITY_LABELS[String(memberKey || '').trim().toLowerCase()] || '家人';
+}
 function normalizeRole(role) { return role === ROLES.ADMIN ? ROLES.ADMIN : ROLES.MEMBER; }
 function isAdmin(identity) {
   return !!(identity && identity.status === 'active' && normalizeRole(identity.role) === ROLES.ADMIN);
@@ -138,10 +144,10 @@ async function createFamily(name, memberKey, displayName) {
   // 首成员由触发器强制 active/admin（传什么都覆盖，这里传一致值避免歧义）
   const { error: e2 } = await cloud.database.from('gg_members').insert({
     family_id: familyId, uid, member_key: mk,
-    name: displayName || '我', role: ROLES.ADMIN, status: 'active',
+    name: displayName || identityLabel(mk), role: ROLES.ADMIN, status: 'active',
   });
   if (e2) throw e2;
-  const id = { familyId, memberKey: mk, role: ROLES.ADMIN, name: displayName || '我', status: 'active', uid };
+  const id = { familyId, memberKey: mk, role: ROLES.ADMIN, name: displayName || identityLabel(mk), status: 'active', uid };
   saveIdentity(id);
   return id;
 }
@@ -161,7 +167,7 @@ async function requestJoin(familyCode, memberKey, name) {
   }
   const cloud = getCloud();
   const mk = String(memberKey || '').trim() || 'papa';
-  const displayName = String(name || '').trim().slice(0, 12) || '家人';
+  const displayName = String(name || '').trim().slice(0, 12) || identityLabel(mk);
 
   // 身份查重：与 joinByInvite 一致，避免两个 mama 串数据
   const { data: rows, error: e0 } = await cloud.database.from('gg_members')
@@ -202,7 +208,7 @@ async function joinByInvite(token, memberKey, name) {
   }
   const cloud = getCloud();
   const mk = String(memberKey || '').trim() || 'papa';
-  const displayName = String(name || '').trim().slice(0, 12) || '家人';
+  const displayName = String(name || '').trim().slice(0, 12) || identityLabel(mk);
 
   // 身份查重：同一家庭里 member_key 决定数据归属与代签对象，重复会串数据
   const { data: rows, error: e0 } = await cloud.database.from('gg_members')
@@ -493,6 +499,6 @@ module.exports = {
   createFamily, requestJoin, joinByInvite, listMembers, approveMember,
   createInviteLink, resolveInvite, revokeInviteLink, getCachedInvite,
   createVisitorLink, revokeVisitorLink, getVisitorSnapshot, randomCode, generateFamilyId,
-  ROLES, ROLE_LABELS, normalizeRole, isAdmin,
+  ROLES, ROLE_LABELS, IDENTITY_LABELS, identityLabel, normalizeRole, isAdmin,
   getFamilyName, renameFamily, setMemberRole, updateDisplayName, leaveFamily,
 };

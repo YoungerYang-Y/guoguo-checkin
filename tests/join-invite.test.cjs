@@ -164,3 +164,35 @@ test('云端触发器语义：邀请 token 记邀请人；家庭码同为 active
   assert.equal(first.status, 'active');
   assert.equal(first.role, 'admin', '创建者仍是 admin');
 });
+
+test('显示名兜底：没填时按身份推导为妈妈/爸爸/孩子，绝不用「我/家人」', async () => {
+  const { family } = loadFamily();
+  assert.equal(family.identityLabel('mama'), '妈妈');
+  assert.equal(family.identityLabel('papa'), '爸爸');
+  assert.equal(family.identityLabel('guoguo'), '孩子');
+  assert.equal(family.identityLabel('MAMA'), '妈妈');
+  assert.ok(!['我', '家人'].includes(family.identityLabel('mama')));
+});
+
+test('邀请加入没填显示名 → 云端 name 存的是身份称谓', async () => {
+  const inv = validInvite();
+  const { family, db } = loadFamily({ invites: [inv] });
+  await family.joinByInvite('inv_ok', 'papa', '');
+  const insert = db.calls.find(c => c.action === 'insert' && c.table === 'gg_members');
+  assert.equal(insert.values.name, '爸爸');
+});
+
+test('家庭码加入没填显示名 → 云端 name 存的是身份称谓', async () => {
+  const { family, db } = loadFamily();
+  await family.requestJoin('fam_x', 'mama', '');
+  const insert = db.calls.find(c => c.action === 'insert' && c.table === 'gg_members');
+  assert.equal(insert.values.name, '妈妈');
+});
+
+test('用户显式填了显示名时，不被身份推导覆盖', async () => {
+  const inv = validInvite();
+  const { family, db } = loadFamily({ invites: [inv] });
+  await family.joinByInvite('inv_ok', 'papa', '小名');
+  const insert = db.calls.find(c => c.action === 'insert' && c.table === 'gg_members');
+  assert.equal(insert.values.name, '小名');
+});

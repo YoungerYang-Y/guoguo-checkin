@@ -30,7 +30,7 @@ Page({
     ],
     joinCode: '',
     joinRole: 'papa',
-    joinName: '家人',
+    joinName: '',
     busy: false,
     // 成员邀请（卡片分享用，只有 inv_xxx token，不含家庭码）
     inviteToken: '',
@@ -171,7 +171,7 @@ Page({
       this.setData({ loggedIn: !!state.loggedIn });
       if (!state.loggedIn) { this.goLoginHint(); return; }
 
-      const joined = await family.joinByInvite(token, this.data.joinRole, this.data.joinName.trim() || '家人');
+      const joined = await family.joinByInvite(token, this.data.joinRole, this.data.joinName.trim());
       // 立刻用真实身份接管本机：否则首页会读不到 active 身份而回落成默认「妈妈」
       if (joined && joined.status === 'active') {
         try { await cloudstore.adoptJoinedFamily(); } catch (e) { /* 同步失败不影响已写入的成员身份 */ }
@@ -233,7 +233,7 @@ Page({
       const id = await family.createFamily(
         this.data.createName.trim() || '果果家庭',
         this.data.createRole,
-        this.data.createDisplayName.trim() || '我'
+        this.data.createDisplayName.trim()
       );
       await cloudstore.adoptCreatedFamily(id);
       toast('家庭已创建', 'success');
@@ -252,7 +252,7 @@ Page({
     if (!code) { toast('请输入家庭码'); return; }
     this.setData({ busy: true });
     try {
-      const joined = await family.requestJoin(code, this.data.joinRole, this.data.joinName.trim() || '家人');
+      const joined = await family.requestJoin(code, this.data.joinRole, this.data.joinName.trim());
       if (joined && joined.status === 'active') {
         try { await cloudstore.adoptJoinedFamily(); } catch (e) { /* 同步失败不影响成员身份 */ }
       }
