@@ -129,6 +129,7 @@ async function pushPending() {
   }
 }
 async function identify() {
+  _familyId = ''; _state.familyId = ''; _state.memberKey = ''; _state.role = '';
   _session = await ensureSession(); _state.loggedIn = !!_session;
   if (!_session) {
     _familyId = ''; _state.familyId = ''; _state.memberKey = ''; _state.role = '';
@@ -136,7 +137,13 @@ async function identify() {
     _state.lastError = (typeof getLastAuthError === 'function' && getLastAuthError()) || '暂未连接，记录已保存在本机';
     return null;
   }
-  const id = await family.refreshIdentity();
+  let id;
+  try { id = await family.refreshIdentity(); }
+  catch (e) {
+    // A new session must never inherit the previous session's upload destination.
+    _familyId = ''; _state.familyId = ''; _state.memberKey = ''; _state.role = '';
+    throw e;
+  }
   _familyId = id && id.status === 'active' ? id.familyId : '';
   _state.familyId = _familyId; _state.memberKey = _familyId ? id.memberKey : ''; _state.role = _familyId ? id.role : '';
   if (!_familyId) _state.lastError = '尚未加入家庭，数据仅保存在本机';

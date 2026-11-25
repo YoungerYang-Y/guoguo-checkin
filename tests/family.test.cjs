@@ -91,6 +91,29 @@ function pageHarness({ cloudReady, cloudState, refreshMembership, getIdentity, m
   return page;
 }
 
+function indexHarness({ adopted = false } = {}) {
+  const source = fs.readFileSync(path.join(root, 'pages/index/index.js'), 'utf8');
+  let definition;
+  const family = { getIdentity: () => null, refreshIdentity: async () => null };
+  vm.runInNewContext(source, {
+    Page(value) { definition = value; }, getApp: () => ({}),
+    wx: { getStorageSync: key => key === 'gg_family_adopted' && adopted ? 'fam_cached' : '', showToast() {} },
+    require(name) {
+      if (name === '../../utils/family.js') return family;
+      if (name === '../../utils/store.js') return {};
+      if (name === '../../utils/stats.js') return {};
+      if (name === '../../utils/date.js') return {};
+      if (name === '../../utils/privacy.js') return {};
+      throw new Error(`unexpected module ${name}`);
+    },
+    Date, Math, String, Number, Array, Object, Error, RegExp,
+  }, { filename: path.join(root, 'pages/index/index.js') });
+  return Object.assign({}, definition, {
+    data: clone(definition.data),
+    setData(values) { Object.assign(this.data, values); },
+  });
+}
+
 test('family page waits for cloud startup and coalesces onLoad/onShow membership refresh', async () => {
   let releaseCloud;
   const cloudReady = new Promise(resolve => { releaseCloud = resolve; });
@@ -118,6 +141,37 @@ test('family page waits for cloud startup and coalesces onLoad/onShow membership
   assert.equal(refreshCalls, 1);
   assert.equal(page.data.status, 'active');
   assert.equal(page.data.identity.familyId, 'fam_joined');
+});
+
+test('family page does not show stale active identity as successful when cloud refresh reports an error', async () => {
+  const page = pageHarness({
+    cloudReady: Promise.resolve(),
+    cloudState: { loggedIn: true, familyId: 'fam_old', lastError: '身份刷新失败' },
+    refreshMembership: async () => ({ loggedIn: true, familyId: 'fam_old', lastError: '身份刷新失败' }),
+    getIdentity: () => ({ familyId: 'fam_old', memberKey: 'mama', role: 'admin', status: 'active' }),
+    membership: { family_id: 'fam_old', status: 'active' },
+  });
+  await page.refresh();
+  assert.notEqual(page.data.status, 'active');
+  assert.equal(page.data.identity, null);
+  assert.match(page.data.errorMsg, /身份刷新失败/);
+});
+
+test('adopted family without a current identity cannot fall back to local admin writes', () => {
+  const adopted = indexHarness({ adopted: true });
+  adopted.resetOperator();
+  assert.equal(adopted.data.operatorKey, '');
+  assert.equal(adopted.data.operatorRole, 'guest');
+  assert.equal(adopted.canWriteMember('mama'), false);
+
+  const localPreview = indexHarness();
+  localPreview.resetOperator();
+  assert.equal(localPreview.data.operatorKey, 'mama');
+  assert.equal(localPreview.data.operatorRole, 'admin');
+  const child = { familyId: 'fam_test', memberKey: 'guoguo', role: 'child', status: 'active' };
+  localPreview.applyIdentity(child);
+  assert.equal(localPreview.canWriteMember('guoguo'), false, 'child profiles are read-only; a parent records on their behalf');
+  assert.equal(localPreview.canWriteMember('papa'), false);
 });
 
 test('requestJoin blocks an active identity from applying to the same or another family', async t => {

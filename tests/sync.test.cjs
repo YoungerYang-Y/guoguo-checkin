@@ -110,15 +110,19 @@ function createHarness({ database = new MemoryDatabase(), storage = new Map(), i
   };
 
   let currentIdentity = identity;
+  let currentUserId = userId;
   const cloudModule = {
     getCloud: () => ({ database }),
-    ensureSession: async () => ({ user: { id: userId, name: 'Test' } }),
+    ensureSession: async () => ({ user: { id: currentUserId, name: 'Test' } }),
     getLastAuthError: () => '',
     describeCloudError: error => (error && error.message) || String(error),
   };
   const familyModule = {
     getIdentity: () => currentIdentity,
-    refreshIdentity: async () => currentIdentity,
+    refreshIdentity: async () => {
+      if (currentIdentity instanceof Error) throw currentIdentity;
+      return currentIdentity;
+    },
   };
 
   const holder = {};
@@ -144,6 +148,7 @@ function createHarness({ database = new MemoryDatabase(), storage = new Map(), i
   return {
     database, storage, wx, store, sync,
     setIdentity(value) { currentIdentity = value; },
+    setUserId(value) { currentUserId = value; },
     getIdentity() { return currentIdentity; },
   };
 }
@@ -266,6 +271,40 @@ test('resetAll advances the epoch so prior cloud records do not return', async (
   assert.ok(database.rows.some(item => item.family_id === 'fam_test' && item.doc_key === 'gg_reset_state'));
 });
 
+test('an old-device CAS already in flight cannot restore data across a reset', async () => {
+  const old = { record_id: 'rec_old', member_id: 'papa', item_code: 'walk', biz_date: '2026-11-23', updated_at: '2026-11-23T10:00:00.000Z' };
+  const database = new MemoryDatabase([row('fam_test', 'gg_records', [old])]);
+  const admin = createHarness({ database, identity: Object.assign(makeIdentity(), { role: 'admin' }), userId: 'admin' });
+  const oldStorage = new Map();
+  const oldDevice = createHarness({ database, storage: oldStorage, userId: 'old-device' });
+  await startActive(admin);
+  await startActive(oldDevice);
+
+  const entered = deferred();
+  const release = deferred();
+  let held = false;
+  database.beforeUpdate = async query => {
+    const value = query.values && query.values.doc_value;
+    if (!held && value && value.__gg === 2 && value.epoch === 'legacy'
+      && query.filters.some(([key, item]) => key === 'doc_key' && item === 'gg_records')) {
+      held = true;
+      entered.resolve();
+      await release.promise;
+    }
+  };
+  await writeRecord(oldDevice.store, 'stale-in-flight');
+  await entered.promise;
+
+  await admin.store.resetAll();
+  await waitIdle(admin, 'reset with old write in flight');
+  release.resolve();
+  await waitIdle(oldDevice, 'old CAS rejected after reset');
+
+  const remote = cloudValue(database, 'fam_test', 'gg_records');
+  assert.equal(remote.some(record => record.item_code === 'stale-in-flight' || record.record_id === 'rec_old'), false);
+  assert.equal((oldDevice.wx.getStorageSync('gg_records') || []).some(record => record.item_code === 'stale-in-flight'), false);
+});
+
 test('a pending member manual sync adopts remote family data instead of uploading local data', async () => {
   const database = new MemoryDatabase([row('fam_new', 'gg_records', [])]);
   const harness = createHarness({ database, identity: makeIdentity('', 'none') });
@@ -279,6 +318,29 @@ test('a pending member manual sync adopts remote family data instead of uploadin
 
   assert.equal((cloudValue(database, 'fam_new', 'gg_records') || []).some(record => record.item_code === 'private-old'), false);
   assert.equal((harness.wx.getStorageSync('gg_records') || []).some(record => record.item_code === 'private-old'), false);
+});
+
+test('an identity refresh failure cannot keep uploading under the prior family id', async () => {
+  const database = new MemoryDatabase([row('fam_old', 'gg_records', [])]);
+  const harness = createHarness({ database, identity: makeIdentity('fam_old') });
+  await startActive(harness, 'fam_old');
+
+  harness.setUserId('user-new');
+  harness.setIdentity(new Error('membership lookup failed'));
+  await harness.sync.syncNow();
+  harness.store.write('gg_settings', { source: 'new-account-local' });
+  await sleep(50);
+
+  assert.equal(harness.sync.getFamilyId(), '');
+  assert.equal(cloudValue(database, 'fam_old', 'gg_settings'), undefined);
+  assert.ok((harness.wx.getStorageSync('gg_pending_keys') || []).includes('gg_settings'));
+
+  harness.setIdentity(makeIdentity('fam_new'));
+  await harness.sync.syncNow();
+  await waitIdle(harness, 'new family adoption after identity recovery');
+  assert.equal(harness.wx.getStorageSync('gg_family_adopted'), 'fam_new');
+  assert.equal((harness.wx.getStorageSync('gg_pending_keys') || []).includes('gg_settings'), false);
+  assert.equal(cloudValue(database, 'fam_new', 'gg_settings'), undefined);
 });
 
 test('two clients resolve a same-document CAS conflict without losing either record', async () => {
@@ -327,6 +389,20 @@ test('a failed upload preserves dirty state and pending work for retry', async (
   await waitIdle(harness, 'retry after reconnect');
   assert.ok(cloudValue(database, 'fam_test', 'gg_records').some(record => record.item_code === 'offline-write'));
   assert.deepEqual(harness.wx.getStorageSync('gg_pending_keys'), []);
+});
+
+test('a failed cloud read never falls through to an unconditional write', async () => {
+  const initial = [{ member_id: 'guoguo', ym: '2026-11', weight: 20, updated_at: '2026-11-01T10:00:00.000Z' }];
+  const database = new MemoryDatabase([row('fam_test', 'gg_weights', initial)]);
+  const harness = createHarness({ database });
+  await startActive(harness);
+  database.failReads = true;
+  harness.store.write('gg_weights', [{ member_id: 'guoguo', ym: '2026-11', weight: 21, updated_at: '2026-11-25T10:00:00.000Z' }]);
+  await waitFor(() => !harness.sync.getState().syncing && !!harness.sync.getState().lastError, 'failed CAS source read');
+
+  assert.equal(database.updateCalls.length, 0);
+  assert.deepEqual(cloudValue(database, 'fam_test', 'gg_weights'), initial);
+  assert.ok((harness.wx.getStorageSync('gg_pending_keys') || []).includes('gg_weights'));
 });
 
 test('offline local changes survive app restart and upload on bootstrap', async () => {

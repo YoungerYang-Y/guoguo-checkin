@@ -73,7 +73,7 @@ function initFamily(force) {
 function getFamily() { return read(KEYS.FAMILY, null) || initFamily(); }
 function canManage() {
   const id = require('./family.js').getIdentity();
-  return !id || id.status !== 'active' || id.role === 'admin';
+  return id && id.status === 'active' ? id.role === 'admin' : !read('gg_family_adopted', '');
 }
 function updateMemberName(memberId, name) {
   if (!canManage()) return { data: null, error: 'FORBIDDEN' };
@@ -112,7 +112,14 @@ function setSettings(patch) {
 function getRecords() { return mergeRecords([], read(KEYS.RECORDS, [])); }
 
 // 唯一约束：member + item + biz_date，后写入覆盖先写入
+function recordOperator() {
+  const id = require('./family.js').getIdentity();
+  if (id && id.status === 'active') return ['admin', 'parent'].indexOf(id.role) >= 0 ? id.memberKey : null;
+  return read('gg_family_adopted', '') ? null : 'mama';
+}
 function saveRecord(rec) {
+  const operator = recordOperator();
+  if (!operator) return { data: null, error: 'FORBIDDEN' };
   const list = getRecords();
   const idx = list.findIndex(r => r.member_id === rec.member_id && r.item_code === rec.item_code && r.biz_date === rec.biz_date);
   const now = new Date().toISOString();
@@ -132,6 +139,7 @@ function saveRecord(rec) {
     created_at: now,
     updated_at: now,
   }, rec);
+  record.operator = operator;
   if (idx >= 0) {
     record.created_at = list[idx].created_at;
     list[idx] = record;
@@ -144,10 +152,13 @@ function saveRecord(rec) {
 
 // 撤销：status=2，保留供审计
 function revokeRecord(memberId, itemCode, date) {
+  const operator = recordOperator();
+  if (!operator) return { data: null, error: 'FORBIDDEN' };
   const list = getRecords();
   const idx = list.findIndex(r => r.member_id === memberId && r.item_code === itemCode && r.biz_date === date);
   if (idx < 0) return { data: null, error: 'NOT_FOUND' };
   list[idx].status = 2;
+  list[idx].operator = operator;
   list[idx].updated_at = new Date().toISOString();
   const w = write(KEYS.RECORDS, list);
   return w.error ? w : { data: list[idx], error: null };
@@ -221,7 +232,8 @@ function getCustomTargetsAt(memberId, date) {
 }
 function canEditTarget(target) {
   const id = require('./family.js').getIdentity();
-  if (!id || id.status !== 'active' || id.role === 'admin') return true;
+  if (!id || id.status !== 'active') return !read('gg_family_adopted', '');
+  if (id.role === 'admin') return true;
   return target.created_by ? target.created_by === id.uid : targetMemberIds(target).length === 1 && targetMemberIds(target)[0] === id.memberKey;
 }
 function createCustomTarget(t) {
@@ -229,6 +241,7 @@ function createCustomTarget(t) {
   const all = read(KEYS.CUSTOM, []);
   const ids = normalizeMemberIds(t);
   const identity = require('./family.js').getIdentity();
+  if ((!identity || identity.status !== 'active') && read('gg_family_adopted', '')) return { data: null, error: 'FORBIDDEN' };
   if (identity && identity.status === 'active' && identity.role !== 'admin' && (ids.length !== 1 || ids[0] !== identity.memberKey)) return { data: null, error: 'FORBIDDEN' };
   if (!ids.length) return { data: null, error: 'NO_MEMBER' };
   // 每位成员分别计算进行中目标数，都不能超过 10 个
@@ -339,6 +352,6 @@ module.exports = {
   getSchedule, setRequired, getTargets, setTarget, getSettings, setSettings,
   getRecords, saveRecord, revokeRecord, getRecord, getDayRecords, canBackfill, exportCSV,
   getCustomTargets, createCustomTarget, updateCustomTarget, archiveCustomTarget, getCustomTarget, checkCustomTarget,
-  targetMemberIds, normalizeMemberIds, getCustomTargetsAt, canEditTarget,
+  targetMemberIds, normalizeMemberIds, getCustomTargetsAt, canEditTarget, canManage,
   saveSnapshot, getSnapshot, resetAll,
 };

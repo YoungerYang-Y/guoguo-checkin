@@ -365,21 +365,28 @@ function customTargetDetails(memberId, dates, recs) {
       const cycleKey = cycleType === 'daily' ? date
         : (cycleType === 'weekly' ? D.weekStart(date)
           : (cycleType === 'monthly' ? date.slice(0, 7) : 'once'));
-      if (!datesByCycle[cycleKey]) datesByCycle[cycleKey] = { type: cycleType, dates: [], target };
+      if (!datesByCycle[cycleKey]) datesByCycle[cycleKey] = { type: cycleType, dates: [], target, actual: 0 };
       datesByCycle[cycleKey].dates.push(date);
-      actual += actualByIdAndDate[targetId + ':' + date] || 0;
+      const dateActual = actualByIdAndDate[targetId + ':' + date] || 0;
+      datesByCycle[cycleKey].actual += dateActual;
+      actual += dateActual;
     });
 
+    let achieved = true;
     Object.keys(datesByCycle).forEach(cycleKey => {
       const cycle = datesByCycle[cycleKey];
       const amount = Number(cycle.target.cycle_value) || 1;
-      if (cycle.type === 'daily') needs += 1;
-      else if (cycle.type === 'weekly') needs += amount * cycle.dates.length / 7;
+      let cycleNeed = 0;
+      if (cycle.type === 'daily') cycleNeed = 1;
+      else if (cycle.type === 'weekly') cycleNeed = amount * cycle.dates.length / 7;
       else if (cycle.type === 'monthly') {
         const year = Number(cycleKey.slice(0, 4)), month = Number(cycleKey.slice(5, 7));
         const monthDays = new Date(year, month, 0).getDate();
-        needs += amount * cycle.dates.length / monthDays;
-      } else if (cycle.type === 'once') needs = 1;
+        cycleNeed = amount * cycle.dates.length / monthDays;
+      } else if (cycle.type === 'once') cycleNeed = 1;
+      // Partial report/active cycles are prorated by covered days; the same decimal threshold is displayed and compared.
+      needs += cycleNeed;
+      if (cycle.type === 'once' ? cycle.actual === 0 : cycle.actual < cycleNeed) achieved = false;
     });
 
     const target = entry.target;
@@ -388,7 +395,7 @@ function customTargetDetails(memberId, dates, recs) {
     return {
       target_id: targetId, name: target.name, cycle_type: cycleType,
       cycle_value: target.cycle_value, need: r1(needs), actual,
-      achieved: cycleType === 'once' ? actual > 0 : actual >= needs,
+      achieved: Object.keys(datesByCycle).length > 0 && achieved,
       executed: actual > 0, standard: target.standard_note,
       count_mode: target.count_mode,
     };
@@ -408,10 +415,10 @@ function buildHighlights(report, dates, type) {
   if (type !== 'month') return [];
   const out = [];
   const gg = report.members.guoguo;
-  if (gg && gg.detail.longestStreak >= 14) out.push('果果首次连续 14 天全勤');
+  if (gg && gg.detail.longestStreak >= 14) out.push('果果本月最长连续全勤达 ' + gg.detail.longestStreak + ' 天');
   if (gg && gg.detail.sessions >= 10) out.push('单月会员课达到 ' + gg.detail.sessions + ' 节');
   const mama = report.members.mama;
-  if (mama && mama.detail.wordDays >= 20) out.push('单词连续达标 ' + mama.detail.wordDays + ' 天');
+  if (mama && mama.detail.wordDays >= 20) out.push('妈妈本月单词达标 ' + mama.detail.wordDays + ' 天');
   const swim = gg ? (gg.detail.counts['G-SWIM'] || 0) + (gg.detail.counts['G-SKATE'] || 0) : 0;
   if (swim >= 8) out.push('单月运动打卡达到 ' + swim + ' 次');
   return out.slice(0, 4);

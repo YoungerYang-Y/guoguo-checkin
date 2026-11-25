@@ -64,7 +64,8 @@ Page({
     if (!s.ready) {
       label = '正在连接云服务…'; detail = '首次启动同步中'; dotClass = 'dot-pending';
     } else if (s.loggedIn && !s.familyId) {
-      label = '本机保存'; detail = '加入家庭后可与家人同步数据'; dotClass = 'dot-warn';
+      label = s.lastError && !/^尚未加入家庭/.test(s.lastError) ? '连接待恢复' : '本机保存';
+      detail = s.lastError || '加入家庭后可与家人同步数据'; dotClass = 'dot-warn';
     } else if (s.loggedIn) {
       if (s.syncing) { label = '正在同步'; detail = '数据上传中…'; dotClass = 'dot-pending'; }
       else if (s.lastError) { label = '同步异常'; detail = s.lastError; dotClass = 'dot-error'; }

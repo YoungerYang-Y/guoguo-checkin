@@ -1,0 +1,5 @@
+const test=require('node:test'),assert=require('node:assert/strict');
+const {merge}=require('../utils/sync-merge.js');
+const policy=require('../utils/policy.js');
+test('concurrent schedule edits preserve both fields and their effective-date history',()=>{const base={'G-READ':{1:1,2:1},'G-ENG':{1:1,2:1}};const a=policy.stageScheduleChange(base,'G-READ',1,0,'2026-11-25');const b=policy.stageScheduleChange(base,'G-ENG',2,0,'2026-11-25');const result=merge('gg_schedule',base,a,b);assert.equal(result['G-READ'][1],0);assert.equal(result['G-ENG'][2],0);const before=policy.getScheduleAt('2026-11-25',result),after=policy.getScheduleAt('2026-11-26',result);assert.equal(before['G-READ'][1],1);assert.equal(before['G-ENG'][2],1);assert.equal(after['G-READ'][1],0);assert.equal(after['G-ENG'][2],0);});
+test('three-way merge preserves remote additions and explicit local deletion',()=>{const base=[{id:'a',amount:1},{id:'b',amount:2}];const local=[base[1]];const remote=[...base,{id:'c',amount:3}];assert.deepEqual(merge('gg_fees',base,local,remote).map(x=>x.id),['b','c']);});

@@ -4,7 +4,7 @@ const object = v => v && typeof v === 'object' && !Array.isArray(v);
 function itemKey(key, row) {
   if (!row || typeof row !== 'object') return JSON.stringify(row);
   if (key === 'gg_records' && row.member_id && row.item_code && row.biz_date) return JSON.stringify([row.member_id, row.item_code, row.biz_date]);
-  if (key === 'gg_weights') return JSON.stringify([row.member_id, row.ym]);
+  if (key === 'gg_weights' && row.member_id && row.ym) return JSON.stringify([row.member_id, row.ym]);
   if (key === 'gg_snapshots') return row.type + ':' + row.key;
   if (key === '__history') return row.effectiveFrom;
   return row.target_id || row.record_id || row.id || JSON.stringify(row);
@@ -23,7 +23,15 @@ function merge(key, base, local, remote) {
   if (Array.isArray(local) && Array.isArray(remote)) {
     const b = indexed(key, base), l = indexed(key, local), r = indexed(key, remote), out = [];
     new Set([...b.keys(), ...l.keys(), ...r.keys()]).forEach(id => {
-      const before = b.get(id), left = l.get(id), right = r.get(id);
+      let before = b.get(id);
+      const left = l.get(id), right = r.get(id);
+      // Two clients may add the same effective date from the same earlier policy.
+      // Compare their fields against that earlier policy, not against an empty object.
+      if (key === '__history' && !before && left && right) {
+        const earlier = [...b.values(), ...[...l.values()].filter(v => same(v, r.get(v.effectiveFrom)))]
+          .filter(v => v.effectiveFrom < id).sort((a, z) => a.effectiveFrom.localeCompare(z.effectiveFrom));
+        if (earlier.length) before = { effectiveFrom: id, value: earlier[earlier.length - 1].value };
+      }
       let value;
       if (same(left, before)) value = right;
       else if (same(right, before) || same(left, right)) value = left;

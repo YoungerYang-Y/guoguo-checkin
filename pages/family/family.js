@@ -70,12 +70,13 @@ Page({
       const state = await cloudstore.refreshMembership();
       this.setData({ loggedIn: !!state.loggedIn });
       if (!state.loggedIn) { this.setData({ status: 'noauth', identity: null, members: [] }); return; }
+      if (state.lastError && (state.familyId || (family.getIdentity() && family.getIdentity().status === 'active'))) throw new Error(state.lastError);
 
       const membership = await family.getMyMembership();
       // refreshMembership has refreshed the cloud identity; never trust the pre-launch cache here.
       const id = family.getIdentity();
       if (id && id.status === 'active' && id.familyId) {
-        this.setData({ status: 'active', identity: id, errorMsg: '' });
+        this.setData({ status: 'active', identity: id, errorMsg: state.lastError || '' });
         await this.loadMembers();
         this.loadVisitorToken();
         if (id.role === 'admin') await this.ensureInvite();

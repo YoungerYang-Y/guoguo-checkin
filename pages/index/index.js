@@ -70,10 +70,12 @@ Page({
   },
 
   resetOperator() {
+    let hasAdoptedFamily = false;
+    try { hasAdoptedFamily = !!wx.getStorageSync('gg_family_adopted'); } catch (e) {}
     this.setData({
-      operatorKey: 'mama',
-      operatorRole: 'admin',
-      operatorName: '妈妈',
+      operatorKey: hasAdoptedFamily ? '' : 'mama',
+      operatorRole: hasAdoptedFamily ? 'guest' : 'admin',
+      operatorName: hasAdoptedFamily ? '' : '妈妈',
       confirmMember: '',
       confirmName: '',
       pending: null,
@@ -87,7 +89,7 @@ Page({
       this._identityRefreshPromise = app.cloudReady
         .then(() => family.refreshIdentity())
         .then(id => this.applyIdentity(id))
-        .catch(() => this.resetOperator())
+        .catch(() => this.applyIdentity(family.getIdentity()))
         .finally(() => { this._identityRefreshPromise = null; });
     }
     // 日历页「查看/补卡」用 switchTab 进入，tabBar 跳转不能带参数，日期通过暂存值传递
@@ -203,10 +205,25 @@ Page({
 
   confirmCheckin() {
     const { confirmMember: member, pending } = this.data;
+    if (!pending || !this.canWriteMember(member)) return;
     this.setData({ confirmMember: '' });
     this.openForKind(member, pending.code, pending.kind, pending.isCustom, pending.standard);
   },
   cancelCheckin() { this.setData({ confirmMember: '' }); },
+
+  canWriteMember(member) {
+    const role = this.data.operatorRole;
+    const operator = this.data.operatorKey;
+    if (!operator || ['admin', 'parent'].indexOf(role) < 0) {
+      wx.showToast({ title: '当前身份不能修改打卡', icon: 'none' });
+      return false;
+    }
+    if (member !== operator && ['admin', 'parent'].indexOf(role) < 0) {
+      wx.showToast({ title: '当前角色不能代签', icon: 'none' });
+      return false;
+    }
+    return true;
+  },
 
   openForKind(member, code, kind, isCustom, standard) {
     this.setData({ sheetCtx: { memberId: member, code, isCustom, standard } });
@@ -266,6 +283,7 @@ Page({
   confirmCustom() {
     if (!this.canEditDate()) return;
     const { code, memberId } = this.data.sheetCtx;
+    if (!this.canWriteMember(memberId)) return;
     const res = store.checkCustomTarget(code, memberId, this.data.date, true, this.data.inputNote.slice(0, 200));
     if (res.error) { wx.showToast({ title: '打卡失败，目标可能已归档', icon: 'none' }); return; }
     this.closeSheet();
@@ -276,8 +294,9 @@ Page({
   doCheckin(patch) {
     if (!this.canEditDate()) { this.closeSheet(); return; }
     const { memberId, code } = this.data.sheetCtx;
+    if (!this.canWriteMember(memberId)) { this.closeSheet(); return; }
     const isBackfill = this.data.date !== D.today();
-    store.saveRecord(Object.assign({
+    const result = store.saveRecord(Object.assign({
       member_id: memberId,
       item_code: code,
       biz_date: this.data.date,
@@ -285,6 +304,7 @@ Page({
       source: isBackfill ? 2 : 1,
       operator: this.data.operatorKey,
     }, patch));
+    if (result && result.error) { wx.showToast({ title: '保存失败，请检查身份或存储空间', icon: 'none' }); return; }
     this.closeSheet();
     this.refresh();
     wx.showToast({ title: '已保存', icon: 'success', duration: 600 });
@@ -295,6 +315,7 @@ Page({
     const { member, code } = e.currentTarget.dataset;
     if (!this.isDone(member, code)) return;
     if (!this.canEditDate()) return;
+    if (!this.canWriteMember(member)) return;
     wx.showModal({
       title: '撤销打卡',
       content: '确定撤销这一项吗？撤销后 3 秒内可恢复。',
@@ -302,7 +323,8 @@ Page({
       success: (res) => {
         if (!res.confirm) return;
         const rec = store.getRecord(member, code, this.data.date);
-        store.revokeRecord(member, code, this.data.date);
+        const result = store.revokeRecord(member, code, this.data.date);
+        if (result && result.error) { wx.showToast({ title: '撤销失败，请重试', icon: 'none' }); return; }
         this.setData({ showUndo: true, lastUndo: { member, code, rec, date: this.data.date } });
         this.refresh();
         const timer = setTimeout(() => this.setData({ showUndo: false, lastUndo: null }), 3000);
@@ -313,7 +335,9 @@ Page({
   undoRevoke() {
     const u = this.data.lastUndo;
     if (!u) return;
-    store.saveRecord(Object.assign({}, u.rec, { status: 1, updated_at: new Date().toISOString() }));
+    if (!this.canWriteMember(u.member)) return;
+    const result = store.saveRecord(Object.assign({}, u.rec, { status: 1, updated_at: new Date().toISOString() }));
+    if (result && result.error) { wx.showToast({ title: '恢复失败，请重试', icon: 'none' }); return; }
     clearTimeout(this.data.undoTimer);
     this.setData({ showUndo: false, lastUndo: null });
     this.refresh();
@@ -332,19 +356,22 @@ Page({
   finishAll(e) {
     if (!this.canEditDate()) return;
     const member = e.currentTarget.dataset.member;
+    if (!this.canWriteMember(member)) return;
     const g = this.data.groups.find(x => x.id === member);
     if (!g) return;
     if (member !== this.data.operatorKey) {
       wx.showToast({ title: '代打卡需二次确认', icon: 'none' });
       return;
     }
+    let failed = false;
     g.rows.forEach(r => {
       if (r.done) return;
       const patch = r.kind === 'word' ? { metric_value: 20 } : {};
-      store.saveRecord(Object.assign({ member_id: member, item_code: r.code, biz_date: this.data.date, status: 1, source: this.data.date === D.today() ? 1 : 2, operator: this.data.operatorKey }, patch));
+      const result = store.saveRecord(Object.assign({ member_id: member, item_code: r.code, biz_date: this.data.date, status: 1, source: this.data.date === D.today() ? 1 : 2, operator: this.data.operatorKey }, patch));
+      if (result && result.error) failed = true;
     });
     this.refresh();
-    wx.showToast({ title: '本区已全部完成', icon: 'success' });
+    wx.showToast({ title: failed ? '部分未保存，请重试' : '本区已全部完成', icon: failed ? 'none' : 'success' });
   },
 
   openPrivacy() {

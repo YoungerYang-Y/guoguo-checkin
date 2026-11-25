@@ -1,6 +1,5 @@
 const store = require('../../utils/store.js');
 const { ITEMS, GUOGUO_ITEMS, PARENT_ITEMS } = require('../../utils/constants.js');
-const family = require('../../utils/family.js');
 
 const DOWS = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
 
@@ -19,8 +18,7 @@ Page({
   },
 
   onShow() {
-    const id = family.getIdentity();
-    this.setData({ canManage: !(id && id.status === 'active') || id.role === 'admin' });
+    this.setData({ canManage: store.canManage() });
     this.build();
   },
 
@@ -54,7 +52,8 @@ Page({
     const { code, d } = e.currentTarget.dataset;
     const row = this.data.scheduleRows.find(r => r.code === code);
     const day = row.days.find(x => x.d === d);
-    store.setRequired(code, d, day.on ? 0 : 1);
+    const result = store.setRequired(code, d, day.on ? 0 : 1);
+    if (result.error) { wx.showToast({ title: '保存失败，请检查身份', icon: 'none' }); return; }
     this.build();
     wx.showToast({ title: '排期明日起生效，历史不变', icon: 'none' });
   },
@@ -69,14 +68,16 @@ Page({
     if (!this.requireAdmin()) return;
     const code = e.currentTarget.dataset.code;
     const row = this.data.targetRows.find(r => r.code === code);
-    store.setTarget(code, row.value);
+    const result = store.setTarget(code, row.value);
+    if (result.error) { wx.showToast({ title: '保存失败，请检查身份', icon: 'none' }); return; }
     wx.showToast({ title: '目标下周起生效', icon: 'success' });
   },
 
   onRemindTime(e) { this.setData({ remindTime: e.detail.value }); },
   saveSettings() {
     if (!this.requireAdmin()) return;
-    store.setSettings({ remindTime: this.data.remindTime, remindEnabled: this.data.remindEnabled, weekRemind: this.data.weekRemind });
+    const result = store.setSettings({ remindTime: this.data.remindTime, remindEnabled: this.data.remindEnabled, weekRemind: this.data.weekRemind });
+    if (result.error) { wx.showToast({ title: '保存失败，请检查身份', icon: 'none' }); return; }
     wx.showToast({ title: '提醒设置已保存', icon: 'success' });
   },
   toggleRemind() { this.setData({ remindEnabled: !this.data.remindEnabled }); },
@@ -91,7 +92,8 @@ Page({
   saveName() {
     if (!this.requireAdmin()) return;
     if (!this.data.editNameValue.trim()) { wx.showToast({ title: '昵称不能为空', icon: 'none' }); return; }
-    store.updateMemberName(this.data.editNameId, this.data.editNameValue.trim());
+    const result = store.updateMemberName(this.data.editNameId, this.data.editNameValue.trim());
+    if (result.error) { wx.showToast({ title: '改名失败，请检查身份', icon: 'none' }); return; }
     this.setData({ editNameId: '' });
     this.build();
     wx.showToast({ title: '昵称已更新', icon: 'success' });
