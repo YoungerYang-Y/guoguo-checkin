@@ -46,10 +46,15 @@ Page({
       else if (s.hasAny || pf.hasAny || mf.hasAny) cls = 'partial';
       days.push({ empty: false, key: date, date, day: d, cls, hasBackfill: (s.backfillCount + pf.backfillCount + mf.backfillCount) > 0, isToday: date === today });
     }
+    // 只把「末行」补满 7 格，不新增空行：末行格子不足时 flex:1 会把少数日期撑满整行（拉宽甚至居中）。
+    // 补齐后每行严格 7 格，行高由 WXSS 固定，整月网格不产生断层。
+    const totalCells = Math.ceil(days.length / 7) * 7;
+    while (days.length < totalCells) days.push({ empty: true, key: 'b' + days.length });
+    const cells = days.slice(0, totalCells);
     // 按 7 天分组：每行也要带唯一 key
     const weeks = [];
-    for (let i = 0; i < days.length; i += 7) {
-      weeks.push({ key: 'w' + (i / 7), days: days.slice(i, i + 7) });
+    for (let i = 0; i < totalCells; i += 7) {
+      weeks.push({ key: 'w' + (i / 7), days: cells.slice(i, i + 7) });
     }
     this.setData({ weeks });
 
