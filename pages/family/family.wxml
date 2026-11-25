@@ -17,9 +17,10 @@
     <view class="form-field">
       <text class="field-label">你的身份</text>
       <view class="chip-row">
-        <view class="chip {{joinRole === 'papa' ? 'active' : ''}}" data-key="papa" hover-class="ui-hover" bindtap="pickJoinRole">爸爸</view>
-        <view class="chip {{joinRole === 'mama' ? 'active' : ''}}" data-key="mama" hover-class="ui-hover" bindtap="pickJoinRole">妈妈</view>
+        <view wx:for="{{roleOptions}}" wx:key="key" class="chip {{joinRole === item.key ? 'active' : ''}}"
+              data-key="{{item.key}}" hover-class="ui-hover" bindtap="pickJoinRole">{{item.label}}</view>
       </view>
+      <text class="hint-line">身份只用于区分打卡对象；权限角色（管理员/成员）由家庭管理员在成员列表里调整。</text>
     </view>
     <button class="btn btn-primary btn-block" style="margin-top:20rpx" loading="{{busy}}" bindtap="acceptInvite">接受邀请并申请加入</button>
   </view>
@@ -45,11 +46,16 @@
         <input class="field-input" value="{{createName}}" bindinput="onCreateName" placeholder="果果家庭" maxlength="20" />
       </view>
       <view class="form-field">
-        <text class="field-label">你的身份</text>
+        <text class="field-label">我的显示名</text>
+        <input class="field-input" value="{{createDisplayName}}" bindinput="onCreateDisplayName" placeholder="如：妈妈" maxlength="12" />
+      </view>
+      <view class="form-field">
+        <text class="field-label">我的身份</text>
         <view class="chip-row">
           <view wx:for="{{roleOptions}}" wx:key="key" class="chip {{createRole === item.key ? 'active' : ''}}"
                 data-key="{{item.key}}" hover-class="ui-hover" bindtap="pickCreateRole">{{item.label}}</view>
         </view>
+        <text class="hint-line">身份与角色分开：选谁都不影响权限，创建者自动成为管理员，之后可随时增减管理员。</text>
       </view>
       <button class="btn btn-primary btn-block" style="margin-top:20rpx" loading="{{busy}}" bindtap="doCreate">创建家庭</button>
     </view>
@@ -62,8 +68,15 @@
         <input class="field-input" value="{{joinCode}}" bindinput="onJoinCode" placeholder="fam_xxxx" maxlength="40" />
       </view>
       <view class="form-field">
-        <text class="field-label">你的称谓</text>
+        <text class="field-label">我的显示名</text>
         <input class="field-input" value="{{joinName}}" bindinput="onJoinName" placeholder="如：爸爸" maxlength="12" />
+      </view>
+      <view class="form-field">
+        <text class="field-label">我的身份</text>
+        <view class="chip-row">
+          <view wx:for="{{roleOptions}}" wx:key="key" class="chip {{joinRole === item.key ? 'active' : ''}}"
+                data-key="{{item.key}}" hover-class="ui-hover" bindtap="pickJoinRole">{{item.label}}</view>
+        </view>
       </view>
       <button class="btn btn-ghost btn-block" style="margin-top:20rpx" loading="{{busy}}" bindtap="doJoin">申请加入</button>
     </view>
@@ -85,6 +98,26 @@
   <block wx:if="{{status === 'active'}}">
     <view class="card">
       <text class="section-title">我的家庭</text>
+      <view class="setting-row" style="margin-top:16rpx">
+        <text class="setting-label">家庭名称</text>
+        <view class="row-between">
+          <text class="setting-value">{{familyName || '果果家庭'}}</text>
+          <view wx:if="{{isAdmin && !editingFamilyName}}" class="mini-action" hover-class="ui-hover" bindtap="editFamilyName">修改</view>
+        </view>
+      </view>
+      <view wx:if="{{editingFamilyName}}" class="inline-edit">
+        <input class="inline-input" value="{{familyNameDraft}}" bindinput="onFamilyNameInput" placeholder="家庭名称" maxlength="20" />
+        <view class="mini-action primary" hover-class="ui-hover" bindtap="saveFamilyName">保存</view>
+        <view class="mini-action" hover-class="ui-hover" bindtap="cancelFamilyName">取消</view>
+      </view>
+      <view class="setting-row">
+        <text class="setting-label">我的显示名</text>
+        <text class="setting-value">{{identity.name}}</text>
+      </view>
+      <view class="setting-row">
+        <text class="setting-label">我的角色</text>
+        <text class="setting-value">{{isAdmin ? '管理员' : '成员'}}</text>
+      </view>
       <view class="row-between" style="margin-top:16rpx">
         <view>
           <text class="text-muted text-small">家庭码 · 备用（手动输入加入）</text>
@@ -92,7 +125,7 @@
         </view>
         <button class="btn btn-ghost" size="mini" bindtap="copyFamilyCode">复制</button>
       </view>
-      <text class="text-muted text-small" style="margin-top:16rpx">你：{{identity.name}} · {{identity.role === 'admin' ? '管理员' : (identity.role === 'child' ? '孩子' : '家长')}}</text>
+      <text class="hint-line">角色决定权限，身份（{{identity.memberKey}}）只决定打卡数据归属，两者互不影响。显示名可在下方成员列表修改。</text>
     </view>
 
     <!-- 成员列表 -->
@@ -102,16 +135,26 @@
         <view class="member-avatar">{{item.name[0]}}</view>
         <view class="member-info">
           <text class="text-bold">{{item.name}}<text wx:if="{{item.isSelf}}" class="text-muted text-small">（我）</text></text>
-          <text class="text-muted text-small">{{item.roleLabel}} · {{item.member_key}}</text>
+          <text class="text-muted text-small">{{item.roleLabel}} · 身份 {{item.member_key}} · {{item.statusLabel}}</text>
+          <view wx:if="{{editingNameUid === item.uid}}" class="member-edit-row">
+            <input class="inline-input" value="{{nameDraft}}" bindinput="onNameDraft" placeholder="显示名" maxlength="12" />
+            <view class="mini-action primary" hover-class="ui-hover" bindtap="saveMemberName">保存</view>
+            <view class="mini-action" hover-class="ui-hover" bindtap="cancelMemberName">取消</view>
+          </view>
         </view>
-        <view class="approve-btn" wx:if="{{item.status === 'pending' && identity.role === 'admin'}}"
-              hover-class="ui-hover" data-uid="{{item.uid}}" bindtap="onApprove">批准</view>
-        <text wx:else class="tag {{item.status === 'active' ? 'tag-success' : 'tag-warn'}}">{{item.statusLabel}}</text>
+        <view class="member-actions">
+          <view class="approve-btn" wx:if="{{item.status === 'pending' && isAdmin}}"
+                hover-class="ui-hover" data-uid="{{item.uid}}" bindtap="onApprove">批准</view>
+          <view wx:if="{{item.canEditName && editingNameUid !== item.uid}}" class="mini-action"
+                hover-class="ui-hover" data-uid="{{item.uid}}" data-name="{{item.name}}" bindtap="onEditMemberName">改名</view>
+          <view wx:if="{{item.canSwitchRole}}" class="mini-action" hover-class="ui-hover"
+                data-uid="{{item.uid}}" data-role="{{item.roleValue}}" bindtap="onToggleRole">{{item.roleValue === 'admin' ? '设为成员' : '设为管理员'}}</view>
+        </view>
       </view>
     </view>
 
     <!-- 成员邀请（管理员）：微信卡片直接转发，对方点开即可申请加入 -->
-    <view class="card" wx:if="{{identity.role === 'admin'}}">
+    <view class="card" wx:if="{{isAdmin}}">
       <text class="section-title">邀请家人加入</text>
       <text class="text-muted text-small">点下面的分享按钮，直接转发到微信聊天；家人点开卡片就能申请加入，仍需你批准。邀请 7 天有效，重新生成会让旧邀请失效。</text>
       <button wx:if="{{inviteToken}}" class="btn btn-primary btn-block" style="margin-top:20rpx"
@@ -131,7 +174,7 @@
     </view>
 
     <!-- 访客只读链接（管理员）：微信卡片直接转发 -->
-    <view class="card" wx:if="{{identity.role === 'admin'}}">
+    <view class="card" wx:if="{{isAdmin}}">
       <text class="section-title">访客只读链接</text>
       <text class="text-muted text-small">生成 7 天有效的只读链接，点分享转发给亲友；对方点开即可查看脱敏报表快照，不能打卡、不含家庭码与任何明细。</text>
       <button class="btn btn-primary btn-block" style="margin-top:20rpx" loading="{{busy}}" bindtap="doCreateVisitorLink">生成访客链接</button>
@@ -143,6 +186,12 @@
           <button class="btn btn-danger btn-mini" bindtap="revokeVisitorLink">撤销链接</button>
         </view>
       </view>
+    </view>
+
+    <view class="card leave-box">
+      <text class="section-title">退出家庭</text>
+      <text class="text-muted text-small">退出后本机不再保留该家庭的打卡数据；再次加入需要新的邀请并重新审批。</text>
+      <button class="btn btn-danger btn-block" style="margin-top:20rpx" loading="{{busy}}" bindtap="doLeaveFamily">退出当前家庭</button>
     </view>
   </block>
 

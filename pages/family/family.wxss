@@ -17,3 +17,17 @@
 .link-tools { margin-top: 20rpx; padding-top: 16rpx; border-top: 2rpx solid #f5f6f7; }
 .tool-row { display: flex; flex-wrap: wrap; gap: 12rpx; margin-top: 12rpx; }
 .btn-mini { flex: 1; min-width: 150rpx; padding: 8rpx 12rpx; font-size: 24rpx; line-height: 1.6; }
+
+/* 家庭设置：名称 / 显示名 / 角色 / 退出 */
+.setting-row { display: flex; align-items: center; justify-content: space-between; padding: 14rpx 0; border-bottom: 2rpx solid #f5f6f7; }
+.setting-label { font-size: 26rpx; color: #6b7280; }
+.setting-value { font-size: 30rpx; color: #374151; font-weight: 600; }
+.inline-edit { display: flex; gap: 12rpx; align-items: center; margin-top: 14rpx; }
+.inline-input { flex: 1; min-width: 0; padding: 16rpx 20rpx; background: #f7f8fa; border-radius: 12rpx; font-size: 28rpx; }
+.mini-action { padding: 10rpx 18rpx; border-radius: 10rpx; font-size: 24rpx; background: #f3f4f6; color: #374151; white-space: nowrap; }
+.mini-action.primary { background: #EC5B8C; color: #fff; }
+.mini-action.danger { background: #FDECEC; color: #d93026; }
+.member-actions { display: flex; flex-direction: column; gap: 8rpx; align-items: flex-end; flex-shrink: 0; }
+.member-edit-row { display: flex; gap: 10rpx; align-items: center; margin-top: 12rpx; }
+.hint-line { display: block; font-size: 24rpx; color: #9ca3af; margin-top: 12rpx; line-height: 1.6; }
+.leave-box { margin-top: 24rpx; }

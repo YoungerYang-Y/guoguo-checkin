@@ -59,7 +59,9 @@ async function compareWrite(key, row, value) {
 function clearLocal() {
   DOC_KEYS.forEach(key => wx.removeStorageSync(key));
   put(PENDING_KEY, []); put(BASE_KEY, {}); put(VERSION_KEY, {});
-  ['gg_invite_link', 'gg_visitor_link'].forEach(key => wx.removeStorageSync(key));
+  // 家庭归属与重置代次一并清除：否则「清空数据 / 退出家庭」后残留的 adopted
+  // 会让 store 的写入门禁把本机用户误判成访客，打卡和设置全部锁死。
+  [ADOPTED_KEY, EPOCH_KEY, 'gg_invite_link', 'gg_visitor_link'].forEach(key => wx.removeStorageSync(key));
 }
 function stampFamily() {
   const f = read('gg_family', null);
@@ -133,7 +135,8 @@ async function identify() {
   _session = await ensureSession(); _state.loggedIn = !!_session;
   if (!_session) {
     _familyId = ''; _state.familyId = ''; _state.memberKey = ''; _state.role = '';
-    family.clearIdentity();
+    // 离线/登录失败时保留身份缓存：数据层与首页据此判定可写；
+    // 上传目标由 _familyId 控制（此处为空），离线写入只会留在本机待同步。
     _state.lastError = (typeof getLastAuthError === 'function' && getLastAuthError()) || '暂未连接，记录已保存在本机';
     return null;
   }
@@ -229,10 +232,21 @@ async function resetFamilyData() {
     return { data: require('./store.js').getFamily(), error: null };
   });
 }
+// 退出家庭后把本机恢复为「未加入家庭」：清身份缓存、清 adopted/epoch、重建本地默认家庭
+function forgetFamily() {
+  _familyId = '';
+  Object.assign(_state, { loggedIn: !!_session, familyId: '', memberKey: '', role: '' });
+  family.clearIdentity();
+  _initializing = true;
+  try { clearLocal(); require('./store.js').initFamily(true); }
+  finally { _initializing = false; }
+  saveState();
+}
+
 module.exports = {
   bootstrap, markDirty, flush, syncNow, refreshMembership, getState, onStateChange,
   isLoggedIn: () => !!_session,
   getSessionUser: () => _session && _session.user ? { id: _session.user.id, name: _session.user.name } : null,
   getFamilyId: () => _familyId, getIdentity: () => family.getIdentity(),
-  adoptCreatedFamily, adoptJoinedFamily, resetFamilyData, DOC_KEYS, mergeRecords,
+  adoptCreatedFamily, adoptJoinedFamily, resetFamilyData, forgetFamily, DOC_KEYS, mergeRecords,
 };

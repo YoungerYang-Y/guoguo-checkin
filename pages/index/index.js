@@ -214,11 +214,11 @@ Page({
   canWriteMember(member) {
     const role = this.data.operatorRole;
     const operator = this.data.operatorKey;
-    if (!operator || ['admin', 'parent'].indexOf(role) < 0) {
+    if (!operator || ['admin', 'member', 'parent'].indexOf(role) < 0) {
       wx.showToast({ title: '当前身份不能修改打卡', icon: 'none' });
       return false;
     }
-    if (member !== operator && ['admin', 'parent'].indexOf(role) < 0) {
+    if (member !== operator && ['admin', 'member', 'parent'].indexOf(role) < 0) {
       wx.showToast({ title: '当前角色不能代签', icon: 'none' });
       return false;
     }

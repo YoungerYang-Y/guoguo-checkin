@@ -76,7 +76,9 @@ function canManage() {
   return id && id.status === 'active' ? id.role === 'admin' : !read('gg_family_adopted', '');
 }
 function updateMemberName(memberId, name) {
-  if (!canManage()) return { data: null, error: 'FORBIDDEN' };
+  const id = require('./family.js').getIdentity();
+  const selfEdit = id && id.status === 'active' && id.memberKey === memberId;
+  if (!canManage() && !selfEdit) return { data: null, error: 'FORBIDDEN' };
   const f = getFamily();
   const m = f.members.find(x => x.id === memberId);
   if (!m) return { data: null, error: 'NOT_FOUND' };
@@ -114,7 +116,12 @@ function getRecords() { return mergeRecords([], read(KEYS.RECORDS, [])); }
 // 唯一约束：member + item + biz_date，后写入覆盖先写入
 function recordOperator() {
   const id = require('./family.js').getIdentity();
-  if (id && id.status === 'active') return ['admin', 'parent'].indexOf(id.role) >= 0 ? id.memberKey : null;
+  if (id && id.status === 'active') {
+    // 角色与身份分离：admin / member 都可写；兼容旧值 parent，
+    // 旧「孩子身份」child 按原约定不代签共享记录。
+    if (id.role === 'child') return null;
+    return ['admin', 'member', 'parent'].indexOf(id.role) >= 0 ? id.memberKey : null;
+  }
   return read('gg_family_adopted', '') ? null : 'mama';
 }
 function saveRecord(rec) {

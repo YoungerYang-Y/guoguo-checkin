@@ -66,6 +66,10 @@ function pageHarness({ cloudReady, cloudState, refreshMembership, getIdentity, m
     listMembers: async () => [],
     getCachedInvite: () => null,
     createInviteLink: async () => ({ token: 'inv_test', expiresAt: '' }),
+    isAdmin: id => !!(id && id.status === 'active' && id.role === 'admin'),
+    normalizeRole: r => (r === 'admin' ? 'admin' : 'member'),
+    ROLE_LABELS: { admin: '管理员', member: '成员' },
+    getFamilyName: async () => '测试家庭',
   };
   const cloudstore = {
     refreshMembership,

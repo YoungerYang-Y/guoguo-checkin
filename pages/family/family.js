@@ -19,9 +19,11 @@ Page({
     // 创建/加入表单
     createName: '果果家庭',
     createRole: 'mama',
+    // 身份（member_key）只决定数据归属与代签对象，不决定权限
     roleOptions: [
-      { key: 'mama', label: '妈妈', role: 'admin' },
-      { key: 'papa', label: '爸爸', role: 'parent' },
+      { key: 'mama', label: '妈妈' },
+      { key: 'papa', label: '爸爸' },
+      { key: 'guoguo', label: '孩子' },
     ],
     joinCode: '',
     joinRole: 'papa',
@@ -36,6 +38,14 @@ Page({
     // 访客链接（卡片分享用）
     visitorToken: '',
     visitorExpires: '',
+    // 家庭设置：名称 / 显示名 / 角色（角色与身份 member_key 完全分离）
+    familyName: '',
+    familyNameDraft: '',
+    editingFamilyName: false,
+    editingNameUid: '',
+    nameDraft: '',
+    isAdmin: false,
+    createDisplayName: '',
   },
 
   onLoad(options) {
@@ -76,10 +86,15 @@ Page({
       // refreshMembership has refreshed the cloud identity; never trust the pre-launch cache here.
       const id = family.getIdentity();
       if (id && id.status === 'active' && id.familyId) {
-        this.setData({ status: 'active', identity: id, errorMsg: state.lastError || '' });
+        const admin = family.isAdmin(id);
+        this.setData({ status: 'active', identity: id, isAdmin: admin, errorMsg: state.lastError || '' });
         await this.loadMembers();
         this.loadVisitorToken();
-        if (id.role === 'admin') await this.ensureInvite();
+        try {
+          const fname = await family.getFamilyName();
+          this.setData({ familyName: fname, familyNameDraft: fname });
+        } catch (e) { /* 名称读取失败不阻塞主流程 */ }
+        if (admin) await this.ensureInvite();
       } else if (membership && membership.status === 'pending') {
         this.setData({ status: 'pending', pendingFamilyId: membership.family_id, identity: null });
       } else {
@@ -170,12 +185,16 @@ Page({
   async loadMembers() {
     try {
       const list = await family.listMembers();
-      const roleLabel = { admin: '管理员', parent: '家长', child: '孩子' };
       const statusLabel = { active: '已加入', pending: '待批准', left: '已退出' };
+      const admin = this.data.isAdmin;
+      const selfUid = this.data.identity && this.data.identity.uid;
       const members = list.map(m => Object.assign({}, m, {
-        roleLabel: roleLabel[m.role] || m.role,
+        roleLabel: (family.ROLE_LABELS || {})[m.role] || m.role,
+        roleValue: family.normalizeRole(m.role),
         statusLabel: statusLabel[m.status] || m.status,
-        isSelf: m.uid === (this.data.identity && this.data.identity.uid),
+        isSelf: m.uid === selfUid,
+        canEditName: admin || m.uid === selfUid,
+        canSwitchRole: admin && m.status === 'active',
       }));
       // 待批准排前
       members.sort((a, b) => (a.status === 'pending' ? -1 : 0) - (b.status === 'pending' ? -1 : 0));
@@ -194,6 +213,7 @@ Page({
 
   // ---------- 表单输入 ----------
   onCreateName(e) { this.setData({ createName: e.detail.value }); },
+  onCreateDisplayName(e) { this.setData({ createDisplayName: e.detail.value }); },
   onJoinCode(e) { this.setData({ joinCode: e.detail.value }); },
   onJoinName(e) { this.setData({ joinName: e.detail.value }); },
   pickCreateRole(e) { this.setData({ createRole: e.currentTarget.dataset.key }); },
@@ -204,7 +224,11 @@ Page({
     if (this.data.busy) return;
     this.setData({ busy: true });
     try {
-      const id = await family.createFamily(this.data.createName.trim() || '果果家庭', this.data.createRole);
+      const id = await family.createFamily(
+        this.data.createName.trim() || '果果家庭',
+        this.data.createRole,
+        this.data.createDisplayName.trim() || '我'
+      );
       await cloudstore.adoptCreatedFamily(id);
       toast('家庭已创建', 'success');
       await this.refresh();
@@ -336,7 +360,7 @@ Page({
 
   async doCreateVisitorLink() {
     if (this.data.busy) return;
-    if (!this.data.identity || this.data.identity.role !== 'admin') { toast('仅管理员可生成访客链接'); return; }
+    if (!this.data.isAdmin) { toast('仅管理员可生成访客链接'); return; }
     this.setData({ busy: true });
     try {
       const snap = this.buildVisitorSnapshot();
@@ -374,6 +398,87 @@ Page({
         } catch (err) {
           toast((err && err.message) || '撤销失败');
         }
+      },
+    });
+  },
+
+  // ---------- 家庭名称 / 显示名 / 角色 / 退出 ----------
+  editFamilyName() { this.setData({ editingFamilyName: true, familyNameDraft: this.data.familyName }); },
+  cancelFamilyName() { this.setData({ editingFamilyName: false, familyNameDraft: this.data.familyName }); },
+  onFamilyNameInput(e) { this.setData({ familyNameDraft: e.detail.value }); },
+  async saveFamilyName() {
+    const v = (this.data.familyNameDraft || '').trim();
+    if (!v) { toast('家庭名称不能为空'); return; }
+    if (v === this.data.familyName) { this.setData({ editingFamilyName: false }); return; }
+    this.setData({ busy: true });
+    try {
+      const name = await family.renameFamily(v);
+      this.setData({ familyName: name, familyNameDraft: name, editingFamilyName: false });
+      toast('家庭名称已更新', 'success');
+    } catch (e) { toast((e && e.message) || '保存失败'); }
+    finally { this.setData({ busy: false }); }
+  },
+
+  onEditMemberName(e) {
+    const { uid, name } = e.currentTarget.dataset;
+    this.setData({ editingNameUid: uid, nameDraft: name || '' });
+  },
+  cancelMemberName() { this.setData({ editingNameUid: '', nameDraft: '' }); },
+  onNameDraft(e) { this.setData({ nameDraft: e.detail.value }); },
+  async saveMemberName() {
+    const uid = this.data.editingNameUid;
+    const v = (this.data.nameDraft || '').trim();
+    if (!uid || !v) { toast('显示名不能为空'); return; }
+    this.setData({ busy: true });
+    try {
+      await family.updateDisplayName(uid, v);
+      // 本地成员表里的显示名同步更新，保证首页/报表称谓一致
+      const m = this.data.members.find(x => x.uid === uid);
+      if (m && m.member_key) store.updateMemberName(m.member_key, v);
+      this.setData({ editingNameUid: '', nameDraft: '' });
+      toast('显示名已更新', 'success');
+      await this.refresh();
+    } catch (e) { toast((e && e.message) || '保存失败'); }
+    finally { this.setData({ busy: false }); }
+  },
+
+  onToggleRole(e) {
+    const { uid, role } = e.currentTarget.dataset;
+    const next = role === 'admin' ? 'member' : 'admin';
+    wx.showModal({
+      title: next === 'admin' ? '设为管理员' : '设为成员',
+      content: next === 'admin'
+        ? '管理员可审批成员、修改家庭名与角色、生成邀请和访客链接。'
+        : '成员可打卡、代签、管理自己的目标，但不能管理家庭设置。',
+      success: async (res) => {
+        if (!res.confirm) return;
+        this.setData({ busy: true });
+        try {
+          await family.setMemberRole(uid, next);
+          toast('角色已更新', 'success');
+          await this.refresh();
+        } catch (err) { toast((err && err.message) || '角色更新失败'); }
+        finally { this.setData({ busy: false }); }
+      },
+    });
+  },
+
+  doLeaveFamily() {
+    wx.showModal({
+      title: '退出家庭',
+      content: '退出后本机家庭数据会被清空；再次加入需要新的邀请并重新审批。确定退出吗？',
+      confirmText: '退出', confirmColor: '#d93026',
+      success: async (res) => {
+        if (!res.confirm) return;
+        this.setData({ busy: true });
+        try {
+          await family.leaveFamily();
+          cloudstore.forgetFamily();
+          this.setData({ inviteToken: '', visitorToken: '', familyName: '', members: [], isAdmin: false });
+          toast('已退出家庭', 'success');
+          await this.refresh();
+        } catch (e) { toast((e && e.message) || '退出失败'); }
+        finally { this.setData({ busy: false }); }
       },
     });
   },
