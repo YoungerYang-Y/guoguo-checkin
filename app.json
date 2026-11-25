@@ -4,7 +4,6 @@
     "pages/calendar/calendar",
     "pages/report/report",
     "pages/report-detail/report-detail",
-    "pages/compare/compare",
     "pages/settings/settings",
     "pages/target-edit/target-edit",
     "pages/mine/mine",
@@ -46,12 +45,6 @@
         "text": "报表",
         "iconPath": "assets/tab/report.png",
         "selectedIconPath": "assets/tab/report_on.png"
-      },
-      {
-        "pagePath": "pages/compare/compare",
-        "text": "对比",
-        "iconPath": "assets/tab/compare.png",
-        "selectedIconPath": "assets/tab/compare_on.png"
       },
       {
         "pagePath": "pages/mine/mine",

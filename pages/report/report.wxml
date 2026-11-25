@@ -1,20 +1,27 @@
 <view class="page">
+  <!-- 一级视图：报表 / 对比 -->
+  <view class="view-tabs">
+    <view wx:for="{{views}}" wx:key="key" class="view-tab {{view === item.key ? 'active' : ''}}"
+          data-view="{{item.key}}" hover-class="ui-hover" bindtap="switchView">{{item.label}}</view>
+  </view>
+
   <!-- 周期类型切换 -->
   <view class="type-tabs">
     <view wx:for="{{types}}" wx:key="key" class="type-tab {{type === item.key ? 'active' : ''}}"
           data-key="{{item.key}}" bindtap="setType">{{item.label}}</view>
   </view>
 
-  <!-- 周期翻页 -->
+  <!-- 周期翻页（两个视图共用同一周期） -->
   <view class="period-nav">
-    <text class="nav-btn" bindtap="prevPeriod">‹</text>
+    <text class="nav-btn" hover-class="ui-hover" bindtap="prevPeriod">‹</text>
     <text class="period-title">{{title}}</text>
-    <text class="nav-btn {{canNext ? '' : 'disabled'}}" bindtap="nextPeriod">›</text>
+    <text class="nav-btn {{canNext ? '' : 'disabled'}}" hover-class="ui-hover" bindtap="nextPeriod">›</text>
   </view>
 
   <view class="empty" wx:if="{{loading}}">正在生成报表…</view>
 
-  <block wx:if="{{!loading && report}}">
+  <!-- ===== 报表视图 ===== -->
+  <block wx:if="{{!loading && view === 'report' && report}}">
     <!-- 样本不足提示 -->
     <view class="sample-banner" wx:if="{{sampleNote}}">{{sampleNote}}</view>
 
@@ -33,7 +40,7 @@
     <view class="card">
       <view class="row-between">
         <text class="section-title" style="margin:0">三人进步空间指数</text>
-        <text class="text-muted text-small" bindtap="goCompare">查看对比 ›</text>
+        <text class="text-muted text-small" data-view="compare" bindtap="switchView">查看对比 ›</text>
       </view>
       <view class="member-card" wx:for="{{memberCards}}" wx:key="id">
         <view class="mem-rank">{{item.id === 'guoguo' ? '果' : (item.id === 'papa' ? '爸' : '妈')}}</view>
@@ -61,5 +68,66 @@
     </view>
 
     <button class="btn btn-primary btn-block" bindtap="goDetail">查看完整报表详情</button>
+  </block>
+
+  <!-- ===== 对比视图 ===== -->
+  <block wx:if="{{!loading && view === 'compare'}}">
+    <view class="sample-banner" wx:if="{{sampleNote}}">{{sampleNote}}</view>
+
+    <!-- 四维雷达图 -->
+    <view class="card radar-card" wx:if="{{hasData}}">
+      <text class="section-title">四维雷达图</text>
+      <view class="radar-wrap">
+        <canvas type="2d" id="radar" class="radar"></canvas>
+      </view>
+      <view class="legend">
+        <view class="legend-item" wx:for="{{memberCards}}" wx:for-item="m" wx:key="id">
+          <view class="legend-dot" style="background:{{m.color}}"></view>
+          <text class="text-small">{{m.name}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 指数排行 -->
+    <view class="card">
+      <text class="section-title">指数排行</text>
+      <view class="rank-row" wx:for="{{memberCards}}" wx:for-item="m" wx:key="id">
+        <view class="rank-badge" style="background:{{m.color}}">{{m.valid ? m.rank : '—'}}</view>
+        <view class="rank-info">
+          <text class="rank-name">{{m.name}}</text>
+          <text class="text-muted text-small" wx:if="{{m.valid}}">进步空间 {{m.gap}}</text>
+          <text class="text-muted text-small" wx:else>样本不足</text>
+        </view>
+        <view class="rank-score">
+          <text class="rank-num" style="color:{{m.color}}" wx:if="{{m.valid}}">{{m.index}}</text>
+          <text class="rank-num text-muted" wx:else>—</text>
+          <text class="rank-delta {{m.trend}}" wx:if="{{m.delta !== null}}">
+            {{m.delta > 0 ? '明显进步 +' : (m.delta < 0 ? '明显退步 ' : '基本持平 ')}}{{m.valid ? m.delta : ''}}
+          </text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 维度横向对比 -->
+    <view class="card" wx:if="{{hasData}}">
+      <text class="section-title">维度对比</text>
+      <view class="dim-block" wx:for="{{dimNames}}" wx:for-item="dn" wx:for-index="di" wx:key="*this">
+        <text class="dim-title">{{dn}}</text>
+        <view class="dim-line" wx:for="{{memberCards}}" wx:for-item="m" wx:key="id" wx:if="{{m.valid}}">
+          <text class="dim-name">{{m.name}}</text>
+          <view class="dim-bar"><view class="dim-fill" style="width:{{m.dims[di]}}%;background:{{m.color}}"></view></view>
+          <text class="dim-val">{{m.dims[di]}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 进步空间建议 -->
+    <view class="card">
+      <text class="section-title">主要进步空间与建议</text>
+      <view class="advice-block" wx:for="{{memberCards}}" wx:for-item="m" wx:key="id" wx:if="{{m.valid}}">
+        <text class="parent-name" style="color:{{m.color}}">{{m.name}} · 短板：{{m.low}}</text>
+        <view class="advice-item" wx:for="{{m.advice}}" wx:for-item="txt" wx:key="*this">• {{txt}}</view>
+      </view>
+    </view>
   </block>
 </view>

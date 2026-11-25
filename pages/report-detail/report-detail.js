@@ -87,7 +87,12 @@ Page({
     });
   },
 
-  goCompare() { wx.switchTab({ url: '/pages/compare/compare' }); },
+  // 对比视图已并入报表页，用 globalData 传一次性信号（switchTab 不支持 query）
+  goCompare() {
+    const app = getApp();
+    if (app.globalData) app.globalData.reportView = 'compare';
+    wx.switchTab({ url: '/pages/report/report' });
+  },
   onShareAppMessage() {
     return { title: '果果家庭 · ' + this.data.typeLabel, path: '/pages/report/report' };
   },
