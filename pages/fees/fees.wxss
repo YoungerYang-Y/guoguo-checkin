@@ -10,8 +10,9 @@
 
 .nav-row { display: flex; align-items: center; justify-content: center; margin-bottom: 20rpx; }
 .nav-btn {
-  width: 60rpx; height: 60rpx; line-height: 54rpx; text-align: center;
-  border-radius: 50%; background: #FFF3F8; color: #EC5B8C; font-size: 42rpx;
+  /* 88rpx ≈ 44pt 可点区域 */
+  width: 88rpx; height: 88rpx; line-height: 84rpx; text-align: center;
+  border-radius: 50%; background: #FFF3F8; color: #EC5B8C; font-size: 44rpx;
 }
 .nav-label { margin: 0 32rpx; font-size: 30rpx; font-weight: 600; }
 
@@ -30,7 +31,11 @@
 .rec-del { color: #d93026; font-size: 24rpx; }
 
 .f-table { margin-top: 8rpx; }
-.f-tr { display: flex; align-items: center; padding: 14rpx 10rpx; border-bottom: 1rpx solid #f2f3f5; font-size: 25rpx; }
+.f-tr {
+  display: flex; align-items: center; padding: 14rpx 10rpx;
+  border-bottom: 1rpx solid #f2f3f5; font-size: 26rpx;
+  font-feature-settings: "tnum"; font-variant-numeric: tabular-nums;
+}
 .f-tr:last-child { border-bottom: none; }
 .f-th { background: #FFF6FA; border-radius: 10rpx; font-weight: 600; color: #6c5a64; }
 .f-td { flex: 1; text-align: center; }
@@ -49,10 +54,13 @@
   background: #ffffff;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
 }
-.pie-total { font-size: 28rpx; font-weight: 600; color: #EC5B8C; }
+.pie-total {
+  font-size: 28rpx; font-weight: 600; color: #EC5B8C;
+  font-feature-settings: "tnum"; font-variant-numeric: tabular-nums;
+}
 .pie-cap { font-size: 20rpx; color: #6b7280; margin-top: 4rpx; }
 .pie-legend { flex: 1; min-width: 0; margin-left: 24rpx; }
-.pl-row { display: flex; align-items: center; margin-bottom: 12rpx; font-size: 23rpx; }
+.pl-row { display: flex; align-items: center; margin-bottom: 12rpx; font-size: 24rpx; }
 .pl-name { flex: 1; min-width: 0; }
 .pl-val { color: #4a525e; margin: 0 12rpx; }
 .pl-pct { color: #EC5B8C; width: 80rpx; text-align: right; }

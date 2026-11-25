@@ -1,5 +1,5 @@
 .detail-header { display: flex; flex-direction: column; padding: 8rpx 8rpx 24rpx; }
-.detail-title { font-size: 38rpx; font-weight: 700; }
+.detail-title { font-size: 36rpx; font-weight: 700; }
 .sample-banner { padding: 20rpx 24rpx; margin-bottom: 20rpx; border-radius: 14rpx; background: #fff6dc; color: #a67c00; font-size: 26rpx; }
 
 .overview-row { display: flex; }
@@ -25,7 +25,7 @@
 .bar-wrap { height: 210rpx; display: flex; align-items: flex-end; }
 .bar { width: 28rpx; background: #EC5B8C; border-radius: 6rpx 6rpx 0 0; min-height: 8rpx; }
 .bar-empty { background: transparent; border: 2rpx dashed #c0c4c9; }
-.bar-label { font-size: 18rpx; color: #6b7280; margin-top: 8rpx; }
+.bar-label { font-size: 20rpx; color: #6b7280; margin-top: 8rpx; }
 
 .custom-block { margin-bottom: 16rpx; }
 .custom-row { padding: 14rpx 0; border-bottom: 2rpx solid #f5f6f7; }

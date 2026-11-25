@@ -1,4 +1,4 @@
-.pb-sheet { padding-bottom: 120rpx; }
+.pb-sheet { padding-bottom: calc(120rpx + var(--safe-bottom, 0px)); }
 
 /* 全勤鼓励横幅：正向粉色语义，合并原「视觉增强」层的尺寸/阴影（去橙金覆盖） */
 .banner {
@@ -16,23 +16,26 @@
   padding: 8rpx 0 20rpx;
 }
 .date-nav {
-  width: 76rpx; height: 76rpx; border-radius: 50%;
+  /* 88rpx ≈ 44pt：左右翻日期是高频操作，触区不能小于拇指 */
+  width: 88rpx; height: 88rpx; border-radius: 50%;
   background: #ffffff; color: #EC5B8C;
-  font-size: 56rpx; line-height: 68rpx; text-align: center; font-weight: 300;
+  font-size: 52rpx; line-height: 84rpx; text-align: center; font-weight: 300;
   border: 1rpx solid rgba(236, 91, 140, 0.06);
   box-shadow: 0 8rpx 20rpx rgba(150, 80, 110, 0.1);
 }
 .date-nav.disabled { color: #d0d3d6; }
 .date-center { display: flex; flex-direction: column; align-items: center; }
-.date-label { font-size: 34rpx; font-weight: 600; }
+.date-label { font-size: 36rpx; font-weight: 600; letter-spacing: 0.5rpx; }
 .date-full { font-size: 22rpx; color: #6b7280; margin-top: 4rpx; }
 .subbar { display: flex; justify-content: space-between; align-items: center; padding: 0 8rpx 16rpx; }
 
 .progress-card {
   display: flex; align-items: center;
   padding: 32rpx 36rpx; margin-bottom: 24rpx;
-  background: #ffffff; border-radius: 20rpx;
-  box-shadow: 0 2rpx 12rpx rgba(31,35,41,0.04);
+  background: linear-gradient(135deg, #FFF4F8 0%, #ffffff 62%);
+  border: 1rpx solid rgba(236, 91, 140, 0.06);
+  border-radius: var(--r-lg, 24rpx);
+  box-shadow: var(--sh-2, 0 12rpx 32rpx rgba(150, 80, 110, 0.07));
 }
 .ring {
   width: 160rpx; height: 160rpx; border-radius: 50%;
@@ -40,14 +43,19 @@
   flex-shrink: 0;
 }
 .ring-inner {
+  /* 用 align-items:center 取代原来的 baseline + padding-top 补偿，数字不再视觉偏移 */
   width: 128rpx; height: 128rpx; border-radius: 50%;
-  background: #ffffff; display: flex; align-items: baseline; justify-content: center;
-  padding-top: 34rpx; box-sizing: border-box;
+  background: #ffffff; display: flex; align-items: center; justify-content: center;
+  box-sizing: border-box;
+  box-shadow: inset 0 2rpx 10rpx rgba(150, 80, 110, 0.06);
 }
-.ring-num { font-size: 56rpx; font-weight: 700; color: #EC5B8C; line-height: 1; }
-.ring-unit { font-size: 24rpx; color: #EC5B8C; margin-left: 2rpx; }
+.ring-num {
+  font-size: 56rpx; font-weight: 700; color: #EC5B8C; line-height: 1;
+  font-feature-settings: "tnum"; font-variant-numeric: tabular-nums;
+}
+.ring-unit { font-size: 24rpx; color: #EC5B8C; margin-left: 2rpx; line-height: 1; }
 .progress-info { margin-left: 36rpx; display: flex; flex-direction: column; }
-.prog-title { font-size: 34rpx; font-weight: 700; }
+.prog-title { font-size: 36rpx; font-weight: 700; }
 .prog-sub { font-size: 26rpx; color: #646a73; margin-top: 10rpx; }
 .prog-tags { margin-top: 14rpx; }
 .prog-tags .tag { margin-right: 10rpx; }
@@ -60,14 +68,17 @@
   font-size: 36rpx; font-weight: 600; flex-shrink: 0;
 }
 .group-head-info { margin-left: 20rpx; display: flex; flex-direction: column; flex: 1; }
-.group-name { font-size: 32rpx; font-weight: 600; }
+.group-name {
+  font-size: 32rpx; font-weight: 600;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 .group-stat { display: flex; flex-direction: column; align-items: flex-end; }
 .group-stat .text-bold { font-size: 30rpx; }
 
 .item-list { margin-top: 8rpx; }
 .item-row {
   display: flex; align-items: center; min-height: 112rpx;
-  padding: 18rpx 12rpx; border-radius: 14rpx;
+  padding: 18rpx 12rpx; border-radius: var(--r-md, 16rpx);
   border-bottom: 2rpx solid #f2f3f5;
   transition: background 0.15s;
 }
@@ -86,7 +97,12 @@
 .item-name-wrap { display: flex; align-items: center; flex-wrap: wrap; }
 .item-name { font-size: 30rpx; font-weight: 500; margin-right: 12rpx; }
 .item-row.done .item-name { color: #6b7280; }
-.item-value { font-size: 28rpx; color: #EC5B8C; font-weight: 600; margin-left: 12rpx; white-space: nowrap; }
+.item-value {
+  flex-shrink: 0; max-width: 240rpx; margin-left: 12rpx;
+  font-size: 28rpx; color: #EC5B8C; font-weight: 600; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
+  font-feature-settings: "tnum"; font-variant-numeric: tabular-nums;
+}
 .item-meta { margin-top: 8rpx; display: flex; flex-wrap: wrap; }
 .item-arrow { color: #c0c4c9; font-size: 40rpx; margin-left: 12rpx; }
 .quick-row { margin-top: 20rpx; }
@@ -129,26 +145,10 @@
   font-size: 28rpx; color: #646a73;
 }
 .form-field { margin-top: 28rpx; }
-.field-label { display: block; font-size: 27rpx; color: #6c5a64; margin-bottom: 14rpx; font-weight: 500; }
 
-/* 单行输入框：加高，方便点按 */
-.field-input {
-  width: 100%; box-sizing: border-box;
-  min-height: 96rpx; padding: 24rpx 26rpx;
-  background: #FDF6F9; border: 2rpx solid #F3E7EE; border-radius: 16rpx;
-  font-size: 30rpx; line-height: 1.5; color: #33262E;
-}
-
-/* 多行文本域：固定大高度，内容超出可在框内滚动 */
-.field-textarea {
-  display: block;
-  width: 100%; box-sizing: border-box;
-  height: 230rpx; min-height: 230rpx; padding: 24rpx 26rpx;
-  background: #FDF6F9; border: 2rpx solid #F3E7EE; border-radius: 16rpx;
-  font-size: 30rpx; line-height: 1.6; color: #33262E;
-}
+/* 输入框基础样式统一在 app.wxss，这里只声明首页特有的高度差异 */
+.field-textarea { height: 230rpx; min-height: 230rpx; }
 .field-textarea-sm { height: 150rpx; min-height: 150rpx; }
-.field-placeholder { color: #bca9b4; font-size: 28rpx; }
 .field-count {
   display: block; text-align: right;
   margin-top: 8rpx; font-size: 22rpx; color: #6b7280;
@@ -240,14 +240,8 @@
 }
 .pd-btn-hover { opacity: 0.85; transform: translateY(1rpx); }
 
-/* ========== 首页视觉增强 ========== */
-.date-label { font-size: 36rpx; letter-spacing: 0.5rpx; }
-.progress-card {
-  background: linear-gradient(135deg, #FFF4F8 0%, #ffffff 62%);
-  border: 1rpx solid rgba(236, 91, 140, 0.06);
-}
+/* ========== 首页视觉增强（只保留真正新增的规则，重复声明已并入上方同名类） ========== */
 .ring { box-shadow: 0 10rpx 26rpx rgba(236, 91, 140, 0.18); }
-.ring-inner { box-shadow: inset 0 2rpx 10rpx rgba(150, 80, 110, 0.06); }
 .group-card { position: relative; overflow: hidden; }
 .group-card::before {
   content: "";
@@ -257,6 +251,10 @@
   background: linear-gradient(180deg, #FF8FB4, #FFC2D8);
 }
 .avatar { box-shadow: 0 6rpx 16rpx rgba(150, 80, 110, 0.1); }
-.item-row { border-radius: 16rpx; }
 .check.checked { box-shadow: 0 6rpx 14rpx rgba(236, 91, 140, 0.24); }
 .custom-divider { border-top: 2rpx dashed #F0E3EA; }
+
+/* ========== 骨架屏 ========== */
+.sk-card { display: flex; align-items: center; }
+.sk-ring { width: 140rpx; height: 140rpx; flex-shrink: 0; }
+.sk-lines { flex: 1; display: flex; flex-direction: column; margin-left: 32rpx; }

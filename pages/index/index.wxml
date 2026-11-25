@@ -41,8 +41,21 @@
     </view>
   </view>
 
-  <!-- 加载态 -->
-  <view class="empty" wx:if="{{loading}}">正在加载…</view>
+  <!-- 加载态：骨架屏占位，尺寸与真实卡片一致，数据到位时不跳动 -->
+  <block wx:if="{{loading}}">
+    <view class="card sk-card">
+      <view class="sk-circle sk-ring"></view>
+      <view class="sk-lines">
+        <view class="sk-line sk-w70"></view>
+        <view class="sk-line sk-w55"></view>
+      </view>
+    </view>
+    <view class="card" wx:for="{{[1, 2]}}" wx:key="*this">
+      <view class="sk-line sk-w40"></view>
+      <view class="sk-line sk-w100"></view>
+      <view class="sk-line sk-w85"></view>
+    </view>
+  </block>
 
   <!-- 成员分区 -->
   <block wx:for="{{groups}}" wx:for-item="group" wx:key="id">

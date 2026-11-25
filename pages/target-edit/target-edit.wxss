@@ -5,15 +5,7 @@
 .target-dates { margin-top: 14rpx; }
 
 .form-field { margin-top: 28rpx; }
-.field-label { display: block; font-size: 26rpx; color: #646a73; margin-bottom: 14rpx; }
-.field-input {
-  width: 100%; box-sizing: border-box; padding: 20rpx 24rpx;
-  background: #f7f8fa; border-radius: 12rpx; font-size: 30rpx;
-}
-.field-textarea {
-  width: 100%; box-sizing: border-box; padding: 20rpx 24rpx; min-height: 160rpx;
-  background: #f7f8fa; border-radius: 12rpx; font-size: 30rpx;
-}
+/* 输入框 / 文本域 / 标签样式统一由 app.wxss 提供 */
 .chip-row { display: flex; flex-wrap: wrap; }
 .chip {
   padding: 14rpx 24rpx; margin: 0 14rpx 14rpx 0; border-radius: 12rpx;
