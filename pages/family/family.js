@@ -158,10 +158,11 @@ Page({
     return { title: '果果家庭打卡 · 一起坚持每一天', path: '/pages/family/family' };
   },
 
-  // 点邀请卡片后「接受邀请」：用内存里的 familyId 直接申请，不展示给用户也不写入链接
+  // 点邀请卡片后「接受邀请」：token 即创建人授权，直接加入为成员，不需要再审批。
+  // token 从 onLoad 的 options 保留在内存，绝不写回分享参数或本地存储。
   async acceptInvite() {
-    const inv = this.data.incomingInvite;
-    if (!inv || !inv.familyId) return;
+    const token = this._incomingToken;
+    if (!token) return;
     if (this.data.busy) return;
     this.setData({ busy: true });
     try {
@@ -169,14 +170,16 @@ Page({
       const state = await cloudstore.refreshMembership();
       this.setData({ loggedIn: !!state.loggedIn });
       if (!state.loggedIn) { this.goLoginHint(); return; }
-      const identity = family.getIdentity();
-      if (identity && identity.status === 'active') {
-        toast(identity.familyId === inv.familyId ? '你已经在这个家庭里了' : '当前账号已加入其他家庭，不能再申请加入');
-        return;
+
+      const joined = await family.joinByInvite(token, this.data.joinRole, this.data.joinName.trim() || '家人');
+      // 立刻用真实身份接管本机：否则首页会读不到 active 身份而回落成默认「妈妈」
+      if (joined && joined.status === 'active') {
+        try { await cloudstore.adoptJoinedFamily(); } catch (e) { /* 同步失败不影响已写入的成员身份 */ }
       }
-      await family.requestJoin(inv.familyId, this.data.joinRole, this.data.joinName.trim() || '家人');
-      toast('已申请，等待创建人同意', 'success');
-      this.setData({ incomingInvite: null });
+      const mk = (joined && joined.identity && joined.identity.memberKey) || this.data.joinRole;
+      toast('已加入家庭，你的身份：' + mk, 'success');
+      this.setData({ incomingInvite: null, incomingError: '' });
+      this._inviteResolved = false;
       await this.refresh();
     } catch (err) {
       toast((err && err.message) || '加入失败');
@@ -249,8 +252,12 @@ Page({
     if (!code) { toast('请输入家庭码'); return; }
     this.setData({ busy: true });
     try {
-      await family.requestJoin(code, this.data.joinRole, this.data.joinName.trim() || '家人');
-      toast('已申请，等待创建人同意', 'success');
+      const joined = await family.requestJoin(code, this.data.joinRole, this.data.joinName.trim() || '家人');
+      if (joined && joined.status === 'active') {
+        try { await cloudstore.adoptJoinedFamily(); } catch (e) { /* 同步失败不影响成员身份 */ }
+      }
+      const mk = (joined && joined.identity && joined.identity.memberKey) || this.data.joinRole;
+      toast('已加入家庭，你的身份：' + mk, 'success');
       await this.refresh();
     } catch (e) {
       toast((e && e.message) || '加入失败');
@@ -312,7 +319,7 @@ Page({
     if (!token) return;
     wx.showModal({
       title: '撤销家庭邀请',
-      content: '撤销后该邀请链接立即失效，对方将无法通过它申请加入。',
+      content: '撤销后该邀请链接立即失效，对方将无法通过它加入家庭。',
       success: async (res) => {
         if (!res.confirm) return;
         try {
@@ -469,7 +476,7 @@ Page({
   doLeaveFamily() {
     wx.showModal({
       title: '退出家庭',
-      content: '退出后本机家庭数据会被清空；再次加入需要新的邀请并重新审批。确定退出吗？',
+      content: '退出后本机家庭数据会被清空；再次加入需要创建人重新发邀请。确定退出吗？',
       confirmText: '退出', confirmColor: '#d93026',
       success: async (res) => {
         if (!res.confirm) return;

@@ -1,8 +1,10 @@
 // 家庭身份与成员管理：直连云端表（无 RPC 函数，本平台未建且 DEFINER 函数被拦）。
 // - gg_families：RLS 仅成员可查，创建由 created_by=auth.uid() 放行
-// - gg_members ：无 RLS，靠 gg_members_guard 触发器收紧写入（首成员 active/admin，其余 pending/parent）
+// - gg_members ：无 RLS，靠 gg_members_guard 触发器收紧写入
+//   （首成员 active/admin；凡持有凭证——邀请 token 或家庭码——的加入者一律直接 active/member）
 // - 家庭码 = family_id（fam_xxx），外人查不到 families 表，用外键自动校验码是否存在，不泄露家庭信息
-// - 成员邀请链接：只分享 inv_xxx token（不含家庭码），7 天有效、可撤销、需 admin 批准，和访客只读 token 完全分开
+// - 成员邀请链接：只分享 inv_xxx token（不含家庭码），7 天有效、可撤销；token 即创建人授权，接受即加入，
+//   不需要再批准。手动输家庭码属于申请，仍要 admin 批准。两种入口完全分开，和访客只读 token 也分开
 // - 访客快照：token 随机不可猜 + 7 天有效 + 可撤销；表无 RLS 属已知风险（见设计文档第 14 节）
 const { getCloud, ensureSession } = require('./cloud.js');
 
@@ -102,7 +104,7 @@ async function refreshIdentity() {
   return id;
 }
 
-// 查我的成员记录（含 pending），用于家庭页展示申请状态
+// 查我的成员记录（含历史 pending），仅用于兼容旧数据的状态展示；新加入一律 active
 async function getMyMembership() {
   const session = await ensureSession();
   const uid = uidOf(session);
@@ -123,8 +125,6 @@ async function createFamily(name, memberKey, displayName) {
   if (!uid) throw new Error('未登录，暂不能创建家庭（请用微信扫码打开小程序）');
   const identity = await refreshIdentity();
   if (identity && identity.status === 'active') throw new Error('当前账号已加入家庭，不能重复创建');
-  const membership = await getMyMembership();
-  if (membership && membership.status === 'pending') throw new Error('当前账号有待审批的家庭申请，暂不能创建家庭');
   const cloud = getCloud();
   const familyId = await generateFamilyId();
   const mk = memberKey || 'mama';
@@ -146,36 +146,94 @@ async function createFamily(name, memberKey, displayName) {
   return id;
 }
 
-// 申请加入家庭：以家庭码(fam_xxx)直插 pending 成员，触发器压成 pending/parent；外键校验家庭存在
+// 通过家庭码加入：家庭码 fam_xxx 由创建人发出，凭证即授权，直接成为 active/member，无需审批。
+// 与 joinByInvite 的区别只是入口不同（手动输入 vs 点邀请卡片），落库语义完全一致。
 async function requestJoin(familyCode, memberKey, name) {
   const session = await ensureSession();
   const uid = uidOf(session);
   if (!uid) throw new Error('未登录，暂不能加入家庭（请用微信扫码打开小程序）');
   const fid = String(familyCode || '').trim().toLowerCase();
   if (!/^fam_[0-9a-z]+$/.test(fid)) throw new Error('家庭码格式不对，应为 fam 开头');
+
   const identity = await refreshIdentity();
   if (identity && identity.status === 'active') {
-    throw new Error(identity.familyId === fid ? '你已经加入这个家庭' : '当前账号已加入其他家庭，不能再申请加入');
-  }
-  const membership = await getMyMembership();
-  if (membership && membership.status === 'pending') {
-    throw new Error(membership.family_id === fid ? '你已申请过这个家庭，等待创建人批准' : '当前账号已有待审批的家庭申请');
+    throw new Error(identity.familyId === fid ? '你已经加入这个家庭' : '当前账号已加入其他家庭，不能再加入');
   }
   const cloud = getCloud();
-  const { data, error } = await cloud.database.from('gg_members').insert({
-    family_id: fid, uid,
-    member_key: memberKey || 'papa',
-    name: name || '家人',
-    role: ROLES.MEMBER, status: 'pending',
-  }).select('family_id, uid, status');
-  if (error) throw new Error('家庭码无效，或你已申请过该家庭');
-  if (!Array.isArray(data) || !data.some(row => row.uid === uid && row.family_id === fid && row.status === 'pending')) {
-    throw new Error('加入申请未能保存，请重试');
+  const mk = String(memberKey || '').trim() || 'papa';
+  const displayName = String(name || '').trim().slice(0, 12) || '家人';
+
+  // 身份查重：与 joinByInvite 一致，避免两个 mama 串数据
+  const { data: rows, error: e0 } = await cloud.database.from('gg_members')
+    .select('member_key, uid, status').eq('family_id', fid);
+  if (e0) throw e0;
+  if (Array.isArray(rows) && rows.some(r => r.member_key === mk && r.status === 'active')) {
+    throw new Error('身份「' + mk + '」在这个家庭里已有人使用，请换一个身份再加入');
   }
-  return { familyId: fid, status: 'pending' };
+
+  const { data, error } = await cloud.database.from('gg_members').insert({
+    family_id: fid, uid, member_key: mk,
+    name: displayName, role: ROLES.MEMBER, status: 'active',
+    invited_by: null,
+  }).select('family_id, uid, status, role, member_key, invited_by');
+  if (error) throw new Error('家庭码无效，或你已加入该家庭');
+  const row = Array.isArray(data) ? data[0] : null;
+  if (!row || row.status !== 'active') throw new Error('加入未生效，请确认家庭码是否正确');
+
+  const id = { familyId: fid, memberKey: mk, role: ROLES.MEMBER, name: displayName, status: 'active', uid };
+  saveIdentity(id);
+  return { familyId: fid, status: 'active', identity: id };
 }
 
-// 列出本家庭成员（含 pending），供 admin 审批
+// 通过邀请链接加入：token 即创建人授权，直接成为 active/member，无需二次批准。
+// 与 requestJoin（手动家庭码）是两条独立入口，落库语义一致，不要混用。
+async function joinByInvite(token, memberKey, name) {
+  const invite = await resolveInvite(token);
+  if (!invite.valid) throw new Error(invite.reason || '邀请链接无效');
+
+  const session = await ensureSession();
+  const uid = uidOf(session);
+  if (!uid) throw new Error('未登录，暂不能加入家庭（请用微信扫码打开小程序）');
+
+  const identity = await refreshIdentity();
+  if (identity && identity.status === 'active') {
+    if (identity.familyId === invite.familyId) return { familyId: invite.familyId, status: 'active', identity };
+    throw new Error('当前账号已加入其他家庭，不能再加入');
+  }
+  const cloud = getCloud();
+  const mk = String(memberKey || '').trim() || 'papa';
+  const displayName = String(name || '').trim().slice(0, 12) || '家人';
+
+  // 身份查重：同一家庭里 member_key 决定数据归属与代签对象，重复会串数据
+  const { data: rows, error: e0 } = await cloud.database.from('gg_members')
+    .select('member_key, uid, status').eq('family_id', invite.familyId);
+  if (e0) throw e0;
+  if (Array.isArray(rows) && rows.some(r => r.member_key === mk && r.status === 'active')) {
+    throw new Error('身份「' + mk + '」在这个家庭里已有人使用，请换一个身份再加入');
+  }
+
+  // invited_by 临时承载 token：触发器校验有效后会把这列改写成真正的邀请人 uid，
+  // 并强制 status=active / role=member（即使这里传 admin 也压成 member，防越权）
+  const { data, error } = await cloud.database.from('gg_members').insert({
+    family_id: invite.familyId, uid, member_key: mk,
+    name: displayName, role: ROLES.MEMBER, status: 'active',
+    invited_by: token,
+  }).select('family_id, uid, status, role, member_key, invited_by');
+  if (error) throw new Error('加入失败：' + (error.message || '请重试'));
+  const row = Array.isArray(data) ? data[0] : null;
+  if (!row || row.status !== 'active') {
+    throw new Error('加入未生效，可能邀请已失效，请让创建人重新生成邀请');
+  }
+
+  const id = {
+    familyId: invite.familyId, memberKey: mk, role: ROLES.MEMBER,
+    name: displayName, status: 'active', uid,
+  };
+  saveIdentity(id);
+  return { familyId: invite.familyId, status: 'active', identity: id };
+}
+
+// 列出本家庭成员，供家庭管理与显示
 async function listMembers() {
   const id = getIdentity();
   if (!id || !id.familyId) return [];
@@ -187,7 +245,7 @@ async function listMembers() {
   return Array.isArray(data) ? data : [];
 }
 
-// 批准成员：触发器校验「本家庭 active admin」才允许改 status
+// 批准成员：仅用于清理历史遗留的 pending 行（新加入已免审批）；触发器要求本家庭 active admin
 async function approveMember(targetUid) {
   const id = getIdentity();
   if (!id || id.role !== 'admin') throw new Error('只有管理员能批准成员');
@@ -432,7 +490,7 @@ async function leaveFamily() {
 
 module.exports = {
   getIdentity, saveIdentity, clearIdentity, refreshIdentity, getMyMembership,
-  createFamily, requestJoin, listMembers, approveMember,
+  createFamily, requestJoin, joinByInvite, listMembers, approveMember,
   createInviteLink, resolveInvite, revokeInviteLink, getCachedInvite,
   createVisitorLink, revokeVisitorLink, getVisitorSnapshot, randomCode, generateFamilyId,
   ROLES, ROLE_LABELS, normalizeRole, isAdmin,

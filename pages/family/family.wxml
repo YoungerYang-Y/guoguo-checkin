@@ -9,7 +9,7 @@
   <view class="card invite-card" wx:if="{{incomingInvite}}">
     <text class="section-title">家庭邀请</text>
     <text class="invite-desc">「{{incomingInvite.familyName}}」邀请你加入家庭打卡</text>
-    <text class="text-muted text-small">加入后可查看全家打卡数据，并帮家人代签。需创建人同意后生效。</text>
+    <text class="text-muted text-small">邀请由创建人发出，点接受即加入，无需再等批准。加入后可查看全家打卡数据并帮家人代签。</text>
     <view class="form-field">
       <text class="field-label">你的称谓</text>
       <input class="field-input {{fieldFocus ? 'is-focus' : ''}}" value="{{joinName}}" bindinput="onJoinName" placeholder="如：爸爸" maxlength="12" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
@@ -20,9 +20,9 @@
         <view wx:for="{{roleOptions}}" wx:key="key" class="chip {{joinRole === item.key ? 'active' : ''}}"
               data-key="{{item.key}}" hover-class="ui-hover" bindtap="pickJoinRole">{{item.label}}</view>
       </view>
-      <text class="hint-line">身份只用于区分打卡对象；权限角色（管理员/成员）由家庭管理员在成员列表里调整。</text>
+      <text class="hint-line">身份用于区分打卡对象，同一家庭不能重复；权限角色（管理员/成员）由家庭管理员在成员列表里调整。</text>
     </view>
-    <button class="btn btn-primary btn-block" style="margin-top:20rpx" loading="{{busy}}" bindtap="acceptInvite">接受邀请并申请加入</button>
+    <button class="btn btn-primary btn-block" style="margin-top:20rpx" loading="{{busy}}" bindtap="acceptInvite">接受邀请并加入</button>
   </view>
   <view class="card" wx:if="{{incomingError}}">
     <text class="text-small" style="color:#d93026">{{incomingError}}</text>
@@ -62,7 +62,7 @@
 
     <view class="card">
       <text class="section-title">手动输入家庭码加入</text>
-      <text class="text-muted text-small">若对方不方便发邀请卡片，可让他复制家庭码给你。申请后需创建人同意。</text>
+      <text class="text-muted text-small">若对方不方便发邀请卡片，可让他复制家庭码给你。输入家庭码选好身份即可直接加入。</text>
       <view class="form-field">
         <text class="field-label">家庭码</text>
         <input class="field-input {{fieldFocus ? 'is-focus' : ''}}" value="{{joinCode}}" bindinput="onJoinCode" placeholder="fam_xxxx" maxlength="40" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
@@ -77,8 +77,9 @@
           <view wx:for="{{roleOptions}}" wx:key="key" class="chip {{joinRole === item.key ? 'active' : ''}}"
                 data-key="{{item.key}}" hover-class="ui-hover" bindtap="pickJoinRole">{{item.label}}</view>
         </view>
+        <text class="hint-line">身份用于区分打卡对象，同一家庭不能重复。</text>
       </view>
-      <button class="btn btn-ghost btn-block" style="margin-top:20rpx" loading="{{busy}}" bindtap="doJoin">申请加入</button>
+      <button class="btn btn-ghost btn-block" style="margin-top:20rpx" loading="{{busy}}" bindtap="doJoin">加入家庭</button>
     </view>
 
     <view class="card" wx:if="{{errorMsg}}">
@@ -88,9 +89,9 @@
 
   <!-- 待批准 -->
   <view class="card" wx:if="{{status === 'pending'}}">
-    <text class="section-title">申请已提交</text>
+    <text class="section-title">历史申请待处理</text>
     <text class="text-muted text-small">你申请的家庭码：{{pendingFamilyId}}</text>
-    <text class="text-muted text-small" style="margin-top:16rpx">等待创建人同意后，下拉或重新进入本页面即可自动同步家庭数据。</text>
+    <text class="text-muted text-small" style="margin-top:16rpx">这是旧版本留下的待批准记录，请让创建人在成员列表处理，或联系管理后重新加入。</text>
     <button class="btn btn-ghost btn-block" style="margin-top:24rpx" bindtap="refresh">刷新状态</button>
   </view>
 
@@ -153,10 +154,10 @@
       </view>
     </view>
 
-    <!-- 成员邀请（管理员）：微信卡片直接转发，对方点开即可申请加入 -->
+    <!-- 成员邀请（管理员）：微信卡片直接转发，对方点开选身份即加入 -->
     <view class="card" wx:if="{{isAdmin}}">
       <text class="section-title">邀请家人加入</text>
-      <text class="text-muted text-small">点下面的分享按钮，直接转发到微信聊天；家人点开卡片就能申请加入，仍需你批准。邀请 7 天有效，重新生成会让旧邀请失效。</text>
+      <text class="text-muted text-small">点分享按钮转发到微信聊天；家人点开卡片选好身份、点接受就直接加入，无需你再批准。邀请 7 天有效，重新生成会让旧邀请失效。</text>
       <button wx:if="{{inviteToken}}" class="btn btn-primary btn-block" style="margin-top:20rpx"
               open-type="share" data-kind="invite">分享邀请卡片给家人</button>
       <view wx:else style="margin-top:20rpx">
@@ -190,7 +191,7 @@
 
     <view class="card leave-box">
       <text class="section-title">退出家庭</text>
-      <text class="text-muted text-small">退出后本机不再保留该家庭的打卡数据；再次加入需要新的邀请并重新审批。</text>
+      <text class="text-muted text-small">退出后本机不再保留该家庭的打卡数据；再次加入需要创建人重新发邀请卡片。</text>
       <button class="btn btn-danger btn-block" style="margin-top:20rpx" loading="{{busy}}" bindtap="doLeaveFamily">退出当前家庭</button>
     </view>
   </block>
