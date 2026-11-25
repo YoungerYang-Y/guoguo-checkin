@@ -1,18 +1,25 @@
 <view class="page">
   <view class="readonly-tip" wx:if="{{!canManage}}">当前为成员视角，仅管理员可修改排期、目标或清空数据</view>
-  <!-- 排期 -->
+  <!-- 排期：行式摘要 + 逐天弹层（避免 7 列小格的误触） -->
   <view class="card">
-    <text class="section-title">周内排期（必修/选修）</text>
-    <text class="text-muted text-small">点击星期切换；修改明日起生效，历史报表保持原口径</text>
-    <view class="sched-head">
-      <text class="sched-name-col">打卡项</text>
-      <text class="sched-day" wx:for="{{dows}}" wx:key="*this">{{item}}</text>
+    <view class="row-between" style="margin-bottom:8rpx">
+      <text class="section-title" style="margin:0">周内排期</text>
+      <text class="text-muted text-small">明日起生效</text>
     </view>
-    <view class="sched-row" wx:for="{{scheduleRows}}" wx:key="code">
-      <text class="sched-name-col">{{item.name}}</text>
-      <view wx:for="{{item.days}}" wx:for-item="day" wx:key="d" class="sched-cell {{day.on ? 'on' : ''}}"
-            data-code="{{item.code}}" data-d="{{day.d}}" hover-class="ui-hover" disabled="{{!canManage}}" bindtap="toggleRequired">
-        <text wx:if="{{day.on}}">✓</text>
+    <text class="text-muted text-small">点任意一行，逐天勾选必修日；历史报表保持原口径</text>
+    <view class="sched-list">
+      <view class="sched-item" wx:for="{{scheduleRows}}" wx:key="code"
+            hover-class="{{canManage ? 'ui-hover' : 'none'}}"
+            data-code="{{item.code}}" bindtap="openSchedule">
+        <view class="sched-item-main">
+          <text class="sched-item-name ellipsis">{{item.name}}</text>
+          <text class="sched-item-sum {{item.onCount ? '' : 'off'}}">{{item.summary}}</text>
+        </view>
+        <view class="sched-item-week">
+          <view wx:for="{{item.days}}" wx:for-item="day" wx:key="d"
+                class="sched-dot {{day.on ? 'on' : ''}}"></view>
+        </view>
+        <text class="sched-item-arrow" wx:if="{{canManage}}">›</text>
       </view>
     </view>
   </view>
@@ -33,7 +40,7 @@
   <view class="card">
     <view class="row-between">
       <text class="section-title" style="margin:0">自定义目标</text>
-      <text class="text-muted text-small" bindtap="goCustomTargets">管理 ›</text>
+      <text class="text-muted text-small" bindtap="goCustomTargets" hover-class="ui-hover">管理 ›</text>
     </view>
     <text class="text-muted text-small">每人最多 10 个进行中目标，可填达标标准</text>
   </view>
@@ -45,7 +52,7 @@
       <view class="member-avatar">{{item.name[0]}}</view>
       <view class="member-info">
         <text class="text-bold">{{item.name}}</text>
-        <text class="text-muted text-small">{{item.role === 'admin' ? '管理员' : (item.role === 'child' ? '孩子' : '成员')}}</text>
+        <text class="text-muted text-small">{{item.roleLabel}}</text>
       </view>
       <button class="btn" size="mini" data-id="{{item.id}}" data-name="{{item.name}}" disabled="{{!canManage}}" bindtap="editName">改名</button>
     </view>
@@ -75,11 +82,26 @@
   <button class="btn btn-danger btn-block" disabled="{{!canManage}}" bindtap="resetData">清空所有数据</button>
 </view>
 
+<!-- 排期弹层：一天一行，每行 96rpx，点哪一天都不会误触邻居 -->
+<view class="mask" wx:if="{{schedCode}}" bindtap="closeSchedule" hover-class="ui-hover"></view>
+<view class="sheet" wx:if="{{schedCode}}">
+  <text class="sheet-title">{{schedName}}</text>
+  <text class="text-muted text-small">勾选的日期当天需要完成；取消勾选即改为选修</text>
+  <view class="sched-day-list">
+    <view class="sched-day-row" wx:for="{{schedDays}}" wx:key="d"
+          hover-class="ui-hover" data-d="{{item.d}}" bindtap="toggleSchedDay">
+      <text class="sched-day-label">{{item.label}}</text>
+      <view class="sched-switch {{item.on ? 'on' : ''}}"><view class="sched-knob"></view></view>
+    </view>
+  </view>
+  <button class="btn btn-primary btn-block" style="margin-top:32rpx" bindtap="closeSchedule">完成</button>
+</view>
+
 <!-- 改名弹层 -->
-<view class="mask" wx:if="{{editNameId}}" bindtap="cancelName"></view>
+<view class="mask" wx:if="{{editNameId}}" bindtap="cancelName" hover-class="ui-hover"></view>
 <view class="sheet" wx:if="{{editNameId}}">
   <text class="sheet-title">修改昵称</text>
-  <input class="field-input" value="{{editNameValue}}" bindinput="onNameInput" placeholder="输入新昵称" />
+  <input class="field-input {{fieldFocus ? 'is-focus' : ''}}" value="{{editNameValue}}" bindinput="onNameInput" placeholder="输入新昵称" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
   <view class="row" style="margin-top:32rpx">
     <button class="btn" style="flex:1;margin-right:16rpx" bindtap="cancelName">取消</button>
     <button class="btn btn-primary" style="flex:1" bindtap="saveName">保存</button>

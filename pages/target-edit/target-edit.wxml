@@ -26,7 +26,10 @@
         <button class="btn btn-danger" size="mini" style="margin-left:16rpx" data-id="{{item.target_id}}" bindtap="archiveTarget">归档</button>
       </view>
     </view>
-    <view class="empty" wx:if="{{list.length === 0}}">还没有自定义目标</view>
+    <view class="empty-block compact" wx:if="{{list.length === 0}}">
+      <view class="empty-mark"></view>
+      <text class="empty-title">还没有自定义目标</text>
+    </view>
     <button class="btn btn-ghost btn-block" bindtap="switchToCreate">新增自定义目标</button>
     <button class="btn btn-primary btn-block" style="margin-top:16rpx" bindtap="goIndex">返回打卡首页</button>
   </block>
@@ -39,14 +42,14 @@
 
       <view class="form-field">
         <text class="field-label">目标名称（不超过 10 字）</text>
-        <input class="field-input" value="{{form.name}}" data-field="name" bindinput="onFieldInput" placeholder="如：每天练琴15分钟" maxlength="10" />
+        <input class="field-input {{fieldFocus ? 'is-focus' : ''}}" value="{{form.name}}" data-field="name" bindinput="onFieldInput" placeholder="如：每天练琴15分钟" maxlength="10" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
       </view>
 
       <view class="form-field">
         <text class="field-label">所属成员（可多选，至少 1 人）</text>
         <view class="chip-row">
           <view wx:for="{{memberChips}}" wx:key="id" class="chip {{item.on ? 'active' : ''}}"
-                data-id="{{item.id}}" bindtap="selectMember">{{item.name}}</view>
+                data-id="{{item.id}}" bindtap="selectMember" hover-class="ui-hover">{{item.name}}</view>
         </view>
         <text class="text-small" style="display:block;margin-top:10rpx;color:#EC5B8C">已选 {{selectedMemberCount}} 人：{{selectedMemberLabel}}</text>
         <text class="text-muted text-small" style="display:block;margin-top:6rpx">同一目标会同时出现在这些成员的今日打卡页，各自独立打卡</text>
@@ -56,26 +59,26 @@
         <text class="field-label">周期类型</text>
         <view class="chip-row">
           <view wx:for="{{cycleTypes}}" wx:key="key" class="chip {{form.cycle_type === item.key ? 'active' : ''}}"
-                data-key="{{item.key}}" bindtap="selectCycle">{{item.label}}</view>
+                data-key="{{item.key}}" bindtap="selectCycle" hover-class="ui-hover">{{item.label}}</view>
         </view>
       </view>
 
       <view class="form-field" wx:if="{{showCountValue}}">
         <text class="field-label">每周/每月次数</text>
-        <input class="field-input" type="number" value="{{form.cycle_value}}" bindinput="onCountInput" placeholder="如：3" />
+        <input class="field-input {{fieldFocus ? 'is-focus' : ''}}" type="number" value="{{form.cycle_value}}" bindinput="onCountInput" placeholder="如：3" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
       </view>
 
       <view class="form-field">
         <text class="field-label">达标标准备注（不超过 50 字，必填）</text>
-        <textarea class="field-textarea" value="{{form.standard_note}}" data-field="standard_note" bindinput="onFieldInput"
-                  placeholder="如：完成 1 幅完整作品，不少于 30 分钟" maxlength="50" />
+        <textarea class="field-textarea {{fieldFocus ? 'is-focus' : ''}}" value="{{form.standard_note}}" data-field="standard_note" bindinput="onFieldInput"
+                  placeholder="如：完成 1 幅完整作品，不少于 30 分钟" maxlength="50" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
       </view>
 
       <view class="form-field">
         <text class="field-label">计入方式</text>
         <view class="chip-row">
-          <view class="chip {{form.count_mode === 0 ? 'active' : ''}}" data-v="0" bindtap="selectCountMode">计入选修</view>
-          <view class="chip {{form.count_mode === 1 ? 'active' : ''}}" data-v="1" bindtap="selectCountMode">计入必修</view>
+          <view class="chip {{form.count_mode === 0 ? 'active' : ''}}" data-v="0" bindtap="selectCountMode" hover-class="ui-hover">计入选修</view>
+          <view class="chip {{form.count_mode === 1 ? 'active' : ''}}" data-v="1" bindtap="selectCountMode" hover-class="ui-hover">计入必修</view>
         </view>
       </view>
 

@@ -8,7 +8,7 @@
   <!-- 周期类型切换 -->
   <view class="type-tabs">
     <view wx:for="{{types}}" wx:key="key" class="type-tab {{type === item.key ? 'active' : ''}}"
-          data-key="{{item.key}}" bindtap="setType">{{item.label}}</view>
+          data-key="{{item.key}}" bindtap="setType" hover-class="ui-hover">{{item.label}}</view>
   </view>
 
   <!-- 周期翻页（两个视图共用同一周期） -->
@@ -18,7 +18,7 @@
     <text class="nav-btn {{canNext ? '' : 'disabled'}}" hover-class="ui-hover" bindtap="nextPeriod">›</text>
   </view>
 
-  <view class="empty" wx:if="{{loading}}">正在生成报表…</view>
+  <view class="loading-block" wx:if="{{loading}}">正在生成报表…</view>
 
   <!-- ===== 报表视图 ===== -->
   <block wx:if="{{!loading && view === 'report' && report}}">
@@ -40,7 +40,7 @@
     <view class="card">
       <view class="row-between">
         <text class="section-title" style="margin:0">三人进步空间指数</text>
-        <text class="text-muted text-small" data-view="compare" bindtap="switchView">查看对比 ›</text>
+        <text class="text-muted text-small" data-view="compare" bindtap="switchView" hover-class="ui-hover">查看对比 ›</text>
       </view>
       <view class="member-card" wx:for="{{memberCards}}" wx:key="id">
         <view class="mem-rank">{{item.id === 'guoguo' ? '果' : (item.id === 'papa' ? '爸' : '妈')}}</view>

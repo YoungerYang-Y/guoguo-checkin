@@ -12,7 +12,7 @@
     <text class="text-muted text-small">加入后可查看全家打卡数据，并帮家人代签。需创建人同意后生效。</text>
     <view class="form-field">
       <text class="field-label">你的称谓</text>
-      <input class="field-input" value="{{joinName}}" bindinput="onJoinName" placeholder="如：爸爸" maxlength="12" />
+      <input class="field-input {{fieldFocus ? 'is-focus' : ''}}" value="{{joinName}}" bindinput="onJoinName" placeholder="如：爸爸" maxlength="12" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
     </view>
     <view class="form-field">
       <text class="field-label">你的身份</text>
@@ -43,11 +43,11 @@
       <text class="text-muted text-small">你是第一个成员，将成为管理员，可批准成员、生成邀请与访客链接。</text>
       <view class="form-field">
         <text class="field-label">家庭名称</text>
-        <input class="field-input" value="{{createName}}" bindinput="onCreateName" placeholder="果果家庭" maxlength="20" />
+        <input class="field-input {{fieldFocus ? 'is-focus' : ''}}" value="{{createName}}" bindinput="onCreateName" placeholder="果果家庭" maxlength="20" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
       </view>
       <view class="form-field">
         <text class="field-label">我的显示名</text>
-        <input class="field-input" value="{{createDisplayName}}" bindinput="onCreateDisplayName" placeholder="如：妈妈" maxlength="12" />
+        <input class="field-input {{fieldFocus ? 'is-focus' : ''}}" value="{{createDisplayName}}" bindinput="onCreateDisplayName" placeholder="如：妈妈" maxlength="12" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
       </view>
       <view class="form-field">
         <text class="field-label">我的身份</text>
@@ -65,11 +65,11 @@
       <text class="text-muted text-small">若对方不方便发邀请卡片，可让他复制家庭码给你。申请后需创建人同意。</text>
       <view class="form-field">
         <text class="field-label">家庭码</text>
-        <input class="field-input" value="{{joinCode}}" bindinput="onJoinCode" placeholder="fam_xxxx" maxlength="40" />
+        <input class="field-input {{fieldFocus ? 'is-focus' : ''}}" value="{{joinCode}}" bindinput="onJoinCode" placeholder="fam_xxxx" maxlength="40" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
       </view>
       <view class="form-field">
         <text class="field-label">我的显示名</text>
-        <input class="field-input" value="{{joinName}}" bindinput="onJoinName" placeholder="如：爸爸" maxlength="12" />
+        <input class="field-input {{fieldFocus ? 'is-focus' : ''}}" value="{{joinName}}" bindinput="onJoinName" placeholder="如：爸爸" maxlength="12" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
       </view>
       <view class="form-field">
         <text class="field-label">我的身份</text>

@@ -15,7 +15,7 @@
     <view class="sync-head">
       <view class="sync-dot {{syncState.dotClass}}"></view>
       <text class="sync-label">{{syncState.label || '云服务连接中…'}}</text>
-      <text class="sync-action" bindtap="onSyncNow">{{syncing ? '同步中' : '立即同步'}}</text>
+      <text class="sync-action" bindtap="onSyncNow" hover-class="ui-hover">{{syncing ? '同步中' : '立即同步'}}</text>
     </view>
     <text class="text-muted text-small sync-detail">{{syncState.detail || ''}}</text>
     <view class="sync-hint" wx:if="{{syncState.hint}}">{{syncState.hint}}</view>

@@ -1,6 +1,6 @@
 # 果果家庭打卡
 
-一家三口使用的原生微信小程序（WXML / WXSS / JavaScript），当前版本 1.5.0。包括日常打卡、日历、报表与对比、家庭管理、体重身高、培训费及古诗/单词复习。
+一家三口使用的原生微信小程序（WXML / WXSS / JavaScript），当前版本 1.6.0。包括日常打卡、日历、报表与对比、家庭管理、体重身高、培训费及古诗/单词复习。
 
 ## 运行与验证
 
@@ -42,9 +42,12 @@ npm test
 - 颜色、圆角、阴影、间距、字阶统一定义在 `app.wxss` 的 `page` 变量里；页面样式通过 `var(--*)` 引用，不再写裸色值。
 - 字阶走 2rpx 步进：20 角标 / 22–24 辅助 / 26–28–30 正文 / 32 小标题 / 36 标题 / 44–52–56 数字展示。不出现 18/21/23/25/27/34/38/46 这类临时值。
 - 圆角只有 4 档（12 / 16 / 24 / 32，胶囊 999）；阴影 3 档（`--sh-1/2/3`）；间距按 8 的倍数。
-- 图标按钮可点区域不小于 88rpx（约 44pt）。已知例外：设置页周排期格 64rpx，因为 7 列网格宽度受限。
-- `field-input` / `field-textarea` / `field-label` 只在 `app.wxss` 定义一次，页面不得重复定义。
+- 可点区域不小于 88rpx（约 44pt），按钮、胶囊、排期行、日期翻页全部适用，**已无例外**。
+- `field-input` / `field-textarea` / `field-label` / `chip` / `chip-row` / `empty-block` / `loading-block` / `btn*` 只在 `app.wxss` 定义一次，页面不得裸定义同名类（只允许 `.父级 .btn` 这类局部微调）。
 - 底部固定元素（sheet / undo-bar / page）统一叠加 `env(safe-area-inset-bottom)`，避免被手势条压住。
+- 交互三态：按下态给所有 `view`/`text` 上的 `bindtap` 挂 `hover-class="ui-hover"`；输入框聚焦由页面 `bindfocus/bindblur` 切 `.is-focus`（WXSS 无 `:focus`）；按钮禁用用 `.btn[disabled]`。
+- 空态统一用 `.empty-block`（`.empty-mark` + `.empty-title` + 可选 `.empty-desc`），加载态用 `.loading-block`（自带转圈）。不再直接写一行灰字。
+- 周排期用「一行一项 + 逐天弹层」：行高 96rpx 可整行点开，弹层里一天一行 96rpx 开关，取代原来 7 列 64rpx 小方格。
 
 ## 约定与验证边界
 

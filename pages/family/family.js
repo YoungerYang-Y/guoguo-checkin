@@ -9,6 +9,9 @@ const app = getApp();
 const toast = (title, icon) => { try { wx.showToast({ title, icon: icon || 'none' }); } catch (e) {} };
 
 Page({
+  // 输入聚焦反馈：WXSS 无 :focus，只能由事件切换 class
+  onFieldFocus() { if (!this.data.fieldFocus) this.setData({ fieldFocus: true }); },
+  onFieldBlur() { if (this.data.fieldFocus) this.setData({ fieldFocus: false }); },
   data: {
     status: 'loading',        // loading | noauth | none | pending | active
     identity: null,           // { familyId, memberKey, role, name }

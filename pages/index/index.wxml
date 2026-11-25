@@ -145,11 +145,11 @@
 <!-- 撤销提示条 -->
 <view class="undo-bar" wx:if="{{showUndo}}">
   <text>已撤销，可恢复</text>
-  <text class="undo-link" bindtap="undoRevoke">恢复</text>
+  <text class="undo-link" bindtap="undoRevoke" hover-class="ui-hover">恢复</text>
 </view>
 
 <!-- 代打卡二次确认 -->
-<view class="mask" wx:if="{{confirmMember}}" bindtap="cancelCheckin"></view>
+<view class="mask" wx:if="{{confirmMember}}" bindtap="cancelCheckin" hover-class="ui-hover"></view>
 <view class="confirm-card" wx:if="{{confirmMember}}">
   <text class="sheet-title">代打卡确认</text>
   <text class="confirm-text">正在为「{{confirmName}}」打卡</text>
@@ -160,7 +160,7 @@
 </view>
 
 <!-- 会员课节数弹层 -->
-<view class="mask" wx:if="{{sheet === 'session'}}" bindtap="closeSheet"></view>
+<view class="mask" wx:if="{{sheet === 'session'}}" bindtap="closeSheet" hover-class="ui-hover"></view>
 <view class="sheet" wx:if="{{sheet === 'session'}}">
   <text class="sheet-title">会员课 · 选择本次节数</text>
   <text class="text-muted text-small">必须选择 2 节或 3 节，每次需显式点选</text>
@@ -172,51 +172,51 @@
 </view>
 
 <!-- 单词数量弹层 -->
-<view class="mask" wx:if="{{sheet === 'word'}}" bindtap="closeSheet"></view>
+<view class="mask" wx:if="{{sheet === 'word'}}" bindtap="closeSheet" hover-class="ui-hover"></view>
 <view class="sheet" wx:if="{{sheet === 'word'}}">
   <text class="sheet-title">今日背诵单词数</text>
   <text class="text-muted text-small">达标线 20 个，小于 20 显示未达标</text>
   <input class="input-big" type="number" value="{{inputValue}}" bindinput="onWordInput" placeholder="20" />
   <view class="quick-nums">
-    <text class="chip" data-n="15" bindtap="setWord15">15</text>
-    <text class="chip" data-n="20" bindtap="setWord20">20</text>
-    <text class="chip" data-n="25" bindtap="setWord25">25</text>
-    <text class="chip" data-n="30" bindtap="setWord30">30</text>
+    <text class="chip" data-n="15" bindtap="setWord15" hover-class="ui-hover">15</text>
+    <text class="chip" data-n="20" bindtap="setWord20" hover-class="ui-hover">20</text>
+    <text class="chip" data-n="25" bindtap="setWord25" hover-class="ui-hover">25</text>
+    <text class="chip" data-n="30" bindtap="setWord30" hover-class="ui-hover">30</text>
   </view>
   <button class="btn btn-primary btn-block" bindtap="confirmWord">确认</button>
 </view>
 
 <!-- 数量/主题/备注弹层 -->
-<view class="mask" wx:if="{{sheet === 'metric'}}" bindtap="closeSheet"></view>
+<view class="mask" wx:if="{{sheet === 'metric'}}" bindtap="closeSheet" hover-class="ui-hover"></view>
 <view class="sheet" wx:if="{{sheet === 'metric'}}">
   <text class="sheet-title">{{sheetCtx.code === 'G-ART' ? '绘画课' : (sheetCtx.code === 'P-AI' ? 'AI 学习' : '运动打卡')}}</text>
   <view class="form-field" wx:if="{{sheetCtx.code === 'G-ART' || sheetCtx.code === 'P-AI'}}">
     <text class="field-label">主题（选填，可写多行）</text>
-    <textarea class="field-textarea field-textarea-sm" value="{{inputTheme}}" bindinput="onThemeInput"
+    <textarea class="field-textarea field-textarea-sm {{fieldFocus ? 'is-focus' : ''}}" value="{{inputTheme}}" bindinput="onThemeInput"
       placeholder="{{sheetCtx.code === 'G-ART' ? '如：今天画了什么、用了哪些颜色' : '如：今天用的提示词、学到的知识点'}}"
-      maxlength="100" cursor-spacing="24" show-confirm-bar="{{false}}" placeholder-class="field-placeholder" />
+      maxlength="100" cursor-spacing="24" show-confirm-bar="{{false}}" placeholder-class="field-placeholder" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
     <text class="field-count">{{inputThemeLen}}/100</text>
   </view>
   <view class="form-field" wx:if="{{sheetCtx.code === 'G-ART' || sheetCtx.code === 'G-SKATE' || sheetCtx.code === 'G-SWIM' || sheetCtx.code === 'P-SWIM'}}">
     <text class="field-label">{{sheetCtx.code === 'G-ART' ? '本次时长（分钟，选填）' : (sheetCtx.code === 'G-SKATE' || sheetCtx.code === 'P-SWIM' ? '时长 / 距离（选填）' : '距离或时长（选填）')}}</text>
-    <input class="field-input" type="number" value="{{inputValue}}" bindinput="onValueInput" placeholder="留空也可完成" />
+    <input class="field-input {{fieldFocus ? 'is-focus' : ''}}" type="number" value="{{inputValue}}" bindinput="onValueInput" placeholder="留空也可完成" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
   </view>
   <view class="form-field" wx:if="{{sheetCtx.code === 'G-SWIM' || sheetCtx.code === 'P-SWIM'}}">
     <text class="field-label">单位</text>
-    <input class="field-input" value="{{inputValue2}}" bindinput="onValue2Input" placeholder="米 / 分钟" />
+    <input class="field-input {{fieldFocus ? 'is-focus' : ''}}" value="{{inputValue2}}" bindinput="onValue2Input" placeholder="米 / 分钟" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
   </view>
   <view class="form-field">
     <text class="field-label">备注（选填，支持多行）</text>
-    <textarea class="field-textarea" value="{{inputNote}}" bindinput="onNoteInput"
+    <textarea class="field-textarea {{fieldFocus ? 'is-focus' : ''}}" value="{{inputNote}}" bindinput="onNoteInput"
       placeholder="可以换行记录：完成情况、遇到的问题、下次改进…"
-      maxlength="200" cursor-spacing="24" show-confirm-bar="{{false}}" placeholder-class="field-placeholder" />
+      maxlength="200" cursor-spacing="24" show-confirm-bar="{{false}}" placeholder-class="field-placeholder" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
     <text class="field-count">{{inputNoteLen}}/200</text>
   </view>
   <button class="btn btn-primary btn-block" bindtap="confirmMetric">确认完成</button>
 </view>
 
 <!-- 自定义目标标准确认弹层 -->
-<view class="mask" wx:if="{{sheet === 'custom'}}" bindtap="closeSheet"></view>
+<view class="mask" wx:if="{{sheet === 'custom'}}" bindtap="closeSheet" hover-class="ui-hover"></view>
 <view class="sheet" wx:if="{{sheet === 'custom'}}">
   <text class="sheet-title">{{sheetCtx.name || '自定义目标'}} · 达标标准</text>
   <view class="standard-card">
@@ -225,16 +225,16 @@
   </view>
   <view class="form-field">
     <text class="field-label">备注（选填，支持多行）</text>
-    <textarea class="field-textarea" value="{{inputNote}}" bindinput="onNoteInput"
+    <textarea class="field-textarea {{fieldFocus ? 'is-focus' : ''}}" value="{{inputNote}}" bindinput="onNoteInput"
       placeholder="本次完成情况，可以写多行"
-      maxlength="200" cursor-spacing="24" show-confirm-bar="{{false}}" placeholder-class="field-placeholder" />
+      maxlength="200" cursor-spacing="24" show-confirm-bar="{{false}}" placeholder-class="field-placeholder" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
     <text class="field-count">{{inputNoteLen}}/200</text>
   </view>
   <button class="btn btn-primary btn-block" bindtap="confirmCustom">按标准完成</button>
 </view>
 
 <!-- 用户隐私保护指引 · 首次使用同意 -->
-<view class="mask" wx:if="{{showPrivacy}}" bindtap="laterPrivacy"></view>
+<view class="mask" wx:if="{{showPrivacy}}" bindtap="laterPrivacy" hover-class="ui-hover"></view>
 <view class="privacy-dialog" wx:if="{{showPrivacy}}">
   <view class="pd-head">
     <view class="pd-badge">隐私</view>

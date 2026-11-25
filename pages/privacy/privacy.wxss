@@ -5,7 +5,7 @@
   padding: 44rpx 34rpx 40rpx;
   margin-bottom: 24rpx;
   border-radius: 26rpx;
-  background: linear-gradient(135deg, #FF8FB4 0%, #EC5B8C 100%);
+  background: linear-gradient(135deg, var(--c-brand-light) 0%, var(--c-brand) 100%);
   box-shadow: 0 14rpx 32rpx rgba(236, 91, 140, 0.24);
   overflow: hidden;
   display: flex;
@@ -25,7 +25,7 @@
   margin-bottom: 20rpx;
   border-radius: 20rpx;
   background: rgba(255, 255, 255, 0.2);
-  color: #ffffff;
+  color: var(--c-surface);
   font-size: 22rpx;
   font-weight: 600;
   letter-spacing: 1rpx;
@@ -34,7 +34,7 @@
   display: block;
   font-size: 40rpx;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--c-surface);
   letter-spacing: 1rpx;
 }
 .ph-meta { display: block; margin-top: 12rpx; font-size: 24rpx; color: rgba(255, 255, 255, 0.82); }
@@ -43,7 +43,7 @@
   display: block;
   padding: 26rpx;
   background: #FFF5F9;
-  border-left: 6rpx solid #EC5B8C;
+  border-left: 6rpx solid var(--c-brand);
   border-radius: 0 14rpx 14rpx 0;
   font-size: 28rpx;
   line-height: 1.8;
@@ -57,19 +57,19 @@
   flex-shrink: 0;
   margin-right: 18rpx;
   border-radius: 14rpx;
-  background: #FFEAF2;
-  color: #EC5B8C;
+  background: var(--c-brand-soft);
+  color: var(--c-brand);
   font-size: 24rpx;
   font-weight: 700;
   display: flex; align-items: center; justify-content: center;
 }
-.ps-title { font-size: 30rpx; font-weight: 700; color: #33262E; letter-spacing: 0.5rpx; }
+.ps-title { font-size: 30rpx; font-weight: 700; color: var(--c-ink); letter-spacing: 0.5rpx; }
 
 .privacy-p {
   display: block;
   font-size: 28rpx;
   line-height: 1.85;
-  color: #4a5568;
+  color: var(--c-text-sub);
   margin-bottom: 18rpx;
 }
 .privacy-p:last-child { margin-bottom: 0; }
@@ -83,8 +83,8 @@
   font-size: 26rpx;
   font-weight: 500;
 }
-.status-pill.ok { background: #e3f8ef; color: #0b8a5f; }
-.status-pill.pending { background: #fff1e0; color: #d97706; }
+.status-pill.ok { background: #e3f8ef; color: var(--c-success); }
+.status-pill.pending { background: #fff1e0; color: var(--c-warn); }
 .status-dot { width: 14rpx; height: 14rpx; border-radius: 50%; margin-right: 12rpx; background: currentColor; }
 
 .pf-btn {
@@ -101,8 +101,8 @@
   transition: opacity 0.15s, transform 0.15s;
 }
 .pf-btn-primary {
-  background: linear-gradient(135deg, #FF8FB4 0%, #EC5B8C 100%);
-  color: #ffffff;
+  background: linear-gradient(135deg, var(--c-brand-light) 0%, var(--c-brand) 100%);
+  color: var(--c-surface);
   box-shadow: 0 10rpx 22rpx rgba(236, 91, 140, 0.26);
 }
 .pf-btn-ghost {
@@ -118,5 +118,5 @@
   margin-top: 32rpx;
   text-align: center;
   font-size: 24rpx;
-  color: #6b7280;
+  color: var(--c-muted);
 }

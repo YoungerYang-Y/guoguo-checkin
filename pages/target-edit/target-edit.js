@@ -12,6 +12,9 @@ const CYCLE_TYPES = [
 function toast(title) { try { wx.showToast({ title, icon: 'none' }); } catch (e) {} }
 
 Page({
+  // 输入聚焦反馈：WXSS 无 :focus，只能由事件切换 class
+  onFieldFocus() { if (!this.data.fieldFocus) this.setData({ fieldFocus: true }); },
+  onFieldBlur() { if (this.data.fieldFocus) this.setData({ fieldFocus: false }); },
   data: {
     mode: 'create',
     members: [],

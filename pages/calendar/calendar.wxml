@@ -1,16 +1,16 @@
 <view class="page">
   <view class="card">
     <view class="month-nav">
-      <text class="nav-btn" bindtap="prevMonth">‹</text>
+      <text class="nav-btn" bindtap="prevMonth" hover-class="ui-hover">‹</text>
       <text class="month-title">{{title}}</text>
-      <text class="nav-btn" bindtap="nextMonth">›</text>
+      <text class="nav-btn" bindtap="nextMonth" hover-class="ui-hover">›</text>
     </view>
     <view class="week-head">
       <text wx:for="{{['一','二','三','四','五','六','日']}}" wx:key="*this">{{item}}</text>
     </view>
     <view class="week-row" wx:for="{{weeks}}" wx:for-item="week" wx:key="key">
       <block wx:for="{{week.days}}" wx:for-item="day" wx:key="key">
-        <view wx:if="{{day.empty}}" class="day-cell empty"></view>
+        <view wx:if="{{day.empty}}" class="day-cell blank"></view>
         <view wx:else class="day-cell {{day.cls}} {{day.isToday ? 'today' : ''}} {{selected === day.date ? 'selected' : ''}}"
               data-date="{{day.date}}" hover-class="ui-hover" bindtap="selectDay">
           <text class="day-num">{{day.day}}</text>

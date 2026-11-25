@@ -1,15 +1,10 @@
 .target-title { font-size: 32rpx; font-weight: 600; margin-left: 12rpx; }
 .target-meta { margin-top: 12rpx; }
-.standard-card { padding: 20rpx; margin-top: 16rpx; background: #FFF3F9; border-radius: 12rpx; }
-.standard-text { display: block; margin-top: 8rpx; font-size: 28rpx; color: #5b3ea8; line-height: 1.5; }
+.standard-card { padding: 20rpx; margin-top: 16rpx; background: var(--c-accent-soft); border-radius: 12rpx; }
+.standard-text { display: block; margin-top: 8rpx; font-size: 28rpx; color: var(--c-accent); line-height: 1.5; }
 .target-dates { margin-top: 14rpx; }
 
 .form-field { margin-top: 28rpx; }
 /* 输入框 / 文本域 / 标签样式统一由 app.wxss 提供 */
-.chip-row { display: flex; flex-wrap: wrap; }
-.chip {
-  padding: 14rpx 24rpx; margin: 0 14rpx 14rpx 0; border-radius: 12rpx;
-  background: #f2f3f5; font-size: 26rpx; color: #646a73;
-}
-.chip.active { background: #FFEDF4; color: #EC5B8C; font-weight: 600; }
-.picker-val { color: #EC5B8C; font-size: 26rpx; padding: 12rpx 0; }
+/* 选择胶囊样式统一由 app.wxss 提供 */
+.picker-val { color: var(--c-brand); font-size: 26rpx; padding: 12rpx 0; }

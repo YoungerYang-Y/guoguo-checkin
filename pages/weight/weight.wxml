@@ -11,9 +11,9 @@
       <view class="mode-chip {{mode === 'cross' ? 'active' : ''}}" data-mode="cross" hover-class="ui-hover" bindtap="switchMode">跨年度</view>
     </view>
     <view class="year-nav" wx:if="{{mode === 'year'}}">
-      <text class="year-btn" bindtap="prevYear">‹</text>
+      <text class="year-btn" bindtap="prevYear" hover-class="ui-hover">‹</text>
       <text class="year-label">{{year}} 年</text>
-      <text class="year-btn" bindtap="nextYear">›</text>
+      <text class="year-btn" bindtap="nextYear" hover-class="ui-hover">›</text>
     </view>
 
     <view class="form-field">
@@ -31,15 +31,15 @@
     </view>
     <view class="form-field">
       <text class="field-label">体重（kg，可留空）</text>
-      <input class="field-input" type="digit" value="{{form.weight}}" bindinput="onWeightInput" placeholder="如 32.5" />
+      <input class="field-input {{fieldFocus ? 'is-focus' : ''}}" type="digit" value="{{form.weight}}" bindinput="onWeightInput" placeholder="如 32.5" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
     </view>
     <view class="form-field" wx:if="{{form.memberId === 'guoguo'}}">
       <text class="field-label">果果身高（cm）</text>
-      <input class="field-input" type="digit" value="{{form.height}}" bindinput="onHeightInput" placeholder="如 128.5" />
+      <input class="field-input {{fieldFocus ? 'is-focus' : ''}}" type="digit" value="{{form.height}}" bindinput="onHeightInput" placeholder="如 128.5" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
     </view>
     <view class="form-field">
       <text class="field-label">备注（选填）</text>
-      <input class="field-input" value="{{form.note}}" bindinput="onNoteInput" placeholder="如：体检数据" />
+      <input class="field-input {{fieldFocus ? 'is-focus' : ''}}" value="{{form.note}}" bindinput="onNoteInput" placeholder="如：体检数据" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
     </view>
     <button class="btn btn-primary btn-block" style="margin-top:28rpx" bindtap="save">保存记录</button>
     <text class="text-muted text-small" style="display:block;margin-top:14rpx">体重与身高至少填一项；果果可同时记录。同成员同月只保留一条，未填的一项沿用上次数值</text>
@@ -63,10 +63,14 @@
             style="left:{{item.left}};top:{{item.top}};width:{{item.width}};transform:{{item.rotate}};background:{{item.color}}"></view>
       <view class="dot" wx:for="{{chart.dots}}" wx:key="key"
             style="left:{{item.left}};top:{{item.top}};background:{{item.color}}"
-            data-label="{{item.label}}" data-value="{{item.value}}" bindtap="onDotTap"></view>
+            data-label="{{item.label}}" data-value="{{item.value}}" bindtap="onDotTap" hover-class="ui-hover"></view>
       <text class="x-label" wx:for="{{chart.xLabels}}" wx:key="key" style="left:{{item.left}}">{{item.text}}</text>
     </view>
-    <view class="empty" wx:else>{{metric === 'height' ? '还没有身高记录，选择果果并填写身高吧' : '还没有体重记录，先在上方记一笔吧'}}</view>
+    <view class="empty-block compact" wx:else>
+      <view class="empty-mark"></view>
+      <text class="empty-title">{{metric === 'height' ? '还没有身高记录' : '还没有体重记录'}}</text>
+      <text class="empty-desc">{{metric === 'height' ? '在上方选择果果并填写身高，就能看到生长曲线' : '在上方记一笔，曲线会自动连起来'}}</text>
+    </view>
   </view>
 
   <view class="card">
@@ -95,7 +99,10 @@
 
   <view class="card" wx:if="{{metric === 'height'}}">
     <text class="section-title">果果身高年度对比</text>
-    <view class="empty" wx:if="{{heightCompare.empty}}">还没有身高记录，无法做年度对比</view>
+    <view class="empty-block compact" wx:if="{{heightCompare.empty}}">
+      <view class="empty-mark"></view>
+      <text class="empty-title">还没有身高记录，无法做年度对比</text>
+    </view>
     <block wx:else>
       <view class="w-table">
         <view class="w-tr w-th">
@@ -125,14 +132,17 @@
 
   <view class="card">
     <text class="section-title">最近记录</text>
-    <view class="empty" wx:if="{{recent.length === 0}}">暂无记录</view>
+    <view class="empty-block compact" wx:if="{{recent.length === 0}}">
+      <view class="empty-mark"></view>
+      <text class="empty-title">暂无记录</text>
+    </view>
     <view class="rec-row" wx:for="{{recent}}" wx:key="id">
       <view class="col">
         <text class="text-bold">{{item.ym}} · {{item.memberName}}</text>
         <text class="text-muted text-small" wx:if="{{item.note}}">{{item.note}}</text>
       </view>
       <text class="rec-value">{{item.valueText}}</text>
-      <text class="rec-del" data-id="{{item.id}}" bindtap="removeWeight">删除</text>
+      <text class="rec-del" data-id="{{item.id}}" bindtap="removeWeight" hover-class="ui-hover">删除</text>
     </view>
   </view>
 

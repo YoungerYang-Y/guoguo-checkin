@@ -1,23 +1,23 @@
 .form-field { margin-top: 24rpx; }
 /* 输入框与标签样式统一由 app.wxss 提供，避免各页漂移 */
-.fam-code { font-size: 36rpx; font-weight: 700; color: #EC5B8C; letter-spacing: 1rpx; margin-top: 8rpx; word-break: break-all; }
-.member-row { display: flex; align-items: center; padding: 16rpx 0; border-bottom: 2rpx solid #f5f6f7; }
-.member-avatar { width: 64rpx; height: 64rpx; border-radius: 50%; background: #FFEDF4; color: #EC5B8C; display: flex; align-items: center; justify-content: center; font-size: 28rpx; font-weight: 600; flex-shrink: 0; }
+.fam-code { font-size: 36rpx; font-weight: 700; color: var(--c-brand); letter-spacing: 1rpx; margin-top: 8rpx; word-break: break-all; }
+.member-row { display: flex; align-items: center; padding: 16rpx 0; border-bottom: 2rpx solid var(--c-line-soft); }
+.member-avatar { width: 64rpx; height: 64rpx; border-radius: 50%; background: var(--c-brand-chip); color: var(--c-brand); display: flex; align-items: center; justify-content: center; font-size: 28rpx; font-weight: 600; flex-shrink: 0; }
 .member-info { display: flex; flex-direction: column; flex: 1; margin-left: 16rpx; }
 .approve-btn {
   min-height: 64rpx; padding: 0 26rpx;
   display: flex; align-items: center; justify-content: center;
-  background: #EC5B8C; color: #fff; border-radius: 10rpx; font-size: 26rpx;
+  background: var(--c-brand); color: var(--c-surface); border-radius: 10rpx; font-size: 26rpx;
 }
 .visitor-box { margin-top: 24rpx; padding: 20rpx; background: #faf7f9; border-radius: 14rpx; display: flex; flex-direction: column; }
 .visitor-link { display: block; margin: 12rpx 0; font-size: 26rpx; color: #8b5cf6; word-break: break-all; }
 
 /* 收到的家庭邀请卡片 */
-.invite-card { border-left: 8rpx solid #EC5B8C; }
+.invite-card { border-left: 8rpx solid var(--c-brand); }
 .invite-desc { display: block; font-size: 30rpx; font-weight: 600; color: #374151; margin: 12rpx 0 8rpx; }
 
 /* 邀请 / 访客链接的操作区 */
-.link-tools { margin-top: 20rpx; padding-top: 16rpx; border-top: 2rpx solid #f5f6f7; }
+.link-tools { margin-top: 20rpx; padding-top: 16rpx; border-top: 2rpx solid var(--c-line-soft); }
 .tool-row { display: flex; flex-wrap: wrap; gap: 12rpx; margin-top: 12rpx; }
 .btn-mini {
   flex: 1; min-width: 150rpx; min-height: 72rpx; padding: 8rpx 12rpx;
@@ -26,23 +26,23 @@
 }
 
 /* 家庭设置：名称 / 显示名 / 角色 / 退出 */
-.setting-row { display: flex; align-items: center; justify-content: space-between; padding: 14rpx 0; border-bottom: 2rpx solid #f5f6f7; }
-.setting-label { font-size: 26rpx; color: #6b7280; }
+.setting-row { display: flex; align-items: center; justify-content: space-between; padding: 14rpx 0; border-bottom: 2rpx solid var(--c-line-soft); }
+.setting-label { font-size: 26rpx; color: var(--c-muted); }
 .setting-value {
   max-width: 360rpx; font-size: 30rpx; color: #374151; font-weight: 600;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .inline-edit { display: flex; gap: 12rpx; align-items: center; margin-top: 14rpx; }
-.inline-input { flex: 1; min-width: 0; padding: 16rpx 20rpx; background: #f7f8fa; border-radius: 12rpx; font-size: 28rpx; }
+.inline-input { flex: 1; min-width: 0; padding: 16rpx 20rpx; background: var(--c-fill-soft); border-radius: 12rpx; font-size: 28rpx; }
 .mini-action {
   min-height: 64rpx; padding: 0 20rpx;
   display: flex; align-items: center; justify-content: center;
   border-radius: 10rpx; font-size: 24rpx;
   background: #f3f4f6; color: #374151; white-space: nowrap;
 }
-.mini-action.primary { background: #EC5B8C; color: #fff; }
-.mini-action.danger { background: #FDECEC; color: #d93026; }
+.mini-action.primary { background: var(--c-brand); color: var(--c-surface); }
+.mini-action.danger { background: #FDECEC; color: var(--c-danger); }
 .member-actions { display: flex; flex-direction: column; gap: 8rpx; align-items: flex-end; flex-shrink: 0; }
 .member-edit-row { display: flex; gap: 10rpx; align-items: center; margin-top: 12rpx; }
-.hint-line { display: block; font-size: 24rpx; color: #6b7280; margin-top: 12rpx; line-height: 1.6; }
+.hint-line { display: block; font-size: 24rpx; color: var(--c-muted); margin-top: 12rpx; line-height: 1.6; }
 .leave-box { margin-top: 24rpx; }

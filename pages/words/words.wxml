@@ -42,22 +42,25 @@
       </view>
       <view class="form-field">
         <text class="field-label">单词或句子</text>
-        <input class="field-input" value="{{form.text}}" data-field="text" bindinput="onFieldInput" placeholder="如：apple / Good morning!" />
+        <input class="field-input {{fieldFocus ? 'is-focus' : ''}}" value="{{form.text}}" data-field="text" bindinput="onFieldInput" placeholder="如：apple / Good morning!" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
       </view>
       <view class="form-field">
         <text class="field-label">备注（选填）</text>
-        <input class="field-input" value="{{form.note}}" data-field="note" bindinput="onFieldInput" placeholder="如：课本第 3 页" />
+        <input class="field-input {{fieldFocus ? 'is-focus' : ''}}" value="{{form.note}}" data-field="note" bindinput="onFieldInput" placeholder="如：课本第 3 页" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
       </view>
       <button class="btn btn-primary btn-block" style="margin-top:24rpx" bindtap="saveOne">保存到本周</button>
     </view>
 
     <view class="card">
       <text class="section-title">本周已录入（{{learned.length}}）</text>
-      <view class="rv-empty" wx:if="{{learned.length === 0}}">本周还没有记录</view>
+      <view class="empty-block compact" wx:if="{{learned.length === 0}}">
+        <view class="empty-mark"></view>
+        <text class="empty-title">本周还没有记录</text>
+      </view>
       <view class="rv-item" wx:for="{{learned}}" wx:key="id">
         <view class="rv-item-head">
           <text class="rv-label">{{item.label}}</text>
-          <text class="rv-del" data-id="{{item.id}}" bindtap="remove">删除</text>
+          <text class="rv-del" data-id="{{item.id}}" bindtap="remove" hover-class="ui-hover">删除</text>
         </view>
         <text class="rv-meta">{{item.typeLabel}}<text wx:if="{{item.image}}"> · 含照片</text><text wx:if="{{item.note}}"> · {{item.note}}</text></text>
       </view>
@@ -83,7 +86,10 @@
 
     <view class="card">
       <text class="section-title">{{reviewData.weekLabel}} 复习清单（{{reviewData.total}}）</text>
-      <view class="rv-empty" wx:if="{{reviewData.total === 0}}">近 5 周和复习库里都没有需要复习的内容</view>
+      <view class="empty-block compact" wx:if="{{reviewData.total === 0}}">
+        <view class="empty-mark"></view>
+        <text class="empty-title">近 5 周和复习库里都没有需要复习的内容</text>
+      </view>
       <view class="rv-item" wx:for="{{reviewData.items}}" wx:key="id">
         <view class="rv-item-head">
           <text class="rv-label">{{item.label}}</text>
@@ -102,7 +108,10 @@
     <view class="card">
       <text class="section-title">复习库（{{bank.total}}）</text>
       <text class="text-muted text-small">标记「需复习」会自动进入这里，此后每周复习清单持续出现，直到标记能完整背诵</text>
-      <view class="rv-empty" wx:if="{{bank.total === 0}}">复习库是空的，真棒</view>
+      <view class="empty-block compact" wx:if="{{bank.total === 0}}">
+        <view class="empty-mark"></view>
+        <text class="empty-title">复习库是空的，真棒</text>
+      </view>
       <view class="rv-item" wx:for="{{bank.items}}" wx:key="id">
         <view class="rv-item-head"><text class="rv-label">{{item.label}}</text></view>
         <text class="rv-meta">{{item.typeLabel}} · {{item.originLabel}} 录入 · 未通过 {{item.failCount}} 次</text>

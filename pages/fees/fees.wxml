@@ -26,11 +26,11 @@
       </view>
       <view class="form-field">
         <text class="field-label">金额（元）</text>
-        <input class="field-input" type="digit" value="{{form.amount}}" bindinput="onAmountInput" placeholder="如 1200" />
+        <input class="field-input {{fieldFocus ? 'is-focus' : ''}}" type="digit" value="{{form.amount}}" bindinput="onAmountInput" placeholder="如 1200" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
       </view>
       <view class="form-field">
         <text class="field-label">备注（选填）</text>
-        <input class="field-input" value="{{form.note}}" bindinput="onNoteInput" placeholder="如：暑期班 12 节" />
+        <input class="field-input {{fieldFocus ? 'is-focus' : ''}}" value="{{form.note}}" bindinput="onNoteInput" placeholder="如：暑期班 12 节" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
       </view>
       <button class="btn btn-primary btn-block" style="margin-top:28rpx" bindtap="saveFee">保存支出</button>
     </view>
@@ -38,7 +38,11 @@
     <view class="card">
       <text class="section-title">{{monthLabels[monthIndex]}} 明细</text>
       <view class="sum-line">本月合计 <text class="sum-num">¥{{month.totalText}}</text><text class="text-muted text-small"> · {{month.count}} 笔</text></view>
-      <view class="empty" wx:if="{{recent.length === 0}}">本月还没有支出记录</view>
+      <view class="empty-block compact" wx:if="{{recent.length === 0}}">
+        <view class="empty-mark"></view>
+        <text class="empty-title">本月还没有支出记录</text>
+        <text class="empty-desc">记一笔后，这里会显示明细与本月合计</text>
+      </view>
       <view class="fee-row" wx:for="{{recent}}" wx:key="id">
         <view class="fee-dot" style="background:{{item.color}}"></view>
         <view class="col fee-body">
@@ -46,7 +50,7 @@
           <text class="text-muted text-small" wx:if="{{item.note}}">{{item.note}}</text>
         </view>
         <text class="fee-amount">¥{{item.amountText}}</text>
-        <text class="rec-del" data-id="{{item.id}}" bindtap="removeFee">删除</text>
+        <text class="rec-del" data-id="{{item.id}}" bindtap="removeFee" hover-class="ui-hover">删除</text>
       </view>
     </view>
   </block>
@@ -54,9 +58,9 @@
   <block wx:if="{{tab === 'month'}}">
     <view class="card">
       <view class="nav-row">
-        <text class="nav-btn" bindtap="prevMonth">‹</text>
+        <text class="nav-btn" bindtap="prevMonth" hover-class="ui-hover">‹</text>
         <text class="nav-label">{{monthLabels[monthIndex]}}</text>
-        <text class="nav-btn" bindtap="nextMonth">›</text>
+        <text class="nav-btn" bindtap="nextMonth" hover-class="ui-hover">›</text>
       </view>
       <text class="section-title">月度分析表</text>
       <view class="f-table">
@@ -72,7 +76,10 @@
           <text class="f-td f-wide">合计</text><text class="f-td">¥{{month.totalText}}</text><text class="f-td">100%</text>
         </view>
       </view>
-      <view class="empty" wx:if="{{month.count === 0}}">本月暂无支出</view>
+      <view class="empty-block compact" wx:if="{{month.count === 0}}">
+        <view class="empty-mark"></view>
+        <text class="empty-title">本月暂无支出</text>
+      </view>
     </view>
 
     <view class="card">
@@ -93,16 +100,19 @@
           </view>
         </view>
       </view>
-      <view class="empty" wx:else>暂无数据</view>
+      <view class="empty-block compact" wx:else>
+        <view class="empty-mark"></view>
+        <text class="empty-title">暂无数据</text>
+      </view>
     </view>
   </block>
 
   <block wx:if="{{tab === 'year'}}">
     <view class="card">
       <view class="nav-row">
-        <text class="nav-btn" bindtap="prevYear">‹</text>
+        <text class="nav-btn" bindtap="prevYear" hover-class="ui-hover">‹</text>
         <text class="nav-label">{{year}} 年</text>
-        <text class="nav-btn" bindtap="nextYear">›</text>
+        <text class="nav-btn" bindtap="nextYear" hover-class="ui-hover">›</text>
       </view>
       <view class="stat-grid">
         <view class="stat-box"><text class="stat-lab">本年支出</text><text class="stat-num">¥{{yearData.totalText}}</text></view>
@@ -136,7 +146,10 @@
         </view>
         <view class="f-tr f-total"><text class="f-td f-wide">合计</text><text class="f-td">¥{{yearData.totalText}}</text><text class="f-td">100%</text></view>
       </view>
-      <view class="empty" wx:if="{{yearData.count === 0}}">本年暂无支出</view>
+      <view class="empty-block compact" wx:if="{{yearData.count === 0}}">
+        <view class="empty-mark"></view>
+        <text class="empty-title">本年暂无支出</text>
+      </view>
     </view>
 
     <view class="card">
@@ -157,7 +170,10 @@
           </view>
         </view>
       </view>
-      <view class="empty" wx:else>暂无数据</view>
+      <view class="empty-block compact" wx:else>
+        <view class="empty-mark"></view>
+        <text class="empty-title">暂无数据</text>
+      </view>
     </view>
 
     <view class="card">
@@ -191,7 +207,7 @@
       <view class="form-field">
         <text class="field-label">果果出生年月（YYYY-MM）</text>
         <view class="birth-row">
-          <input class="field-input" value="{{birthInput}}" bindinput="onBirthInput" placeholder="如 2019-05" />
+          <input class="field-input {{fieldFocus ? 'is-focus' : ''}}" value="{{birthInput}}" bindinput="onBirthInput" placeholder="如 2019-05" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
           <button class="btn btn-ghost birth-btn" bindtap="saveBirth">保存</button>
         </view>
       </view>
@@ -207,7 +223,11 @@
         </view>
         <text class="text-muted text-small">年龄按自然年估算：年份 − 出生年份</text>
       </view>
-      <view class="empty" wx:else>填写出生年月并保存后，可按年龄汇总历年支出</view>
+      <view class="empty-block compact" wx:else>
+        <view class="empty-mark"></view>
+        <text class="empty-title">还没有出生年月</text>
+        <text class="empty-desc">填写并保存后，可按年龄汇总历年支出</text>
+      </view>
     </view>
   </block>
 

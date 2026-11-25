@@ -1,36 +1,64 @@
-.sched-head, .sched-row { display: flex; align-items: center; }
-.sched-name-col { width: 180rpx; flex-shrink: 0; font-size: 24rpx; }
-.sched-head .sched-name-col { font-size: 22rpx; color: #6b7280; }
-.sched-day { flex: 1; text-align: center; font-size: 22rpx; color: #6b7280; }
-.sched-row { padding: 12rpx 0; border-bottom: 2rpx solid #f5f6f7; }
-.sched-cell {
-  /* 排期格是主要交互点：64rpx 高度保证 7 列布局下仍可稳定点中 */
-  flex: 1; height: 64rpx; margin: 0 4rpx; border-radius: 10rpx;
-  background: #f2f3f5; color: #ffffff;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 26rpx;
+/* 排期：一项一行，整行可点（≥96rpx），7 天用圆点做概览 */
+.sched-list { margin-top: 8rpx; }
+.sched-item {
+  display: flex; align-items: center;
+  min-height: 96rpx; padding: 12rpx 0;
+  border-bottom: 2rpx solid var(--c-line-soft, var(--c-line-soft));
 }
-.sched-cell.on { background: #EC5B8C; }
+.sched-item:last-child { border-bottom: none; }
+.sched-item-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.sched-item-name { font-size: 28rpx; color: var(--c-ink, var(--c-ink)); }
+.sched-item-sum { margin-top: 4rpx; font-size: 22rpx; color: var(--c-brand, var(--c-brand)); }
+.sched-item-sum.off { color: var(--c-muted, var(--c-muted)); }
+.sched-item-week { display: flex; align-items: center; margin: 0 16rpx 0 12rpx; }
+.sched-dot {
+  width: 14rpx; height: 14rpx; margin-left: 8rpx; border-radius: 50%;
+  background: var(--c-fill, var(--c-fill));
+}
+.sched-dot.on { background: var(--c-brand, var(--c-brand)); }
+.sched-item-arrow { font-size: 34rpx; color: #c9ccd2; line-height: 1; padding-left: 4rpx; }
 
-.target-row { display: flex; align-items: center; padding: 14rpx 0; border-bottom: 2rpx solid #f5f6f7; }
+/* 排期弹层：一天一行 96rpx，滑动勾选不会点到隔壁 */
+.sched-day-list { margin-top: 20rpx; }
+.sched-day-row {
+  display: flex; align-items: center; justify-content: space-between;
+  min-height: 96rpx; padding: 0 4rpx;
+  border-bottom: 2rpx solid var(--c-line-soft, var(--c-line-soft));
+}
+.sched-day-row:last-child { border-bottom: none; }
+.sched-day-label { font-size: 28rpx; color: var(--c-ink, var(--c-ink)); }
+.sched-switch {
+  position: relative; width: 84rpx; height: 48rpx; border-radius: 48rpx;
+  background: #e3e5e9; transition: background 0.18s;
+}
+.sched-switch .sched-knob {
+  position: absolute; top: 4rpx; left: 4rpx;
+  width: 40rpx; height: 40rpx; border-radius: 50%;
+  background: var(--c-surface); box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.14);
+  transition: transform 0.18s;
+}
+.sched-switch.on { background: var(--c-brand, var(--c-brand)); }
+.sched-switch.on .sched-knob { transform: translateX(36rpx); }
+
+.target-row { display: flex; align-items: center; padding: 14rpx 0; border-bottom: 2rpx solid var(--c-line-soft); }
 .target-name { width: 200rpx; font-size: 26rpx; }
 .target-input {
   width: 110rpx; min-height: 64rpx; box-sizing: border-box;
-  text-align: center; background: #f2f3f5; border-radius: 8rpx; padding: 8rpx;
+  text-align: center; background: var(--c-fill); border-radius: 8rpx; padding: 8rpx;
   font-size: 26rpx; font-feature-settings: "tnum"; font-variant-numeric: tabular-nums;
 }
 .target-row .btn { margin-left: 16rpx; }
 
-.member-row { display: flex; align-items: center; padding: 16rpx 0; border-bottom: 2rpx solid #f5f6f7; }
-.member-avatar { width: 64rpx; height: 64rpx; border-radius: 50%; background: #FFEDF4; color: #EC5B8C; display: flex; align-items: center; justify-content: center; font-size: 28rpx; font-weight: 600; }
+.member-row { display: flex; align-items: center; padding: 16rpx 0; border-bottom: 2rpx solid var(--c-line-soft); }
+.member-avatar { width: 64rpx; height: 64rpx; border-radius: 50%; background: var(--c-brand-chip); color: var(--c-brand); display: flex; align-items: center; justify-content: center; font-size: 28rpx; font-weight: 600; }
 .member-info { display: flex; flex-direction: column; flex: 1; margin-left: 16rpx; }
 
 .setting-row {
   display: flex; align-items: center; justify-content: space-between;
   min-height: 96rpx; padding: 20rpx 0;
-  border-bottom: 2rpx solid #f5f6f7;
+  border-bottom: 2rpx solid var(--c-line-soft);
 }
-.picker-val { color: #EC5B8C; font-size: 28rpx; }
+.picker-val { color: var(--c-brand); font-size: 28rpx; }
 /* 输入框样式统一由 app.wxss 提供，页面不再重复定义 */
 
 .readonly-tip { padding: 18rpx 24rpx; margin-bottom: 20rpx; background: #fff8e6; color: #a16207; border-radius: 12rpx; font-size: 24rpx; }
