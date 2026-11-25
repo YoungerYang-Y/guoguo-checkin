@@ -53,6 +53,10 @@ Page({
   // 读取当前操作者身份：入家庭后按云端 member_key/role；未入家庭维持本机默认（兼容 H5 预览）
   loadIdentity() {
     const id = family.getIdentity();
+    this.applyIdentity(id);
+  },
+
+  applyIdentity(id) {
     if (id && id.status === 'active' && id.memberKey) {
       const group = (this.data.groups || []).find(x => x.id === id.memberKey);
       this.setData({
@@ -60,12 +64,33 @@ Page({
         operatorRole: id.role || 'parent',
         operatorName: (group && group.name) || id.name || '家人',
       });
+    } else {
+      this.resetOperator();
     }
   },
 
+  resetOperator() {
+    this.setData({
+      operatorKey: 'mama',
+      operatorRole: 'admin',
+      operatorName: '妈妈',
+      confirmMember: '',
+      confirmName: '',
+      pending: null,
+    });
+  },
+
   onShow() {
-    // 日历页「查看/补卡」用 switchTab 进入，tabBar 跳转不能带参数，日期通过暂存值传递
+    this.loadIdentity();
     const app = getApp();
+    if (app && app.cloudReady && typeof app.cloudReady.then === 'function' && !this._identityRefreshPromise) {
+      this._identityRefreshPromise = app.cloudReady
+        .then(() => family.refreshIdentity())
+        .then(id => this.applyIdentity(id))
+        .catch(() => this.resetOperator())
+        .finally(() => { this._identityRefreshPromise = null; });
+    }
+    // 日历页「查看/补卡」用 switchTab 进入，tabBar 跳转不能带参数，日期通过暂存值传递
     let pending = '';
     if (app && app.globalData && app.globalData.pendingCheckinDate) {
       pending = app.globalData.pendingCheckinDate;
@@ -91,7 +116,6 @@ Page({
       app.cloudReady.then(() => {
         if (this.data && this.data.date !== undefined) {
           this._cloudRefreshed = true;
-          this.loadIdentity();
           this.refresh();
         }
       });

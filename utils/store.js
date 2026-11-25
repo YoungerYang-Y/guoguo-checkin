@@ -1,6 +1,9 @@
 // 本地存储数据层：所有读写经此模块，页面不直接访问 wx.getStorageSync
 const { defaultSchedule, DEFAULT_WEEKLY_TARGETS } = require('./constants.js');
-const { today } = require('./date.js');
+const D = require('./date.js');
+const { today } = D;
+const policy = require('./policy.js');
+const { mergeRecords } = require('./sync-merge.js');
 
 const KEYS = {
   FAMILY: 'gg_family',
@@ -68,7 +71,12 @@ function initFamily(force) {
 }
 
 function getFamily() { return read(KEYS.FAMILY, null) || initFamily(); }
+function canManage() {
+  const id = require('./family.js').getIdentity();
+  return !id || id.status !== 'active' || id.role === 'admin';
+}
 function updateMemberName(memberId, name) {
+  if (!canManage()) return { data: null, error: 'FORBIDDEN' };
   const f = getFamily();
   const m = f.members.find(x => x.id === memberId);
   if (!m) return { data: null, error: 'NOT_FOUND' };
@@ -80,28 +88,28 @@ function updateMemberName(memberId, name) {
 // ---------- 排期与目标 ----------
 function getSchedule() { return read(KEYS.SCHEDULE, defaultSchedule()); }
 function setRequired(code, dow, val) {
+  if (!canManage()) return { data: null, error: 'FORBIDDEN' };
   const s = getSchedule();
   if (!s[code]) return { data: null, error: 'INVALID_CODE' };
-  s[code][dow] = val ? 1 : 0;
-  write(KEYS.SCHEDULE, s);
-  return { data: s, error: null };
+  return write(KEYS.SCHEDULE, policy.stageScheduleChange(s, code, dow, val, today()));
 }
+
 function getTargets() { return read(KEYS.TARGETS, Object.assign({}, DEFAULT_WEEKLY_TARGETS)); }
 function setTarget(code, value) {
-  const t = getTargets();
-  t[code] = Math.max(0, Number(value) || 0);
-  write(KEYS.TARGETS, t);
-  return { data: t, error: null };
+  if (!canManage()) return { data: null, error: 'FORBIDDEN' };
+  return write(KEYS.TARGETS, policy.stageTargetChange(getTargets(), code, Math.max(0, Number(value) || 0), today()));
 }
+
 function getSettings() { return read(KEYS.SETTINGS, { remindTime: '20:30', remindEnabled: false, weekRemind: true }); }
 function setSettings(patch) {
+  if (!canManage()) return { data: null, error: 'FORBIDDEN' };
   const s = Object.assign(getSettings(), patch);
   write(KEYS.SETTINGS, s);
   return { data: s, error: null };
 }
 
 // ---------- 打卡记录 ----------
-function getRecords() { return read(KEYS.RECORDS, []); }
+function getRecords() { return mergeRecords([], read(KEYS.RECORDS, [])); }
 
 // 唯一约束：member + item + biz_date，后写入覆盖先写入
 function saveRecord(rec) {
@@ -167,15 +175,15 @@ function exportCSV(start, end) {
   const list = getRecords().filter(r => r.biz_date >= start && r.biz_date <= end && r.status === 1);
   const head = '日期,成员,打卡项,完成状态,节数,数量,备注,来源,达标标准快照';
   const memberName = id => (getFamily().members.find(m => m.id === id) || {}).name || id;
-  const cell = v => '"' + String(v || '').replace(/\r?\n/g, ' ').replace(/"/g, '""') + '"';
+  const cell = v => '"' + String(v === null || v === undefined ? '' : v).replace(/\r?\n/g, ' ').replace(/"/g, '""') + '"';
   const rows = list.map(r => [
     r.biz_date, memberName(r.member_id), r.item_code,
     r.status === 1 ? '已完成' : (r.status === 2 ? '已撤销' : '未完成'),
-    r.session_count || '', r.metric_value || '',
-    cell(r.note),
+    r.session_count, r.metric_value,
+    r.note,
     r.source === 2 ? '补卡' : '当日',
-    cell(r.standard_snapshot),
-  ].join(','));
+    r.standard_snapshot,
+  ].map(cell).join(','));
   return [head].concat(rows).join('\n');
 }
 
@@ -197,13 +205,31 @@ function normalizeMemberIds(t) {
 function getCustomTargets(memberId) {
   const all = read(KEYS.CUSTOM, []);
   return memberId
-    ? all.filter(t => t.status === 1 && targetMemberIds(t).indexOf(memberId) >= 0)
+    ? getCustomTargetsAt(memberId, today())
     : all;
 }
 
+function targetAt(target, date) {
+  const versions = Array.isArray(target.__history) ? target.__history : [];
+  const active = versions.filter(v => v.effectiveFrom <= date).sort((a, b) => a.effectiveFrom.localeCompare(b.effectiveFrom));
+  return active.length ? Object.assign({}, active[active.length - 1].value) : target;
+}
+function getCustomTargetsAt(memberId, date) {
+  return read(KEYS.CUSTOM, []).map(t => targetAt(t, date)).filter(t => t.status === 1
+    && (!memberId || targetMemberIds(t).indexOf(memberId) >= 0)
+    && (!t.start_date || t.start_date <= date) && (!t.end_date || t.end_date >= date));
+}
+function canEditTarget(target) {
+  const id = require('./family.js').getIdentity();
+  if (!id || id.status !== 'active' || id.role === 'admin') return true;
+  return target.created_by ? target.created_by === id.uid : targetMemberIds(target).length === 1 && targetMemberIds(target)[0] === id.memberKey;
+}
 function createCustomTarget(t) {
+
   const all = read(KEYS.CUSTOM, []);
   const ids = normalizeMemberIds(t);
+  const identity = require('./family.js').getIdentity();
+  if (identity && identity.status === 'active' && identity.role !== 'admin' && (ids.length !== 1 || ids[0] !== identity.memberKey)) return { data: null, error: 'FORBIDDEN' };
   if (!ids.length) return { data: null, error: 'NO_MEMBER' };
   // 每位成员分别计算进行中目标数，都不能超过 10 个
   for (let i = 0; i < ids.length; i++) {
@@ -218,6 +244,7 @@ function createCustomTarget(t) {
   if (!t.standard_note || !t.standard_note.trim()) return { data: null, error: 'EMPTY_STANDARD' };
   const target = Object.assign({
     target_id: uid('U'),
+    created_by: identity && identity.uid || '',
     name: '',
     cycle_type: 'daily',   // daily | weekly | monthly | once
     cycle_value: 1,
@@ -228,6 +255,7 @@ function createCustomTarget(t) {
     status: 1,              // 1 进行中 / 2 已归档
     created_at: new Date().toISOString(),
   }, t, {
+    created_by: identity && identity.uid || '',
     member_ids: ids,
     member_id: ids[0],     // 兼容字段，供旧逻辑读取
   });
@@ -240,12 +268,28 @@ function updateCustomTarget(targetId, patch) {
   const all = read(KEYS.CUSTOM, []);
   const idx = all.findIndex(t => t.target_id === targetId);
   if (idx < 0) return { data: null, error: 'NOT_FOUND' };
+  const prev = all[idx];
+  if (!canEditTarget(prev)) return { data: null, error: 'FORBIDDEN' };
   const next = Object.assign({}, patch);
-  if (Array.isArray(next.member_ids)) next.member_id = next.member_ids[0] || '';
-  // 周期与计入方式修改从下一周期起生效：这里仅更新配置，历史记录已存 standard_snapshot
-  all[idx] = Object.assign({}, all[idx], next, { updated_at: new Date().toISOString() });
-  const w = write(KEYS.CUSTOM, all);
-  return w.error ? w : { data: all[idx], error: null };
+  delete next.__history; delete next.created_by; delete next.target_id; delete next.created_at;
+  if (Array.isArray(next.member_ids)) {
+    next.member_ids = normalizeMemberIds(next);
+    if (!next.member_ids.length) return { data: null, error: 'NO_MEMBER' };
+    const identity = require('./family.js').getIdentity();
+    if (identity && identity.status === 'active' && identity.role !== 'admin' && (next.member_ids.length !== 1 || next.member_ids[0] !== identity.memberKey)) return { data: null, error: 'FORBIDDEN' };
+    next.member_id = next.member_ids[0];
+  }
+  const snapshot = value => { const out = Object.assign({}, value); delete out.__history; return out; };
+  const current = targetAt(prev, today());
+  let effectiveFrom = D.addDays(today(), 1);
+  if (current.cycle_type === 'weekly') effectiveFrom = D.addDays(D.weekStart(today()), 7);
+  if (current.cycle_type === 'monthly') { const dt = D.parse(today()); effectiveFrom = D.fmt(new Date(dt.getFullYear(), dt.getMonth() + 1, 1)); }
+  const history = (prev.__history || [{ effectiveFrom: '0000-01-01', value: snapshot(prev) }]).filter(v => v.effectiveFrom !== effectiveFrom);
+  const updated = Object.assign({}, prev, next, { updated_at: new Date().toISOString() });
+  history.push({ effectiveFrom, value: snapshot(updated) });
+  all[idx] = Object.assign(updated, { __history: history });
+  const result = write(KEYS.CUSTOM, all);
+  return result.error ? result : { data: all[idx], error: null };
 }
 
 function archiveCustomTarget(targetId) {
@@ -258,7 +302,7 @@ function getCustomTarget(targetId) {
 
 // 自定义目标完成（保存 standard_snapshot）
 function checkCustomTarget(targetId, memberId, date, done, reason) {
-  const target = getCustomTarget(targetId);
+  const target = getCustomTargetsAt(memberId, date).find(t => t.target_id === targetId);
   if (!target) return { data: null, error: 'NOT_FOUND' };
   return saveRecord({
     member_id: memberId,
@@ -288,18 +332,13 @@ function getSnapshot(type, key) {
 }
 
 // 清空所有数据（设置页使用）
-function resetAll() {
-  Object.keys(KEYS).forEach(k => {
-    try { wx.removeStorageSync(KEYS[k]); } catch (e) {}
-  });
-  return initFamily();
-}
+function resetAll() { return require('./cloudstore.js').resetFamilyData(); }
 
 module.exports = {
   KEYS, read, write, initFamily, getFamily, updateMemberName,
   getSchedule, setRequired, getTargets, setTarget, getSettings, setSettings,
   getRecords, saveRecord, revokeRecord, getRecord, getDayRecords, canBackfill, exportCSV,
   getCustomTargets, createCustomTarget, updateCustomTarget, archiveCustomTarget, getCustomTarget, checkCustomTarget,
-  targetMemberIds, normalizeMemberIds,
+  targetMemberIds, normalizeMemberIds, getCustomTargetsAt, canEditTarget,
   saveSnapshot, getSnapshot, resetAll,
 };

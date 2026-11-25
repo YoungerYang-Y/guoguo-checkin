@@ -45,26 +45,34 @@ Page({
   },
   onShow() { this.refresh(); },
 
-  async refresh() {
-    const s = cloudstore.getState();
-    this.setData({ loggedIn: !!s.loggedIn });
+  refresh() {
+    if (this._refreshPromise) return this._refreshPromise;
+    this._refreshPromise = this.refreshState().finally(() => { this._refreshPromise = null; });
+    return this._refreshPromise;
+  },
 
-    // 解析邀请（不依赖登录：先让用户看到"谁邀请我"，再引导登录/加入）
-    if (this._incomingToken && !this.data.incomingInvite) {
-      const token = this._incomingToken;
-      this._incomingToken = ''; // 只解析一次，避免 onShow 重复请求
-      try {
-        const r = await family.resolveInvite(token);
-        if (r.valid) this.setData({ incomingInvite: r, incomingError: '' });
-        else this.setData({ incomingError: r.reason });
-      } catch (e) {
-        this.setData({ incomingError: '邀请链接读取失败，请检查网络' });
-      }
-    }
-
-    if (!s.loggedIn) { this.setData({ status: 'noauth' }); return; }
+  async refreshState() {
+    this.setData({ status: 'loading', errorMsg: '' });
     try {
+      if (app.cloudReady && typeof app.cloudReady.then === 'function') await app.cloudReady;
+      if (this._incomingToken && !this._inviteResolved) {
+        const token = this._incomingToken;
+        this._inviteResolved = true;
+        try {
+          const invite = await family.resolveInvite(token);
+          if (invite.valid) this.setData({ incomingInvite: invite, incomingError: '' });
+          else this.setData({ incomingError: invite.reason });
+        } catch (e) {
+          this.setData({ incomingError: '邀请链接读取失败，请检查网络' });
+        }
+      }
+
+      const state = await cloudstore.refreshMembership();
+      this.setData({ loggedIn: !!state.loggedIn });
+      if (!state.loggedIn) { this.setData({ status: 'noauth', identity: null, members: [] }); return; }
+
       const membership = await family.getMyMembership();
+      // refreshMembership has refreshed the cloud identity; never trust the pre-launch cache here.
       const id = family.getIdentity();
       if (id && id.status === 'active' && id.familyId) {
         this.setData({ status: 'active', identity: id, errorMsg: '' });
@@ -74,10 +82,17 @@ Page({
       } else if (membership && membership.status === 'pending') {
         this.setData({ status: 'pending', pendingFamilyId: membership.family_id, identity: null });
       } else {
-        this.setData({ status: 'none', identity: null });
+        this.setData({ status: 'none', identity: null, members: [] });
       }
     } catch (e) {
-      this.setData({ status: 'none', errorMsg: (e && e.message) || '读取家庭状态失败' });
+      const state = cloudstore.getState();
+      this.setData({
+        loggedIn: !!state.loggedIn,
+        status: state.loggedIn ? 'none' : 'noauth',
+        identity: null,
+        members: [],
+        errorMsg: (e && e.message) || '读取家庭状态失败',
+      });
     }
   },
 
@@ -128,14 +143,18 @@ Page({
   async acceptInvite() {
     const inv = this.data.incomingInvite;
     if (!inv || !inv.familyId) return;
-    if (!this.data.loggedIn) { this.goLoginHint(); return; }
-    if (this.data.status === 'active' && this.data.identity && this.data.identity.familyId === inv.familyId) {
-      toast('你已经在这个家庭里了');
-      return;
-    }
     if (this.data.busy) return;
     this.setData({ busy: true });
     try {
+      if (app.cloudReady && typeof app.cloudReady.then === 'function') await app.cloudReady;
+      const state = await cloudstore.refreshMembership();
+      this.setData({ loggedIn: !!state.loggedIn });
+      if (!state.loggedIn) { this.goLoginHint(); return; }
+      const identity = family.getIdentity();
+      if (identity && identity.status === 'active') {
+        toast(identity.familyId === inv.familyId ? '你已经在这个家庭里了' : '当前账号已加入其他家庭，不能再申请加入');
+        return;
+      }
       await family.requestJoin(inv.familyId, this.data.joinRole, this.data.joinName.trim() || '家人');
       toast('已申请，等待创建人同意', 'success');
       this.setData({ incomingInvite: null });

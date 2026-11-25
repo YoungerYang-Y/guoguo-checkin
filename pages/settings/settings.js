@@ -56,7 +56,7 @@ Page({
     const day = row.days.find(x => x.d === d);
     store.setRequired(code, d, day.on ? 0 : 1);
     this.build();
-    wx.showToast({ title: '排期已更新（不影响历史报表）', icon: 'none' });
+    wx.showToast({ title: '排期明日起生效，历史不变', icon: 'none' });
   },
 
   onTargetInput(e) {
@@ -70,11 +70,12 @@ Page({
     const code = e.currentTarget.dataset.code;
     const row = this.data.targetRows.find(r => r.code === code);
     store.setTarget(code, row.value);
-    wx.showToast({ title: '目标已从下周期生效', icon: 'success' });
+    wx.showToast({ title: '目标下周起生效', icon: 'success' });
   },
 
   onRemindTime(e) { this.setData({ remindTime: e.detail.value }); },
   saveSettings() {
+    if (!this.requireAdmin()) return;
     store.setSettings({ remindTime: this.data.remindTime, remindEnabled: this.data.remindEnabled, weekRemind: this.data.weekRemind });
     wx.showToast({ title: '提醒设置已保存', icon: 'success' });
   },
@@ -82,11 +83,13 @@ Page({
   toggleWeekRemind() { this.setData({ weekRemind: !this.data.weekRemind }); },
 
   editName(e) {
+    if (!this.requireAdmin()) return;
     const { id, name } = e.currentTarget.dataset;
     this.setData({ editNameId: id, editNameValue: name });
   },
   onNameInput(e) { this.setData({ editNameValue: e.detail.value }); },
   saveName() {
+    if (!this.requireAdmin()) return;
     if (!this.data.editNameValue.trim()) { wx.showToast({ title: '昵称不能为空', icon: 'none' }); return; }
     store.updateMemberName(this.data.editNameId, this.data.editNameValue.trim());
     this.setData({ editNameId: '' });
@@ -103,11 +106,16 @@ Page({
       title: '清空所有数据',
       content: '将删除全部打卡记录、排期与目标，且不可恢复。确定继续吗？',
       confirmText: '清空', confirmColor: '#d93026',
-      success: (res) => {
+      success: async (res) => {
         if (!res.confirm) return;
-        store.resetAll();
-        this.build();
-        wx.showToast({ title: '已清空', icon: 'success' });
+        wx.showLoading({ title: '清空中…', mask: true });
+        try {
+          const result = await store.resetAll();
+          this.build();
+          wx.showToast({ title: result.cleanupPending ? '已清空，待同步' : '已清空', icon: result.cleanupPending ? 'none' : 'success' });
+        } catch (e) {
+          wx.showToast({ title: (e && e.message) || '清空失败，请重试', icon: 'none' });
+        } finally { wx.hideLoading(); }
       },
     });
   },

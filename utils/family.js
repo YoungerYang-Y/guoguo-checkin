@@ -48,6 +48,10 @@ async function refreshIdentity() {
   if (error) throw error;
   const rows = Array.isArray(data) ? data : [];
   if (!rows.length) { clearIdentity(); return { uid, status: 'none' }; }
+  if (rows.length > 1) {
+    clearIdentity();
+    throw new Error('当前账号关联了多个家庭，请联系管理员处理后再继续');
+  }
   const r = rows[0];
   const id = {
     familyId: r.family_id, memberKey: r.member_key, role: r.role,
@@ -76,6 +80,10 @@ async function createFamily(name, memberKey) {
   const session = await ensureSession();
   const uid = uidOf(session);
   if (!uid) throw new Error('未登录，暂不能创建家庭（请用微信扫码打开小程序）');
+  const identity = await refreshIdentity();
+  if (identity && identity.status === 'active') throw new Error('当前账号已加入家庭，不能重复创建');
+  const membership = await getMyMembership();
+  if (membership && membership.status === 'pending') throw new Error('当前账号有待审批的家庭申请，暂不能创建家庭');
   const cloud = getCloud();
   const familyId = generateFamilyId();
   const mk = memberKey || 'mama';
@@ -104,14 +112,25 @@ async function requestJoin(familyCode, memberKey, name) {
   if (!uid) throw new Error('未登录，暂不能加入家庭（请用微信扫码打开小程序）');
   const fid = String(familyCode || '').trim().toLowerCase();
   if (!/^fam_[0-9a-z]+$/.test(fid)) throw new Error('家庭码格式不对，应为 fam 开头');
+  const identity = await refreshIdentity();
+  if (identity && identity.status === 'active') {
+    throw new Error(identity.familyId === fid ? '你已经加入这个家庭' : '当前账号已加入其他家庭，不能再申请加入');
+  }
+  const membership = await getMyMembership();
+  if (membership && membership.status === 'pending') {
+    throw new Error(membership.family_id === fid ? '你已申请过这个家庭，等待创建人批准' : '当前账号已有待审批的家庭申请');
+  }
   const cloud = getCloud();
-  const { error } = await cloud.database.from('gg_members').insert({
+  const { data, error } = await cloud.database.from('gg_members').insert({
     family_id: fid, uid,
     member_key: memberKey || 'papa',
     name: name || '家人',
     role: 'parent', status: 'pending',
-  });
+  }).select('family_id, uid, status');
   if (error) throw new Error('家庭码无效，或你已申请过该家庭');
+  if (!Array.isArray(data) || !data.some(row => row.uid === uid && row.family_id === fid && row.status === 'pending')) {
+    throw new Error('加入申请未能保存，请重试');
+  }
   return { familyId: fid, status: 'pending' };
 }
 
@@ -132,11 +151,16 @@ async function approveMember(targetUid) {
   const id = getIdentity();
   if (!id || id.role !== 'admin') throw new Error('只有管理员能批准成员');
   const cloud = getCloud();
-  const { error } = await cloud.database.from('gg_members')
+  const { data, error } = await cloud.database.from('gg_members')
     .update({ status: 'active' })
     .eq('family_id', id.familyId)
-    .eq('uid', targetUid);
+    .eq('uid', targetUid)
+    .eq('status', 'pending')
+    .select('family_id, uid, status');
   if (error) throw error;
+  if (!Array.isArray(data) || !data.some(row => row.uid === targetUid && row.family_id === id.familyId && row.status === 'active')) {
+    throw new Error('该申请已处理或不属于当前家庭，请刷新成员列表');
+  }
   return true;
 }
 
@@ -155,17 +179,18 @@ async function createInviteLink() {
   } catch (e) {}
   const token = 'inv_' + Date.now().toString(36) + randomCode(20).toLowerCase();
   const expiresAt = new Date(Date.now() + 7 * 86400000).toISOString();
-  // 旧邀请先失效（只动本家庭，且不碰已撤销的）
-  const { error: e0 } = await cloud.database.from('gg_invite_tokens')
-    .update({ revoked: true })
-    .eq('family_id', id.familyId)
-    .eq('revoked', false);
-  if (e0) throw e0;
   const { error } = await cloud.database.from('gg_invite_tokens').insert({
     token, family_id: id.familyId, family_name: familyName || '果果家庭',
     created_by: id.uid || '', expires_at: expiresAt, revoked: false,
   });
   if (error) throw error;
+  // Keep the current invite valid unless its replacement was inserted successfully.
+  const { error: e0 } = await cloud.database.from('gg_invite_tokens')
+    .update({ revoked: true })
+    .eq('family_id', id.familyId)
+    .eq('revoked', false)
+    .neq('token', token);
+  if (e0) throw e0;
   try { wx.setStorageSync(INVITE_KEY, { token, expiresAt }); } catch (e) {}
   return { token, expiresAt, familyName: familyName || '果果家庭' };
 }
@@ -183,7 +208,8 @@ async function resolveInvite(token) {
   const row = Array.isArray(data) ? data[0] : null;
   if (!row) return { valid: false, reason: '邀请链接不存在或已作废' };
   if (row.revoked) return { valid: false, reason: '邀请链接已失效，请联系创建人重新生成' };
-  if (new Date(row.expires_at).getTime() <= Date.now()) return { valid: false, reason: '邀请链接已过期（7 天有效）' };
+  const expiresAt = new Date(row.expires_at).getTime();
+  if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) return { valid: false, reason: '邀请链接已过期（7 天有效）' };
   return { valid: true, familyId: row.family_id, familyName: row.family_name || '果果家庭' };
 }
 
@@ -192,11 +218,15 @@ async function revokeInviteLink(token) {
   const id = getIdentity();
   if (!id || !id.familyId || id.role !== 'admin') throw new Error('只有管理员能撤销邀请链接');
   const cloud = getCloud();
-  const { error } = await cloud.database.from('gg_invite_tokens')
+  const { data, error } = await cloud.database.from('gg_invite_tokens')
     .update({ revoked: true })
     .eq('token', token)
-    .eq('family_id', id.familyId);
+    .eq('family_id', id.familyId)
+    .select('token, family_id, revoked');
   if (error) throw error;
+  if (!Array.isArray(data) || !data.some(row => row.token === token && row.family_id === id.familyId && row.revoked)) {
+    throw new Error('邀请链接不存在或不属于当前家庭');
+  }
   try { wx.removeStorageSync(INVITE_KEY); } catch (e) {}
   return true;
 }
@@ -226,11 +256,17 @@ async function createVisitorLink(snapshot, days) {
 // 撤销访客链接
 async function revokeVisitorLink(token) {
   const id = getIdentity();
-  if (!id || id.role !== 'admin') throw new Error('只有管理员能撤销访客链接');
+  if (!id || !id.familyId || id.role !== 'admin') throw new Error('只有管理员能撤销访客链接');
   const cloud = getCloud();
-  const { error } = await cloud.database.from('gg_visitor_snapshots')
-    .update({ revoked: true }).eq('token', token);
+  const { data, error } = await cloud.database.from('gg_visitor_snapshots')
+    .update({ revoked: true })
+    .eq('token', token)
+    .eq('family_id', id.familyId)
+    .select('token, family_id, revoked');
   if (error) throw error;
+  if (!Array.isArray(data) || !data.some(row => row.token === token && row.family_id === id.familyId && row.revoked)) {
+    throw new Error('访客链接不存在或不属于当前家庭');
+  }
   return true;
 }
 
@@ -244,7 +280,8 @@ async function getVisitorSnapshot(token) {
   const row = Array.isArray(data) ? data[0] : null;
   if (!row) return { valid: false, reason: '链接不存在' };
   if (row.revoked) return { valid: false, reason: '链接已撤销' };
-  if (new Date(row.expires_at).getTime() <= Date.now()) return { valid: false, reason: '链接已过期' };
+  const expiresAt = new Date(row.expires_at).getTime();
+  if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) return { valid: false, reason: '链接已过期' };
   return { valid: true, snapshot: row.snapshot };
 }
 

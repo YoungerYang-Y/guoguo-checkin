@@ -24,7 +24,7 @@ Page({
   build() {
     const { type, anchor } = this.data;
     const report = stats.buildReport(type, anchor);
-    const targets = store.getTargets();
+    const targets = report.targetTotals;
     const memberName = id => (store.getFamily().members.find(m => m.id === id) || {}).name || id;
 
     // 果果明细行
@@ -32,10 +32,10 @@ Page({
     const ggDetailRows = GUOGUO_ITEMS.map(code => {
       const cnt = gg.detail.counts[code] || 0;
       let extra = '';
-      if (code === 'G-MEMBER') extra = '共 ' + gg.detail.sessions + ' 节';
-      if (code === 'G-ART') extra = targets['G-ART'] + ' 次/周';
-      if (code === 'G-SKATE') extra = targets['G-SKATE'] + ' 次/周';
-      if (code === 'G-SWIM') extra = targets['G-SWIM'] + ' 次/周';
+      if (code === 'G-MEMBER') extra = '共 ' + gg.detail.sessions + ' 节 · 目标 ' + targets['G-MEMBER'] + ' 节';
+      if (code === 'G-ART') extra = '目标 ' + targets['G-ART'] + ' 次';
+      if (code === 'G-SKATE') extra = '目标 ' + targets['G-SKATE'] + ' 次';
+      if (code === 'G-SWIM') extra = '目标 ' + targets['G-SWIM'] + ' 次';
       return { label: ITEMS[code].name, value: cnt, unit: '次', extra, category: ITEMS[code].category || '' };
     });
 

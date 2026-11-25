@@ -1,332 +1,231 @@
-// 云同步引擎（家庭版）：本地存储为工作缓存，云端 gg_docs 为持久化权威源。
-// 家庭核心：所有写入带 family_id；冲突键 family_id,doc_key；
-//   gg_records 按 record_id 记录级合并（同 id 取 updated_at 新），保证多人各自打卡都保留。
-// 身份来自 utils/family.js（直连 gg_members），未入家庭时仅本地模式。
+// 家庭文档同步：本地变更队列 + 三方合并 + 云端乐观并发控制。
 const { getCloud, ensureSession, getLastAuthError, describeCloudError } = require('./cloud.js');
 const family = require('./family.js');
-
+const { merge, mergeRecords } = require('./sync-merge.js');
 const DOC_KEYS = ['gg_family', 'gg_records', 'gg_schedule', 'gg_targets', 'gg_custom', 'gg_settings', 'gg_snapshots', 'gg_weights', 'gg_fees', 'gg_extra_settings', 'gg_poems', 'gg_words'];
-const SYNC_KEY = 'gg_sync_state';
+const META_KEY = 'gg_reset_state';
 const PENDING_KEY = 'gg_pending_keys';
-const ADOPTED_KEY = 'gg_family_adopted';   // 本地数据已归属的家庭 id；变化时说明换了家庭，需重建本地
-
-function localModeMessage() {
-  const reason = (typeof getLastAuthError === 'function' ? getLastAuthError() : '') || '';
-  return reason
-    ? (reason + '；数据已保存在本机，不影响打卡')
-    : '暂未登录，数据已保存在本机，不影响打卡';
-}
-
-function readPending() {
-  try { const v = wx.getStorageSync(PENDING_KEY); return Array.isArray(v) ? v : []; } catch (e) { return []; }
-}
-function savePending(list) {
-  try { wx.setStorageSync(PENDING_KEY, list); } catch (e) {}
-}
-function addPending(docKey) {
-  const list = readPending();
-  if (list.indexOf(docKey) < 0) { list.push(docKey); savePending(list); }
-}
-function removePending(docKey) {
-  const list = readPending().filter(k => k !== docKey);
-  savePending(list);
-}
-function readAdopted() {
-  try { return wx.getStorageSync(ADOPTED_KEY) || ''; } catch (e) { return ''; }
-}
-function saveAdopted(fid) {
-  try { wx.setStorageSync(ADOPTED_KEY, fid || ''); } catch (e) {}
-}
-
-// 记录级合并：两边 record_id 取并集，同 id 比 updated_at 取新。核心保证多人打卡互不覆盖。
-function mergeRecords(local, remote) {
-  const map = {};
-  (Array.isArray(local) ? local : []).forEach(r => {
-    if (r && r.record_id) map[r.record_id] = r;
-  });
-  (Array.isArray(remote) ? remote : []).forEach(r => {
-    if (!r || !r.record_id) return;
-    const prev = map[r.record_id];
-    if (!prev || String(r.updated_at || '') >= String(prev.updated_at || '')) map[r.record_id] = r;
-  });
-  return Object.keys(map).map(k => map[k]);
-}
-
-// 首次接入家庭：清掉本机旧的单机数据（用户已拍板旧数据丢弃）
-function clearLocalForFamily() {
-  DOC_KEYS.forEach(k => { try { wx.removeStorageSync(k); } catch (e) {} });
-  savePending([]);
-}
-// 给本地家庭配置打上云端 family_id（去掉旧的本地随机 id 语义）
-function stampFamilyId(fid) {
-  try {
-    const f = wx.getStorageSync('gg_family');
-    if (f && typeof f === 'object') { f.familyId = fid; wx.setStorageSync('gg_family', f); }
-  } catch (e) {}
-}
-
+const BASE_KEY = 'gg_sync_base';
+const VERSION_KEY = 'gg_sync_versions';
+const ADOPTED_KEY = 'gg_family_adopted';
+const EPOCH_KEY = 'gg_sync_epoch';
+const LEGACY = 'legacy';
+const read = (key, fallback) => { const v = wx.getStorageSync(key); return v === '' || v === null || v === undefined ? fallback : v; };
+const put = (key, value) => wx.setStorageSync(key, value);
+const pending = () => read(PENDING_KEY, []).filter(k => DOC_KEYS.indexOf(k) >= 0);
+const has = (obj, key) => Object.prototype.hasOwnProperty.call(obj, key);
 let _state = { loggedIn: false, syncing: false, lastSync: '', lastError: '', dirty: false, familyId: '', memberKey: '', role: '' };
-let _ready = false;
-let _session = null;
-let _familyId = '';
-let _identity = null;
-let _dirty = false;
-let _flushing = false;
-let _initializing = false;   // 重建本地期间抑制 flush
-let _retry = 0;
-const MAX_RETRY = 3;
+let _ready = false, _session = null, _familyId = '', _epoch = LEGACY, _initializing = false;
+let _queue = Promise.resolve(), _scheduled = false, _bootstrap = null;
 let _listeners = [];
-
-function readState() {
-  try {
-    const v = wx.getStorageSync(SYNC_KEY);
-    if (v && typeof v === 'object') _state = Object.assign({}, _state, v);
-  } catch (e) {}
-  return _state;
-}
+function getState() { return Object.assign({}, _state, { ready: _ready, dirty: pending().length > 0 }); }
 function saveState() {
-  try { wx.setStorageSync(SYNC_KEY, _state); } catch (e) {}
-  _listeners.forEach(fn => { try { fn(getState()); } catch (e) {} });
+  put('gg_sync_state', _state);
+  _listeners.slice().forEach(fn => { try { fn(getState()); } catch (e) {} });
 }
-function getState() { return Object.assign({}, _state, { ready: _ready }); }
-function onStateChange(fn) { _listeners.push(fn); }
-
-function isLoggedIn() { return !!_session; }
-function getSessionUser() {
-  return _session && _session.user ? { id: _session.user.id, name: _session.user.name } : null;
+function onStateChange(fn) {
+  _listeners.push(fn);
+  return () => { _listeners = _listeners.filter(listener => listener !== fn); };
 }
-function getFamilyId() { return _familyId; }
-function getIdentity() { return family.getIdentity(); }
-
-// ---------- 云端读写 ----------
-// fresh=true 时清空本地后全量覆盖（换家庭/新加入）；否则记录级合并
-async function pullAll(fresh) {
-  if (!_familyId) return {};
-  const cloud = getCloud();
-  const { data, error } = await cloud.database.from('gg_docs')
-    .select('doc_key, doc_value, family_id')
-    .eq('family_id', _familyId);
+function enqueue(task) { const result = _queue.then(task); _queue = result.catch(() => {}); return result; }
+function nextVersion(prev) { return new Date(Math.max(Date.now(), (Date.parse(prev) || 0) + 1)).toISOString(); }
+function unpack(value, epoch) {
+  if (value && value.__gg === 2) return value.epoch === epoch ? value.value : undefined;
+  return epoch === LEGACY ? value : undefined;
+}
+async function getRow(key) {
+  const { data, error } = await getCloud().database.from('gg_docs').select('doc_key,doc_value,family_id,updated_at')
+    .eq('family_id', _familyId).eq('doc_key', key);
   if (error) throw error;
-  const rows = Array.isArray(data) ? data : [];
+  return Array.isArray(data) ? data[0] || null : null;
+}
+async function getEpoch() { const row = await getRow(META_KEY); return row && row.doc_value && row.doc_value.epoch || LEGACY; }
+async function assertEpoch() { if (await getEpoch() !== _epoch) throw new Error('FAMILY_RESET_CHANGED'); }
+async function compareWrite(key, row, value) {
+  const payload = { family_id: _familyId, doc_key: key, doc_value: value, updated_at: nextVersion(row && row.updated_at) };
+  let response;
+  if (!row) {
+    response = await getCloud().database.from('gg_docs').insert(payload).select('doc_key,updated_at');
+    if (response.error && String(response.error.code) === '23505') return false;
+  } else {
+    let query = getCloud().database.from('gg_docs').update(payload).eq('family_id', _familyId).eq('doc_key', key);
+    query = row.updated_at == null ? query.is('updated_at', null) : query.eq('updated_at', row.updated_at);
+    response = await query.select('doc_key,updated_at');
+  }
+  if (response.error) throw response.error;
+  // SELECT after mutation is essential: zero updated rows means another device won.
+  return Array.isArray(response.data) && response.data.length > 0;
+}
+function clearLocal() {
+  DOC_KEYS.forEach(key => wx.removeStorageSync(key));
+  put(PENDING_KEY, []); put(BASE_KEY, {}); put(VERSION_KEY, {});
+  ['gg_invite_link', 'gg_visitor_link'].forEach(key => wx.removeStorageSync(key));
+}
+function stampFamily() {
+  const f = read('gg_family', null);
+  if (f) { f.familyId = _familyId; put('gg_family', f); }
+}
+async function pullAll(fresh) {
+  // Fetch before replacing any local data. A failed join leaves the old cache intact.
+  const epoch = await getEpoch();
+  const { data, error } = await getCloud().database.from('gg_docs').select('doc_key,doc_value,family_id,updated_at').eq('family_id', _familyId);
+  if (error) throw error;
+  if (await getEpoch() !== epoch) throw new Error('FAMILY_RESET_CHANGED');
   const map = {};
-  rows.forEach(r => {
-    if (r.family_id !== _familyId) return;    // 忽略本人 owner 的旧数据行（family_id=NULL，用户已弃用）
-    map[r.doc_key] = r.doc_value;
-  });
-  const pending = readPending();
-  DOC_KEYS.forEach(k => {
-    if (!fresh && pending.indexOf(k) >= 0) return;   // 本地有未上传变更时不覆盖
-    if (Object.prototype.hasOwnProperty.call(map, k) && map[k] !== undefined && map[k] !== null && map[k] !== '') {
-      let value = map[k];
-      if (k === 'gg_records' && !fresh) {
-        let local = null;
-        try { local = wx.getStorageSync(k); } catch (e) {}
-        value = mergeRecords(local, value);
-      }
-      try { wx.setStorageSync(k, value); } catch (e) {}
-    } else if (fresh) {
-      try { wx.removeStorageSync(k); } catch (e) {}
+  (Array.isArray(data) ? data : []).forEach(row => {
+    if (row.family_id === _familyId && DOC_KEYS.indexOf(row.doc_key) >= 0) {
+      const v = unpack(row.doc_value, epoch); if (v !== undefined) map[row.doc_key] = v;
     }
   });
-  return map;
-}
-
-async function pushAll() {
-  if (!_familyId) return;   // 未入家庭：不上传，避免制造孤立 owner 行
-  const cloud = getCloud();
-  for (let i = 0; i < DOC_KEYS.length; i++) {
-    const docKey = DOC_KEYS[i];
-    let value;
-    try { value = wx.getStorageSync(docKey); } catch (e) { value = null; }
-    if (value === '' || value === undefined || value === null) { removePending(docKey); continue; }
-    let out = value;
-    // push 前合并一次云端，尽量缩小并发覆盖窗口（彻底消除需服务端事务/RPC，本平台不可用）
-    if (docKey === 'gg_records') {
-      try {
-        const { data } = await cloud.database.from('gg_docs')
-          .select('doc_value').eq('family_id', _familyId).eq('doc_key', docKey);
-        if (Array.isArray(data) && data[0] && data[0].doc_value) out = mergeRecords(value, data[0].doc_value);
-      } catch (e) {}
-    }
-    const { error } = await cloud.database
-      .from('gg_docs')
-      .upsert({
-        family_id: _familyId, doc_key: docKey, doc_value: out,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: 'family_id,doc_key' });
-    if (error) throw error;
-    if (docKey === 'gg_records' && out !== value) {
-      try { wx.setStorageSync(docKey, out); } catch (e) {}
-    }
-    removePending(docKey);
-  }
-}
-
-// ---------- 写入钩子：store.write 后调用 ----------
-function markDirty(docKey) {
-  if (DOC_KEYS.indexOf(docKey) < 0) return;
-  addPending(docKey);
-  if (!_session || !_familyId) return;   // 未登录/未入家庭：仅本地，dirty 等待入家庭后补传
-  if (_initializing) return;
-  _dirty = true;
-  _state.dirty = true;
-  saveState();
-  flush();
-}
-
-async function flush() {
-  if (_flushing || !_session || !_familyId || !_dirty) return;
-  _flushing = true;
-  _dirty = false;
-  _state.dirty = false;
-  _state.syncing = true;
-  saveState();
-  try {
-    await pushAll();
-    _retry = 0;
-    _state.lastSync = new Date().toISOString();
-    _state.lastError = '';
-  } catch (e) {
-    _retry++;
-    _state.lastError = describeCloudError(e, '同步失败：');
-    if (_retry >= MAX_RETRY) { _dirty = false; _state.dirty = false; }
-    else { _dirty = true; _state.dirty = true; }
-  } finally {
-    _state.syncing = false;
-    _flushing = false;
-    saveState();
-    if (_dirty && _session && _familyId && _retry < MAX_RETRY) flush();
-  }
-}
-
-// ---------- 身份接入 ----------
-// 创建家庭成功：本地数据作为种子上传（不清空）
-async function adoptCreatedFamily(id) {
-  _identity = id;
-  _familyId = id.familyId;
-  _state.familyId = id.familyId;
-  _state.memberKey = id.memberKey;
-  _state.role = id.role;
-  saveAdopted(id.familyId);
-  stampFamilyId(id.familyId);
-  _dirty = true;
-  saveState();
-  await flush();
-  return getState();
-}
-
-// 加入家庭/被批准后：清空本地旧数据，以云端家庭数据为准
-async function adoptJoinedFamily(id) {
-  _identity = id;
-  _familyId = id.familyId;
-  _state.familyId = id.familyId;
-  _state.memberKey = id.memberKey;
-  _state.role = id.role;
-  _state.lastError = '';
+  const changed = read(ADOPTED_KEY, '') !== _familyId || read(EPOCH_KEY, LEGACY) !== epoch;
+  fresh = fresh || changed;
+  _epoch = epoch;
   _initializing = true;
   try {
-    clearLocalForFamily();
-    await pullAll(true);
-    require('./store.js').initFamily(false);   // 补齐云端缺失的默认文档
-    stampFamilyId(id.familyId);
-    saveAdopted(id.familyId);
-  } finally {
-    _initializing = false;
+    if (fresh) clearLocal();
+    const base = read(BASE_KEY, {}), keys = pending();
+    DOC_KEYS.forEach(key => {
+      const remote = map[key];
+      if (keys.indexOf(key) >= 0 && !fresh) {
+        const local = read(key, undefined);
+        const value = merge(key, base[key], local, remote);
+        if (value !== undefined) put(key, value);
+      } else if (has(map, key)) put(key, remote);
+      else if (fresh) wx.removeStorageSync(key);
+      if (remote !== undefined) base[key] = remote; else delete base[key];
+    });
+    put(BASE_KEY, base);
+    require('./store.js').initFamily(false);
+    stampFamily();
+    put(ADOPTED_KEY, _familyId); put(EPOCH_KEY, epoch);
+  } finally { _initializing = false; }
+}
+async function pushKey(key) {
+  const epoch = _epoch;
+  for (let attempt = 0; attempt < 10; attempt++) {
+    await assertEpoch();
+    const versions = read(VERSION_KEY, {}), version = versions[key] || 0;
+    const value = read(key, undefined), base = read(BASE_KEY, {});
+    const row = await getRow(key);
+    const remote = row ? unpack(row.doc_value, epoch) : undefined;
+    const out = merge(key, base[key], value, remote);
+    await assertEpoch();
+    if (!await compareWrite(key, row, { __gg: 2, epoch, value: out === undefined ? null : out })) continue;
+    await assertEpoch();
+    const current = read(key, undefined), nowVersions = read(VERSION_KEY, {});
+    const unchanged = (nowVersions[key] || 0) === version;
+    // A write made while the request was in flight must survive acknowledgement.
+    const reconciled = unchanged ? out : merge(key, value, current, out);
+    if (reconciled !== undefined) put(key, reconciled);
+    base[key] = out === undefined ? null : out; put(BASE_KEY, base);
+    if (unchanged) put(PENDING_KEY, pending().filter(k => k !== key));
+    return;
   }
-  _dirty = true;
-  saveState();
-  await flush();
+  throw new Error('数据更新较频繁，请稍后再同步');
+}
+async function pushPending() {
+  for (let round = 0; round < 16 && pending().length; round++) {
+    for (const key of pending()) await pushKey(key);
+  }
+}
+async function identify() {
+  _session = await ensureSession(); _state.loggedIn = !!_session;
+  if (!_session) {
+    _familyId = ''; _state.familyId = ''; _state.memberKey = ''; _state.role = '';
+    family.clearIdentity();
+    _state.lastError = (typeof getLastAuthError === 'function' && getLastAuthError()) || '暂未连接，记录已保存在本机';
+    return null;
+  }
+  const id = await family.refreshIdentity();
+  _familyId = id && id.status === 'active' ? id.familyId : '';
+  _state.familyId = _familyId; _state.memberKey = _familyId ? id.memberKey : ''; _state.role = _familyId ? id.role : '';
+  if (!_familyId) _state.lastError = '尚未加入家庭，数据仅保存在本机';
+  return _familyId ? id : null;
+}
+async function runSync(refresh, upload) {
+  _state.syncing = true; saveState();
+  try {
+    if (refresh || !_session || !_familyId) await identify();
+    if (!_familyId) return getState();
+    if (refresh || read(ADOPTED_KEY, '') !== _familyId || await getEpoch() !== read(EPOCH_KEY, LEGACY)) await pullAll(false);
+    else _epoch = read(EPOCH_KEY, LEGACY);
+    if (upload) await pushPending();
+    _state.lastError = ''; _state.lastSync = new Date().toISOString();
+  } catch (error) {
+    if (error && error.message === 'FAMILY_RESET_CHANGED') {
+      try { await pullAll(true); _state.lastError = '家庭数据已重置，已刷新本机记录'; }
+      catch (e) { _state.lastError = describeCloudError(e, '同步未完成：'); }
+    } else _state.lastError = describeCloudError(error, '同步未完成：');
+  } finally { _state.syncing = false; saveState(); }
   return getState();
 }
-
-// ---------- 启动引导 ----------
-async function bootstrap() {
-  readState();
-  try {
-    const session = await ensureSession();
-    _session = session || null;
-    _state.loggedIn = !!_session;
-    if (_session) {
-      const id = await family.refreshIdentity();
-      _identity = id && id.status === 'active' ? id : null;
-      if (_identity && _identity.familyId) {
-        _familyId = _identity.familyId;
-        _state.familyId = _familyId;
-        _state.memberKey = _identity.memberKey;
-        _state.role = _identity.role;
-        const adopted = readAdopted();
-        if (adopted !== _familyId) {
-          // 本机尚未归属该家庭（换设备/被批准）：重建本地
-          _initializing = true;
-          try {
-            clearLocalForFamily();
-            await pullAll(true);
-            require('./store.js').initFamily(false);
-            stampFamilyId(_familyId);
-            saveAdopted(_familyId);
-          } finally { _initializing = false; }
-        } else {
-          await pullAll(false);
-        }
-        _dirty = true;
-        await flush();
-      } else {
-        _familyId = '';
-        _state.familyId = '';
-        _state.memberKey = '';
-        _state.role = '';
-        _state.lastError = '尚未加入家庭，数据仅保存在本机；可在「我的 → 家庭管理」创建或加入';
+function markDirty(key) {
+  if (_initializing || DOC_KEYS.indexOf(key) < 0) return;
+  const list = pending(); if (list.indexOf(key) < 0) list.push(key); put(PENDING_KEY, list);
+  const versions = read(VERSION_KEY, {}); versions[key] = (versions[key] || 0) + 1; put(VERSION_KEY, versions);
+  saveState();
+  if (_session && _familyId && !_scheduled) {
+    _scheduled = true;
+    Promise.resolve().then(() => { _scheduled = false; return flush(); }).catch(() => {});
+  }
+}
+function bootstrap() {
+  if (!_bootstrap) _bootstrap = enqueue(async () => { try { return await runSync(true, true); } finally { _ready = true; saveState(); } });
+  return _bootstrap;
+}
+function syncNow() { return enqueue(() => runSync(true, true)); }
+function flush() { return enqueue(() => runSync(false, true)); }
+function refreshMembership() { return enqueue(() => runSync(true, false)); }
+function adoptCreatedFamily(id) {
+  return enqueue(async () => {
+    _session = await ensureSession();
+    if (!_session) throw new Error('登录未完成，请重新连接后重试');
+    _familyId = id.familyId; Object.assign(_state, { loggedIn: true, familyId: id.familyId, memberKey: id.memberKey, role: id.role });
+    _epoch = await getEpoch(); put(ADOPTED_KEY, _familyId); put(EPOCH_KEY, _epoch); put(BASE_KEY, {}); stampFamily();
+    put(PENDING_KEY, DOC_KEYS.filter(key => read(key, undefined) !== undefined));
+    return runSync(false, true);
+  });
+}
+function adoptJoinedFamily() { return syncNow(); }
+async function resetFamilyData() {
+  return enqueue(async () => {
+    const cached = family.getIdentity();
+    if (cached && cached.status === 'active') {
+      const id = await identify();
+      if (!id || id.role !== 'admin') throw new Error('请连接网络并以家庭管理员身份清空数据');
+      let saved = false;
+      for (let attempt = 0; attempt < 10; attempt++) {
+        const row = await getRow(META_KEY);
+        const epoch = 'reset_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2);
+        if (await compareWrite(META_KEY, row, { epoch })) { _epoch = epoch; saved = true; break; }
+      }
+      if (!saved) throw new Error('家庭数据正在更新，请稍后重试');
+      // The committed epoch invalidates every previous document, including offline copies.
+      await pullAll(true);
+      // Scrub old payloads too; the epoch already prevents their reuse if cleanup is interrupted.
+      DOC_KEYS.forEach(key => {
+        if (read(key, undefined) === undefined) put(key, key === 'gg_extra_settings' ? {} : []);
+      });
+      put(PENDING_KEY, DOC_KEYS.slice());
+      try { await pushPending(); }
+      catch (e) {
+        _state.lastError = describeCloudError(e, '重置已生效，云端清理待同步：');
+        saveState();
+        return { data: require('./store.js').getFamily(), error: null, cleanupPending: true };
       }
     } else {
-      _state.lastError = localModeMessage();
+      _initializing = true;
+      try { clearLocal(); require('./store.js').initFamily(true); }
+      finally { _initializing = false; }
     }
-  } catch (e) {
-    _state.lastError = describeCloudError(e, '云端读写失败：');
-  } finally {
-    _ready = true;
-    saveState();
-  }
-  return getState();
+    _state.lastError = ''; saveState();
+    return { data: require('./store.js').getFamily(), error: null };
+  });
 }
-
-// 手动同步：刷新身份 → 合并拉取 → 上传
-async function syncNow() {
-  if (!_session) {
-    const session = await ensureSession();
-    _session = session || null;
-    _state.loggedIn = !!_session;
-  }
-  if (!_session) { _state.lastError = localModeMessage(); saveState(); return getState(); }
-  try {
-    const id = await family.refreshIdentity();
-    _identity = id && id.status === 'active' ? id : null;
-    if (!_identity || !_identity.familyId) {
-      _state.lastError = '尚未加入家庭，数据仅保存在本机';
-      saveState();
-      return getState();
-    }
-    _familyId = _identity.familyId;
-    _state.familyId = _familyId;
-    _state.memberKey = _identity.memberKey;
-    _state.role = _identity.role;
-    await pullAll(false);
-    await pushAll();
-    savePending([]);
-    _dirty = false;
-    _state.dirty = false;
-    _state.lastSync = new Date().toISOString();
-    _state.lastError = '';
-  } catch (e) {
-    _dirty = true;
-    _state.dirty = true;
-    _state.lastError = describeCloudError(e, '同步失败：');
-  }
-  saveState();
-  return getState();
-}
-
 module.exports = {
-  bootstrap, markDirty, flush, syncNow, getState, onStateChange,
-  isLoggedIn, getSessionUser, getFamilyId, getIdentity,
-  adoptCreatedFamily, adoptJoinedFamily, DOC_KEYS, mergeRecords,
+  bootstrap, markDirty, flush, syncNow, refreshMembership, getState, onStateChange,
+  isLoggedIn: () => !!_session,
+  getSessionUser: () => _session && _session.user ? { id: _session.user.id, name: _session.user.name } : null,
+  getFamilyId: () => _familyId, getIdentity: () => family.getIdentity(),
+  adoptCreatedFamily, adoptJoinedFamily, resetFamilyData, DOC_KEYS, mergeRecords,
 };

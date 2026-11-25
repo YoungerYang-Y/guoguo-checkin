@@ -1,5 +1,6 @@
 const store = require('../../utils/store.js');
 const D = require('../../utils/date.js');
+const family = require('../../utils/family.js');
 
 const CYCLE_TYPES = [
   { key: 'daily', label: '每日' },
@@ -33,7 +34,10 @@ Page({
   onShow() {
     store.initFamily();
     const members = store.getFamily().members;
-    const ids = this.data.form.member_ids || ['guoguo'];
+    const identity = family.getIdentity();
+    this._memberOnly = identity && identity.status === 'active' && identity.role !== 'admin' ? identity.memberKey : '';
+    const ids = this._memberOnly && !this.data.editingId ? [this._memberOnly] : (this.data.form.member_ids || ['guoguo']);
+    this.setData({ 'form.member_ids': ids });
     this.setData({
       members,
       memberChips: members.map(m => Object.assign({}, m, { on: ids.indexOf(m.id) >= 0 })),
@@ -42,6 +46,7 @@ Page({
       list: store.getCustomTargets().map(t => Object.assign({}, t, {
         memberNames: store.targetMemberIds(t).map(id => (members.find(m => m.id === id) || {}).name || id).join('、'),
         memberCount: store.targetMemberIds(t).length,
+        canEdit: store.canEditTarget(t),
         cycleLabel: (CYCLE_TYPES.find(c => c.key === t.cycle_type) || {}).label || t.cycle_type,
       })),
       'form.start_date': this.data.form.start_date || D.today(),
@@ -65,7 +70,7 @@ Page({
   cancelAutoBack() { if (this._backTimer) { clearTimeout(this._backTimer); this._backTimer = null; } },
   switchToCreate() {
     this.cancelAutoBack();
-    const ids = ['guoguo'];
+    const ids = [this._memberOnly || 'guoguo'];
     this.setData({
       mode: 'create', editingId: '', showCountValue: false,
       form: { name: '', member_ids: ids, cycle_type: 'daily', cycle_value: 1, standard_note: '', count_mode: 0, start_date: D.today(), end_date: '' },
@@ -79,6 +84,7 @@ Page({
   },
   selectMember(e) {
     const id = e.currentTarget.dataset.id;
+    if (this._memberOnly && id !== this._memberOnly) { toast('成员只能为自己管理目标'); return; }
     const ids = (this.data.form.member_ids || []).slice();
     const i = ids.indexOf(id);
     if (i >= 0) {
@@ -121,11 +127,12 @@ Page({
 
     if (this.data.editingId) {
       const res = store.updateCustomTarget(this.data.editingId, payload);
-      if (res.error) { toast('保存失败'); return; }
+      if (res.error) { toast(res.error === 'FORBIDDEN' ? '只能修改自己创建的目标' : '保存失败'); return; }
       try { wx.showToast({ title: '已更新 · ' + label, icon: 'success' }); } catch (e) {}
     } else {
       const res = store.createCustomTarget(payload);
       const errMap = {
+        FORBIDDEN: '成员只能为自己创建目标',
         NO_MEMBER: '请至少选择一位成员',
         TARGET_LIMIT: '每位成员最多 10 个进行中目标',
         DUPLICATE_NAME: '所选成员中已有同名目标',
@@ -150,6 +157,7 @@ Page({
     const id = e.currentTarget.dataset.id;
     const t = store.getCustomTarget(id);
     if (!t) return;
+    if (!store.canEditTarget(t)) { toast('只能修改自己创建的目标'); return; }
     const ids = store.targetMemberIds(t);
     this.setData({
       mode: 'create', editingId: id, showCountValue: t.cycle_type === 'weekly' || t.cycle_type === 'monthly',
@@ -163,12 +171,13 @@ Page({
   archiveTarget(e) {
     const id = e.currentTarget.dataset.id;
     wx.showModal({
-      title: '归档目标', content: '归档后不再出现在打卡页，历史记录与报表保留。确定吗？',
+      title: '归档目标', content: '归档从下一周期生效，历史记录与报表保留。确定吗？',
       success: (res) => {
         if (!res.confirm) return;
-        store.archiveCustomTarget(id);
+        const result = store.archiveCustomTarget(id);
+        if (result.error) { toast(result.error === 'FORBIDDEN' ? '只能管理自己创建的目标' : '归档失败'); return; }
         this.onShow();
-        toast('已归档');
+        toast('已安排下周期归档');
       },
     });
   },

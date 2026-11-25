@@ -3,7 +3,7 @@
   <!-- 排期 -->
   <view class="card">
     <text class="section-title">周内排期（必修/选修）</text>
-    <text class="text-muted text-small">点击星期切换；修改不影响历史报表</text>
+    <text class="text-muted text-small">点击星期切换；修改明日起生效，历史报表保持原口径</text>
     <view class="sched-head">
       <text class="sched-name-col">打卡项</text>
       <text class="sched-day" wx:for="{{dows}}" wx:key="*this">{{item}}</text>
@@ -20,7 +20,7 @@
   <!-- 周目标 -->
   <view class="card">
     <text class="section-title">周目标</text>
-    <text class="text-muted text-small">修改后从下一周期起生效</text>
+    <text class="text-muted text-small">修改后从下周一起生效</text>
     <view class="target-row" wx:for="{{targetRows}}" wx:key="code">
       <text class="target-name">{{item.name}}</text>
       <input class="target-input" type="number" value="{{item.value}}" data-code="{{item.code}}" bindinput="onTargetInput" />
@@ -47,7 +47,7 @@
         <text class="text-bold">{{item.name}}</text>
         <text class="text-muted text-small">{{item.role === 'admin' ? '管理员' : (item.role === 'child' ? '孩子' : '成员')}}</text>
       </view>
-      <button class="btn" size="mini" data-id="{{item.id}}" data-name="{{item.name}}" bindtap="editName">改名</button>
+      <button class="btn" size="mini" data-id="{{item.id}}" data-name="{{item.name}}" disabled="{{!canManage}}" bindtap="editName">改名</button>
     </view>
   </view>
 
@@ -68,7 +68,7 @@
       <text>每周一报告提醒</text>
       <switch checked="{{weekRemind}}" bindchange="toggleWeekRemind" color="#EC5B8C" />
     </view>
-    <button class="btn btn-primary btn-block" style="margin-top:20rpx" bindtap="saveSettings">保存提醒设置</button>
+    <button class="btn btn-primary btn-block" style="margin-top:20rpx" disabled="{{!canManage}}" bindtap="saveSettings">保存提醒设置</button>
     <text class="text-muted text-small">本地存储版不发送实际推送，设置用于记录偏好</text>
   </view>
 

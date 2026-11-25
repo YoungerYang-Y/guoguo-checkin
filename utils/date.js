@@ -77,8 +77,8 @@ function periodKey(type, anchor) {
     const ws = weekStart(anchor);
     const th = addDays(ws, 3); // ISO 周四所在年份决定归属年
     const y = Number(th.slice(0, 4));
-    const start = y + '-01-01';
-    const w = Math.floor(diffDays(start, ws) / 7) + 1;
+    const firstWeek = weekStart(y + '-01-04');
+    const w = Math.floor(diffDays(firstWeek, ws) / 7) + 1;
     return y + '-W' + pad(w);
   }
   if (type === 'month') return anchor.slice(0, 7);
