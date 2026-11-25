@@ -42,6 +42,7 @@ function install() {
   const mem = {};
   fill('getFileSystemManager', function () {
     return {
+      isMemoryOnly: true,
       writeFileSync: function (p, data) { mem[p] = String(data); },
       saveFileSync: function (src, dest) {
         mem[dest] = mem[src] !== undefined ? mem[src] : String(src);
@@ -79,7 +80,7 @@ function install() {
           wx.showModal({ title: '可手动复制', content: data, showCancel: false });
         }
       } catch (e) {}
-      try { if (typeof opts.success === 'function') opts.success({}); } catch (e) {}
+      try { if (typeof opts.success === 'function') opts.success({ manual: true }); } catch (e) {}
     }
     try { if (typeof opts.complete === 'function') opts.complete({}); } catch (e) {}
   });

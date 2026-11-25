@@ -1,0 +1,35 @@
+<view class="page">
+  <view class="card">
+    <text class="section-title">导出打卡明细</text>
+    <text class="export-desc">将本机当前保存的有效打卡记录导出为 CSV，可用 Excel 查看。</text>
+    <text class="text-muted text-small export-note">仅包含打卡明细，不包含体重身高、培训费和复习记录；已撤销的打卡不导出。</text>
+  </view>
+
+  <view class="card">
+    <text class="section-title">选择范围</text>
+    <view class="chip-row">
+      <view wx:for="{{ranges}}" wx:key="key" class="chip {{exportRange === item.key ? 'active' : ''}}"
+            data-key="{{item.key}}" hover-class="ui-hover" bindtap="setRange">{{item.label}}</view>
+    </view>
+    <text class="range-label">{{rangeLabel}}</text>
+    <text class="record-count">共 {{recordCount}} 条有效打卡</text>
+    <text class="text-muted text-small export-note">如需包含家人最新记录，请先返回「我的」完成同步。</text>
+    <button class="btn btn-primary btn-block export-button" disabled="{{recordCount === 0}}" hover-class="btn-hover" bindtap="exportCSV">生成 CSV 文件</button>
+  </view>
+
+  <view class="card" wx:if="{{exportReady}}">
+    <text class="section-title">{{exportFallback ? '复制打卡明细' : 'CSV 文件已生成'}}</text>
+    <text class="text-muted text-small export-note">{{exportFallback ? '当前环境无法生成文件，可将 CSV 明细复制后另行保存。' : '文件已保存在本机，以下是文件路径。'}}</text>
+    <text class="export-path" selectable="true" wx:if="{{!exportFallback}}">{{exportPath}}</text>
+    <button class="btn btn-ghost btn-block export-button" disabled="{{copying}}" bindtap="copyExport">{{copying ? '复制中…' : (exportFallback ? '复制 CSV 明细' : '复制文件路径')}}</button>
+    <view class="manual-copy" wx:if="{{manualContent}}">
+      <text class="text-muted text-small">长按下方内容，选择并复制。</text>
+      <textarea class="manual-content" value="{{manualContent}}" maxlength="-1" />
+    </view>
+  </view>
+
+  <view class="export-fields">
+    <text class="field-label">文件包含</text>
+    <text class="text-muted text-small">日期、成员、打卡项、完成状态、节数、数量、备注、来源与达标标准快照。</text>
+  </view>
+</view>

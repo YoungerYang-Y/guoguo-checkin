@@ -22,9 +22,11 @@
   </view>
   <view class="stat-row">
     <view class="stat-item"><text class="stat-num">{{recordCount}}</text><text class="stat-label">打卡记录</text></view>
-    <view class="stat-item"><text class="stat-num">{{targetCount}}</text><text class="stat-label">自定义目标</text></view>
-    <view class="stat-item"><text class="stat-num">{{memberCount}}</text><text class="stat-label">家庭成员</text></view>
+    <view class="stat-item"><text class="stat-num">{{targetCount}}</text><text class="stat-label">进行中目标</text></view>
+    <view class="stat-item"><text class="stat-num">{{memberCount}}</text><text class="stat-label">已加入账号</text></view>
   </view>
+
+  <text class="overview-note">概览按本机当前数据统计；已加入账号不含未绑定微信的孩子档案。</text>
 
   <!-- 家庭：管理入口 + 分享统一收口在这里 -->
   <view class="card">
@@ -34,7 +36,7 @@
     <text class="text-muted text-small" style="margin-top:12rpx">也可直接用右上角「···」转发只读概览给微信好友</text>
   </view>
 
-  <!-- 功能入口与导出：导航归导航、操作归操作，各自独立成卡，形态不混 -->
+  <!-- 我的页只保留导航；导出操作在独立页面完成 -->
   <block wx:for="{{menuGroups}}" wx:key="key">
     <view class="card">
       <text class="section-title">{{item.title}}</text>
@@ -44,20 +46,6 @@
       </view>
     </view>
 
-    <!-- 导出明细：本次是就地操作而非跳转，单独成卡，与导航行的列表形态区分开 -->
-    <view class="card" wx:if="{{item.key === 'data'}}">
-      <text class="section-title">导出明细</text>
-      <text class="text-muted text-small export-desc">CSV 包含日期、成员、打卡项、状态、节数、数量、备注与来源</text>
-      <view class="chip-row">
-        <view wx:for="{{ranges}}" wx:for-item="rg" wx:key="key" class="chip {{exportRange === rg.key ? 'active' : ''}}"
-              data-key="{{rg.key}}" hover-class="ui-hover" bindtap="setRange">{{rg.label}}</view>
-      </view>
-      <button class="btn btn-ghost btn-block" bindtap="exportCSV">导出 CSV 明细</button>
-      <view class="export-result" wx:if="{{exportReady}}">
-        <text class="text-small">{{exportFallback ? '当前环境不支持写文件，CSV 明细已复制到剪贴板' : '文件已生成（点分享可转发）'}}</text>
-        <text class="text-small export-path" wx:if="{{!exportFallback}}" bindtap="copyExportPath">{{exportPath}}</text>
-      </view>
-    </view>
   </block>
 
   <view class="version">果果家庭打卡 v{{version}} · 家庭内部使用</view>

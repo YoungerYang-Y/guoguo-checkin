@@ -1,0 +1,13 @@
+.export-desc { display: block; line-height: 1.7; }
+.export-note { display: block; margin-top: 14rpx; line-height: 1.7; }
+.chip-row { display: flex; flex-wrap: wrap; }
+.chip { padding: 14rpx 28rpx; margin: 0 14rpx 14rpx 0; border-radius: 30rpx; background: #f2f3f5; font-size: 26rpx; color: #646a73; }
+.chip.active { background: #FFEDF4; color: #c2366b; font-weight: 600; }
+.range-label { display: block; margin-top: 14rpx; font-size: 26rpx; }
+.record-count { display: block; margin-top: 12rpx; font-size: 32rpx; font-weight: 600; }
+.export-button { margin-top: 28rpx; }
+.export-button[disabled] { opacity: 0.5; }
+.export-path { display: block; margin-top: 20rpx; padding: 20rpx; border-radius: 14rpx; background: #FFF7FA; color: #6b7280; font-size: 24rpx; line-height: 1.6; word-break: break-all; }
+.export-fields { padding: 8rpx 16rpx; line-height: 1.7; }
+.manual-copy { margin-top: 24rpx; }
+.manual-content { box-sizing: border-box; width: 100%; height: 300rpx; margin-top: 16rpx; padding: 20rpx; border: 1rpx solid #F3EAEF; border-radius: 14rpx; font-size: 24rpx; line-height: 1.6; }

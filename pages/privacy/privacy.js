@@ -22,7 +22,7 @@ Page({
   revoke() {
     wx.showModal({
       title: '撤回同意',
-      content: '撤回后，下次打开小程序会再次询问；涉及剪切板的「复制路径」功能将暂不可用。确定撤回吗？',
+      content: '撤回后，下次打开小程序会再次询问；导出页中涉及剪切板的复制功能将暂不可用。确定撤回吗？',
       confirmText: '撤回',
       confirmColor: '#d93026',
       success: (res) => {

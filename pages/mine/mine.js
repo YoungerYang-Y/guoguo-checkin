@@ -1,5 +1,4 @@
 const store = require('../../utils/store.js');
-const D = require('../../utils/date.js');
 const cloudstore = require('../../utils/cloudstore.js');
 const privacy = require('../../utils/privacy.js');
 const family = require('../../utils/family.js');
@@ -17,25 +16,18 @@ Page({
     syncing: false,
     recordCount: 0,
     targetCount: 0,
-    memberCount: 1,   // 家庭成员数：未入家庭默认 1（仅本机），入家庭后按 active 成员统计
-    exportRange: 'month',
-    exportReady: false,      // 导出结果区块是否可见
-    exportPath: '',          // 生成的文件路径（预览环境为空）
-    exportFallback: false,   // 无文件系统时退化为剪贴板
-    ranges: [
-      { key: 'week', label: '本周' },
-      { key: 'month', label: '本月' },
-      { key: 'year', label: '本年' },
-      { key: 'all', label: '全部' },
-    ],
+    memberCount: '—',
     menuGroups: [
-      { key: 'data', title: '记录与设置', items: [
-        { key: 'settings', text: '设置（排期 / 目标 / 成员）', path: '/pages/settings/settings' },
-        { key: 'targets', text: '自定义目标管理', path: '/pages/target-edit/target-edit?list=1' },
-        { key: 'weight', text: '体重记录与年度曲线', path: '/pages/weight/weight' },
-        { key: 'fees', text: '培训费与年度分析', path: '/pages/fees/fees' },
-        { key: 'poems', text: '古诗记录与每周复习', path: '/pages/poems/poems' },
+      { key: 'records', title: '学习与成长', items: [
+        { key: 'weight', text: '体重与身高', path: '/pages/weight/weight' },
+        { key: 'fees', text: '培训费', path: '/pages/fees/fees' },
+        { key: 'poems', text: '古诗与每周复习', path: '/pages/poems/poems' },
         { key: 'words', text: '单词句子与每周复习', path: '/pages/words/words' },
+      ]},
+      { key: 'data', title: '设置与数据', items: [
+        { key: 'settings', text: '排期、周目标与提醒', path: '/pages/settings/settings' },
+        { key: 'targets', text: '自定义目标管理', path: '/pages/target-edit/target-edit?list=1' },
+        { key: 'export', text: '导出打卡明细', path: '/pages/export/export' },
       ]},
       { key: 'about', title: '关于', items: [
         { key: 'about', text: '关于与版本', path: '' },
@@ -48,18 +40,22 @@ Page({
   onLoad() {
     this.setData({ version: app.globalData.version });
     // 等待启动引导完成，再刷新同步状态
-    const ready = () => this.refreshSyncState();
+    const ready = () => { this.refreshSyncState(); this.refreshCounts(); this.loadMemberCount(); };
     if (app.cloudReady && typeof app.cloudReady.then === 'function') app.cloudReady.then(ready);
     else ready();
-    cloudstore.onStateChange(state => this.refreshSyncState(state));
+    cloudstore.onStateChange(state => { this.refreshSyncState(state); this.refreshCounts(); });
   },
   onShow() {
-    this.setData({
-      recordCount: store.getRecords().filter(r => r.status === 1).length,
-      targetCount: store.getCustomTargets().length,
-    });
+    this.refreshCounts();
     this.refreshSyncState();
     this.loadMemberCount();
+  },
+
+  refreshCounts() {
+    this.setData({
+      recordCount: store.getRecords().filter(r => r.status === 1).length,
+      targetCount: store.getCustomTargets().filter(t => t.status === 1).length,
+    });
   },
 
   refreshSyncState(state) {
@@ -67,15 +63,16 @@ Page({
     let label, detail, dotClass, hint = '';
     if (!s.ready) {
       label = '正在连接云服务…'; detail = '首次启动同步中'; dotClass = 'dot-pending';
+    } else if (s.loggedIn && !s.familyId) {
+      label = '本机保存'; detail = '加入家庭后可与家人同步数据'; dotClass = 'dot-warn';
     } else if (s.loggedIn) {
       if (s.syncing) { label = '正在同步'; detail = '数据上传中…'; dotClass = 'dot-pending'; }
       else if (s.lastError) { label = '同步异常'; detail = s.lastError; dotClass = 'dot-error'; }
+      else if (s.dirty) { label = '等待同步'; detail = '本机有尚未上传的修改'; dotClass = 'dot-pending'; }
       else { label = '云端已同步'; detail = s.lastSync ? ('最近同步 ' + this.fmtTime(s.lastSync)) : '数据已保存到云端'; dotClass = 'dot-ok'; }
     } else {
       label = '本地模式'; detail = s.lastError || '未登录，数据仅保存在本机'; dotClass = 'dot-warn';
-      hint = /合法域名|mp-api\.app\.workbuddy\.host/.test(s.lastError || '')
-        ? '这是小程序后台的服务器域名配置问题：需管理员在微信公众平台添加 request 合法域名后重新打开小程序'
-        : '预览面板是 H5 模拟环境，拿不到微信登录凭证，无法云端同步；用微信扫码打开小程序后会自动登录并同步，当前本机数据不会丢失';
+      hint = '当前记录已保存在本机，可以继续使用。连接成功并加入家庭后，再与家人同步。';
     }
     this.setData({ syncState: { label, detail, dotClass, hint, loggedIn: s.loggedIn } , syncing: !!s.syncing });
   },
@@ -100,67 +97,26 @@ Page({
       this.setData({ syncing: false });
     }
     const s = cloudstore.getState();
-    if (s.loggedIn && !s.lastError) toast('同步完成', 'success');
+    if (s.loggedIn && s.familyId && !s.lastError) toast('同步完成', 'success');
+    else if (s.loggedIn && !s.familyId) toast('请先在家庭管理中创建或加入家庭');
     else if (!s.loggedIn) toast('本地模式，数据已存本机');
     else toast('同步异常，请稍后重试');
     this.refreshSyncState();
+    this.refreshCounts();
+    this.loadMemberCount();
   },
 
-  setRange(e) { this.setData({ exportRange: e.currentTarget.dataset.key }); },
-
-  exportCSV() {
-    const r = this.data.exportRange;
-    let start, end = D.today();
-    if (r === 'week') start = D.weekStart(D.today());
-    else if (r === 'month') start = D.monthStart(D.today());
-    else if (r === 'year') start = D.yearStart(D.today());
-    else start = '2000-01-01';
-    const csv = store.exportCSV(start, end);
-    try {
-      const fs = typeof wx.getFileSystemManager === 'function' ? wx.getFileSystemManager() : null;
-      const base = (wx.env && wx.env.USER_DATA_PATH) || 'wxfile://usr';
-      const path = base + '/gg-checkin-' + r + '-' + D.today() + '.csv';
-      if (!fs || typeof fs.writeFileSync !== 'function') throw new Error('NO_FS');
-      // 加 BOM 以便 Excel 正确识别中文
-      fs.writeFileSync(path, '\uFEFF' + csv, 'utf8');
-      this.setData({ exportPath: path, exportReady: true, exportFallback: false });
-      toast('已生成 CSV 文件', 'success');
-    } catch (err) {
-      // 预览环境无文件系统：把明细复制到剪贴板，导出功能仍然可用
-      try { wx.setClipboardData({ data: csv }); } catch (e) {}
-      this.setData({ exportPath: '', exportReady: true, exportFallback: true });
-      toast('当前环境不支持写文件，已复制明细');
-    }
-  },
-
-  copyExportPath() {
-    if (this.data.exportFallback) { toast('明细已复制，无需复制路径'); return; }
-    if (!this.data.exportPath) return;
-    // 「复制路径」会写入剪切板，属于隐私接口；未同意指引前先询问
-    if (!privacy.hasAgreed()) {
-      wx.showModal({
-        title: '需要先同意隐私指引',
-        content: '「复制路径」会用到剪切板。请先阅读并同意《用户隐私保护指引》后再使用。',
-        confirmText: '去查看',
-        cancelText: '取消',
-        success: (res) => { if (res.confirm) wx.navigateTo({ url: '/pages/privacy/privacy' }); },
-      });
-      return;
-    }
-    wx.setClipboardData({ data: this.data.exportPath, success: () => wx.showToast({ title: '路径已复制', icon: 'success' }) });
-  },
-
-  // 家庭成员数：已入家庭按云端 active 成员统计，失败静默保持原值，不打扰用户
+  // 这里只统计已绑定微信身份的 active 账号，不把本地三个档案当作登录成员
   async loadMemberCount() {
     const id = family.getIdentity();
     if (!id || id.status !== 'active' || !id.familyId) {
-      this.setData({ memberCount: 1 });
+      this.setData({ memberCount: '—' });
       return;
     }
     try {
       const list = await family.listMembers();
-      const active = list.filter(m => m && m.status === 'active').length;
-      this.setData({ memberCount: active || 1 });
+      const active = list.filter(m => m && m.status === 'active' && m.uid).length;
+      this.setData({ memberCount: active });
     } catch (e) {}
   },
 

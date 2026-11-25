@@ -36,12 +36,6 @@
 .sync-detail { display: block; margin-top: 12rpx; margin-left: 30rpx; }
 .sync-hint { margin-top: 18rpx; padding: 14rpx 18rpx; border-radius: 12rpx; background: #FFF2F7; color: #C4367E; font-size: 23rpx; line-height: 1.55; }
 
-.chip-row { display: flex; flex-wrap: wrap; }
-.chip { padding: 12rpx 28rpx; margin: 0 14rpx 14rpx 0; border-radius: 30rpx; background: #f2f3f5; font-size: 26rpx; color: #646a73; }
-.chip.active { background: #FFEDF4; color: #EC5B8C; font-weight: 600; }
-.export-result { margin-top: 20rpx; padding: 20rpx; background: #f7f8fa; border-radius: 12rpx; display: flex; flex-direction: column; }
-.export-path { color: #EC5B8C; margin-top: 8rpx; word-break: break-all; }
-
 .menu-item { display: flex; align-items: center; justify-content: space-between; padding: 22rpx 0; border-bottom: 2rpx solid #f5f6f7; font-size: 28rpx; }
 .menu-item:last-child { border-bottom: none; }
 .menu-arrow { color: #c0c4c9; font-size: 36rpx; }
@@ -78,8 +72,5 @@
 .stat-num { font-size: 44rpx; letter-spacing: 0.5rpx; }
 .sync-card { background: linear-gradient(135deg, #ffffff 0%, #FFF8FB 100%); }
 .menu-item { font-size: 28rpx; }
-.chip.active { box-shadow: 0 4rpx 12rpx rgba(236, 91, 140, 0.14); }
 
-/* 导出明细卡：沿用 section-title 规范，仅内容为就地操作控件 */
-.export-desc { display: block; line-height: 1.5; }
-.export-result { border-radius: 16rpx; }
+.overview-note { display: block; margin: -8rpx 8rpx 24rpx; font-size: 22rpx; color: #6b7280; line-height: 1.6; }
