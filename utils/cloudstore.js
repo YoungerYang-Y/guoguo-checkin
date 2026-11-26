@@ -2,7 +2,7 @@
 const { getCloud, ensureSession, getLastAuthError, describeCloudError } = require('./cloud.js');
 const family = require('./family.js');
 const { merge, mergeRecords } = require('./sync-merge.js');
-const DOC_KEYS = ['gg_family', 'gg_records', 'gg_schedule', 'gg_targets', 'gg_custom', 'gg_settings', 'gg_snapshots', 'gg_weights', 'gg_fees', 'gg_extra_settings', 'gg_poems', 'gg_words'];
+const DOC_KEYS = ['gg_family', 'gg_records', 'gg_schedule', 'gg_targets', 'gg_custom', 'gg_settings', 'gg_snapshots', 'gg_weights', 'gg_fees', 'gg_extra_settings', 'gg_poems', 'gg_words', 'gg_logs'];
 const META_KEY = 'gg_reset_state';
 const PENDING_KEY = 'gg_pending_keys';
 const BASE_KEY = 'gg_sync_base';
@@ -202,7 +202,10 @@ async function resetFamilyData() {
     const cached = family.getIdentity();
     if (cached && cached.status === 'active') {
       const id = await identify();
-      if (!id || id.role !== 'admin') throw new Error('请连接网络并以家庭管理员身份清空数据');
+      const fam = require('./family.js');
+      const can = typeof fam.isManager === 'function' ? fam.isManager(id)
+        : !!(id && id.status === 'active' && ['creator', 'admin'].indexOf(id.role) >= 0);
+      if (!id || !can) throw new Error('请连接网络并以创建人或管理员身份清空数据');
       let saved = false;
       for (let attempt = 0; attempt < 10; attempt++) {
         const row = await getRow(META_KEY);

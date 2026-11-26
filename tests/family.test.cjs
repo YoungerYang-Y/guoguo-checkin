@@ -67,6 +67,8 @@ function pageHarness({ cloudReady, cloudState, refreshMembership, getIdentity, m
     getCachedInvite: () => null,
     createInviteLink: async () => ({ token: 'inv_test', expiresAt: '' }),
     isAdmin: id => !!(id && id.status === 'active' && id.role === 'admin'),
+    canProxy: id => !!(id && id.status === 'active' && id.memberKey),
+    isManager: id => !!(id && id.status === 'active' && ['admin', 'creator'].indexOf(id.role) >= 0),
     normalizeRole: r => (r === 'admin' ? 'admin' : 'member'),
     ROLE_LABELS: { admin: '管理员', member: '成员' },
     getFamilyName: async () => '测试家庭',
@@ -98,7 +100,10 @@ function pageHarness({ cloudReady, cloudState, refreshMembership, getIdentity, m
 function indexHarness({ adopted = false } = {}) {
   const source = fs.readFileSync(path.join(root, 'pages/index/index.js'), 'utf8');
   let definition;
-  const family = { getIdentity: () => null, refreshIdentity: async () => null };
+  const family = {
+    getIdentity: () => null, refreshIdentity: async () => null,
+    canProxy: id => !!(id && id.status === 'active' && id.memberKey),
+  };
   vm.runInNewContext(source, {
     Page(value) { definition = value; }, getApp: () => ({}),
     wx: { getStorageSync: key => key === 'gg_family_adopted' && adopted ? 'fam_cached' : '', showToast() {} },

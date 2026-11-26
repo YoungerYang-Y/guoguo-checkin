@@ -1,6 +1,6 @@
 {
   "name": "guoguo-family-checkin",
-  "version": "1.7.1",
+  "version": "1.8.0",
   "description": "果果家庭打卡小程序",
   "main": "app.js",
   "dependencies": {

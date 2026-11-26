@@ -38,7 +38,10 @@ Page({
     store.initFamily();
     const members = store.getFamily().members;
     const identity = family.getIdentity();
-    this._memberOnly = identity && identity.status === 'active' && identity.role !== 'admin' ? identity.memberKey : '';
+    const fam = require('../../utils/family.js');
+    const can = typeof fam.isManager === 'function' ? fam.isManager(identity)
+      : !!(identity && identity.status === 'active' && ['creator', 'admin'].indexOf(identity.role) >= 0);
+    this._memberOnly = identity && identity.status === 'active' && !can ? identity.memberKey : '';
     const ids = this._memberOnly && !this.data.editingId ? [this._memberOnly] : (this.data.form.member_ids || ['guoguo']);
     this.setData({ 'form.member_ids': ids });
     this.setData({

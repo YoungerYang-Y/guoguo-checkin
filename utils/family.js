@@ -9,23 +9,44 @@
 const { getCloud, ensureSession } = require('./cloud.js');
 
 // 角色（权限）与身份（member_key，数据归属/代签对象）是两个独立概念：
-// role 只有 admin / member 两种；member_key 可为 mama / papa / guoguo 或任意自定义。
+// role 三级：creator（创建人，唯一且不可降级）/ admin（管理员）/ member（成员）。
+// member_key 可为 mama / papa / guoguo 或任意自定义，与 role 正交。
 // 旧数据 role=parent/child 一律按 member 兼容。
-const ROLES = { ADMIN: 'admin', MEMBER: 'member' };
-const ROLE_LABELS = { admin: '管理员', member: '成员', parent: '成员', child: '成员' };
+const ROLES = { CREATOR: 'creator', ADMIN: 'admin', MEMBER: 'member' };
+const ROLE_LABELS = { creator: '创建人', admin: '管理员', member: '成员', parent: '成员', child: '成员' };
 // 身份 → 显示名：用户没填显示名时按所选身份推导，绝不用「我/家人」这类相对代词
 // （换个账号看会变成「我」和「家人（我）」，像同一个人出现两次）
-const IDENTITY_LABELS = { mama: '妈妈', papa: '爸爸', guoguo: '孩子' };
+const IDENTITY_LABELS = { mama: '妈妈', papa: '爸爸', guoguo: '宝宝' };
 function identityLabel(memberKey) {
   return IDENTITY_LABELS[String(memberKey || '').trim().toLowerCase()] || '家人';
 }
-function normalizeRole(role) { return role === ROLES.ADMIN ? ROLES.ADMIN : ROLES.MEMBER; }
-function isAdmin(identity) {
-  return !!(identity && identity.status === 'active' && normalizeRole(identity.role) === ROLES.ADMIN);
+function normalizeRole(role) {
+  if (role === ROLES.CREATOR) return ROLES.CREATOR;
+  if (role === ROLES.ADMIN) return ROLES.ADMIN;
+  return ROLES.MEMBER;
+}
+// 管理权限：创建人与管理员都可管设置/成员/邀请
+function isManager(identity) {
+  if (!identity || identity.status !== 'active') return false;
+  const r = normalizeRole(identity.role);
+  return r === ROLES.CREATOR || r === ROLES.ADMIN;
+}
+function isCreator(identity) {
+  return !!(identity && identity.status === 'active' && normalizeRole(identity.role) === ROLES.CREATOR);
+}
+// 兼容旧调用名：isAdmin 现在表示「有管理权」
+function isAdmin(identity) { return isManager(identity); }
+// 代签权限：只要是在家庭里的 active 登录成员，就能代签任何家人。与角色无关。
+function canProxy(identity) {
+  if (!identity || identity.status !== 'active' || !identity.memberKey) return false;
+  // 宝宝是「没有微信、只被代签」的对象，不能登录打卡/代签
+  const mk = String(identity.memberKey).trim().toLowerCase();
+  if (mk === 'guoguo') return false;
+  return true;
 }
 function requireAdminIdentity() {
   const id = getIdentity();
-  if (!isAdmin(id)) throw new Error('只有管理员能执行此操作');
+  if (!isManager(id)) throw new Error('只有创建人或管理员能执行此操作');
   return id;
 }
 
@@ -102,8 +123,17 @@ async function refreshIdentity() {
     throw new Error('当前账号关联了多个家庭，请联系管理员处理后再继续');
   }
   const r = rows[0];
+  // 创建人角色由 gg_families.created_by 派生，不依赖 members.role 是否迁移过。
+  // 这样旧家庭（role 仍是 admin）零改库即可识别创建人，也不会因迁移失败丢权限。
+  let role = normalizeRole(r.role);
+  try {
+    const fam = await cloud.database.from('gg_families')
+      .select('created_by').eq('family_id', r.family_id);
+    const frow = Array.isArray(fam.data) && fam.data[0];
+    if (!fam.error && frow && frow.created_by === uid) role = ROLES.CREATOR;
+  } catch (e) { /* 家庭表读不到时退回成员表里的 role，不阻塞 */ }
   const id = {
-    familyId: r.family_id, memberKey: r.member_key, role: normalizeRole(r.role),
+    familyId: r.family_id, memberKey: r.member_key, role,
     name: r.name, status: 'active', uid,
   };
   saveIdentity(id);
@@ -254,7 +284,7 @@ async function listMembers() {
 // 批准成员：仅用于清理历史遗留的 pending 行（新加入已免审批）；触发器要求本家庭 active admin
 async function approveMember(targetUid) {
   const id = getIdentity();
-  if (!id || id.role !== 'admin') throw new Error('只有管理员能批准成员');
+  if (!isManager(id)) throw new Error('只有创建人或管理员能批准成员');
   const cloud = getCloud();
   const { data, error } = await cloud.database.from('gg_members')
     .update({ status: 'active' })
@@ -273,7 +303,7 @@ async function approveMember(targetUid) {
 // 生成邀请：同家庭旧邀请自动失效（保证同时只有一个有效邀请，便于管理）
 async function createInviteLink() {
   const id = getIdentity();
-  if (!id || !id.familyId || id.role !== 'admin') throw new Error('只有管理员能生成邀请链接');
+  if (!id || !id.familyId || !isManager(id)) throw new Error('只有创建人或管理员能生成邀请链接');
   const cloud = getCloud();
   // 家庭名：admin 是家庭成员，RLS 允许查自己的家庭；查不到就用默认名，不阻塞
   let familyName = '';
@@ -340,7 +370,7 @@ async function resolveInvite(token) {
 // 撤销邀请：限本家庭 admin，且只动本家庭 token
 async function revokeInviteLink(token) {
   const id = getIdentity();
-  if (!id || !id.familyId || id.role !== 'admin') throw new Error('只有管理员能撤销邀请链接');
+  if (!id || !id.familyId || !isManager(id)) throw new Error('只有创建人或管理员能撤销邀请链接');
   const cloud = getCloud();
   const { data, error } = await cloud.database.from('gg_invite_tokens')
     .update({ revoked: true })
@@ -365,7 +395,7 @@ function getCachedInvite() {
 // 生成访客链接：写入脱敏快照，返回 token + 到期时间（默认 7 天）
 async function createVisitorLink(snapshot, days) {
   const id = getIdentity();
-  if (!id || !id.familyId || id.role !== 'admin') throw new Error('只有管理员能生成访客链接');
+  if (!id || !id.familyId || !isManager(id)) throw new Error('只有创建人或管理员能生成访客链接');
   const token = 'vis_' + Date.now().toString(36) + (await randomCode(20)).toLowerCase();
   const expiresAt = new Date(Date.now() + (days || 7) * 86400000).toISOString();
   const cloud = getCloud();
@@ -380,7 +410,7 @@ async function createVisitorLink(snapshot, days) {
 // 撤销访客链接
 async function revokeVisitorLink(token) {
   const id = getIdentity();
-  if (!id || !id.familyId || id.role !== 'admin') throw new Error('只有管理员能撤销访客链接');
+  if (!id || !id.familyId || !isManager(id)) throw new Error('只有创建人或管理员能撤销访客链接');
   const cloud = getCloud();
   const { data, error } = await cloud.database.from('gg_visitor_snapshots')
     .update({ revoked: true })
@@ -437,11 +467,18 @@ async function renameFamily(name) {
 async function setMemberRole(targetUid, role) {
   const id = requireAdminIdentity();
   const next = normalizeRole(role);
-  if (targetUid === id.uid && next === ROLES.MEMBER) {
-    const rows = await listMembers();
-    const admins = rows.filter(m => m.status === 'active' && normalizeRole(m.role) === ROLES.ADMIN);
-    if (admins.length <= 1) throw new Error('至少保留一名管理员，请先把其他成员设为管理员');
-  }
+  // creator 是唯一且不可变的：不能被别人改成 creator，创建人自己也不能降级
+  if (next === ROLES.CREATOR) throw new Error('创建人不能通过角色分配产生');
+  const rows = await listMembers();
+  const target = rows.find(r => r.uid === targetUid);
+  if (!target) throw new Error('成员不存在，请刷新后重试');
+  if (normalizeRole(target.role) === ROLES.CREATOR) throw new Error('创建人角色不可更改');
+  // 旧家庭的成员行 role 仍是 admin，用 created_by 兜底识别创建人，避免被降级
+  const fam = await getCloud().database.from('gg_families')
+    .select('created_by').eq('family_id', id.familyId);
+  const creatorUid = Array.isArray(fam.data) && fam.data[0] ? fam.data[0].created_by : '';
+  if (!fam.error && creatorUid && creatorUid === targetUid) throw new Error('创建人角色不可更改');
+
   const { data, error } = await getCloud().database.from('gg_members')
     .update({ role: next }).eq('family_id', id.familyId).eq('uid', targetUid)
     .select('uid, role');
@@ -449,7 +486,12 @@ async function setMemberRole(targetUid, role) {
   if (!Array.isArray(data) || !data.some(r => r.uid === targetUid && r.role === next)) {
     throw new Error('角色保存失败，请刷新后重试');
   }
-  if (targetUid === id.uid) saveIdentity(Object.assign({}, id, { role: next }));
+  // 自我降级不同步改本地 role 缓存：否则这一步之后就失去管理权、没法再提拔继任者。
+  // 让下次 refreshIdentity 从云端自然刷新，期间 admin 权限多留一小会儿是安全的（云端仍是 member）。
+  if (targetUid === id.uid && isManager(id)) {
+    // 仅当降级后仍是管理角色（creator 不会走到这）才保留缓存；member 由云端刷新接管
+    if (next !== ROLES.MEMBER) saveIdentity(Object.assign({}, id, { role: next }));
+  }
   return next;
 }
 
@@ -473,12 +515,13 @@ async function updateDisplayName(targetUid, name) {
 async function leaveFamily() {
   const id = getIdentity();
   if (!id || id.status !== 'active') throw new Error('当前不在家庭中');
+  if (isCreator(id)) throw new Error('创建人不能退出家庭，请先把创建人身份转交给其他成员');
   const cloud = getCloud();
   const rows = await listMembers();
   const others = rows.filter(m => m.status === 'active' && m.uid !== id.uid);
   const admins = rows.filter(m => m.status === 'active' && normalizeRole(m.role) === ROLES.ADMIN);
   // 最后一个管理员退出时，先把最早加入的 active 成员提升为管理员，避免家庭失管
-  if (isAdmin(id) && admins.length <= 1 && others.length) {
+  if (isManager(id) && !isCreator(id) && admins.length <= 1 && others.length) {
     const heir = others.slice().sort((a, b) => String(a.created_at || '').localeCompare(String(b.created_at || '')))[0];
     const { error: promoteError } = await cloud.database.from('gg_members')
       .update({ role: ROLES.ADMIN }).eq('family_id', id.familyId).eq('uid', heir.uid)
@@ -499,6 +542,6 @@ module.exports = {
   createFamily, requestJoin, joinByInvite, listMembers, approveMember,
   createInviteLink, resolveInvite, revokeInviteLink, getCachedInvite,
   createVisitorLink, revokeVisitorLink, getVisitorSnapshot, randomCode, generateFamilyId,
-  ROLES, ROLE_LABELS, IDENTITY_LABELS, identityLabel, normalizeRole, isAdmin,
+  ROLES, ROLE_LABELS, IDENTITY_LABELS, identityLabel, normalizeRole, isManager, isCreator, isAdmin, canProxy,
   getFamilyName, renameFamily, setMemberRole, updateDisplayName, leaveFamily,
 };

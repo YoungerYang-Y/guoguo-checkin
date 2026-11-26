@@ -23,7 +23,8 @@ class Database {
   from(table) { return new Query(this, table); }
   async run(query) {
     this.calls.push({ table: query.table, action: query.action, filters: clone(query.filters), values: clone(query.values) });
-    const matches = row => query.filters.every(([op, key, value]) => op === 'neq' ? row[key] !== value : row[key] === value);
+    const inTable = row => row.__table === undefined || row.__table === query.table;
+    const matches = row => inTable(row) && query.filters.every(([op, key, value]) => op === 'neq' ? row[key] !== value : row[key] === value);
     if (query.action === 'insert') {
       // 模拟 UNIQUE(family_id, uid)
       const row = clone(query.values);
@@ -53,9 +54,13 @@ function triggerInsert(rows, invites, values) {
   return { ...values, status: 'active', role: 'member', invited_by: null };
 }
 
-function loadFamily({ rows = [], invites = [], session = { user: { id: 'u2' } } } = {}) {
-  const db = new Database([...rows, ...invites]);
+function loadFamily({ rows = [], invites = [], identity = null, session = { user: { id: 'u2' } } } = {}) {
+  const db = new Database([
+    ...rows.map(r => ({ __table: 'gg_members', ...r })),
+    ...invites.map(r => ({ ...r, __table: 'gg_invite_tokens' })),
+  ]);
   const storage = new Map();
+  if (identity) storage.set('gg_my_identity', clone(identity));
   const wx = {
     getStorageSync(key) { return storage.has(key) ? clone(storage.get(key)) : ''; },
     setStorageSync(key, value) { storage.set(key, clone(value)); },
@@ -165,11 +170,11 @@ test('云端触发器语义：邀请 token 记邀请人；家庭码同为 active
   assert.equal(first.role, 'admin', '创建者仍是 admin');
 });
 
-test('显示名兜底：没填时按身份推导为妈妈/爸爸/孩子，绝不用「我/家人」', async () => {
+test('显示名兜底：没填时按身份推导为妈妈/爸爸/宝宝，绝不用「我/家人」', async () => {
   const { family } = loadFamily();
   assert.equal(family.identityLabel('mama'), '妈妈');
   assert.equal(family.identityLabel('papa'), '爸爸');
-  assert.equal(family.identityLabel('guoguo'), '孩子');
+  assert.equal(family.identityLabel('guoguo'), '宝宝');
   assert.equal(family.identityLabel('MAMA'), '妈妈');
   assert.ok(!['我', '家人'].includes(family.identityLabel('mama')));
 });
@@ -195,4 +200,53 @@ test('用户显式填了显示名时，不被身份推导覆盖', async () => {
   await family.joinByInvite('inv_ok', 'papa', '小名');
   const insert = db.calls.find(c => c.action === 'insert' && c.table === 'gg_members');
   assert.equal(insert.values.name, '小名');
+});
+
+test('三角色模型：creator/admin/member 归一化与权限判定', () => {
+  const { family } = loadFamily();
+  assert.equal(family.normalizeRole('creator'), 'creator');
+  assert.equal(family.normalizeRole('admin'), 'admin');
+  assert.equal(family.normalizeRole('member'), 'member');
+  assert.equal(family.normalizeRole('parent'), 'member');
+  assert.equal(family.ROLE_LABELS.creator, '创建人');
+  assert.equal(family.IDENTITY_LABELS.guoguo, '宝宝');
+});
+
+test('代签权限与角色无关：admin/member/creator 都能代签', () => {
+  const { family } = loadFamily();
+  for (const role of ['creator', 'admin', 'member']) {
+    assert.equal(family.canProxy({ status: 'active', memberKey: 'papa', role }), true, role);
+  }
+  assert.equal(family.canProxy({ status: 'active', memberKey: '', role: 'admin' }), false);
+  assert.equal(family.canProxy({ status: 'pending', memberKey: 'papa', role: 'admin' }), false);
+});
+
+test('管理权限：creator 与 admin 可管设置，member 不可', () => {
+  const { family } = loadFamily();
+  assert.equal(family.isManager({ status: 'active', role: 'creator' }), true);
+  assert.equal(family.isManager({ status: 'active', role: 'admin' }), true);
+  assert.equal(family.isManager({ status: 'active', role: 'member' }), false);
+  assert.equal(family.isCreator({ status: 'active', role: 'creator' }), true);
+});
+
+test('创建人身份从 gg_families.created_by 派生，旧家庭 role=admin 也识别为 creator', async () => {
+  const { family } = loadFamily({
+    rows: [
+      { family_id: 'fam_x', uid: 'u2', member_key: 'mama', role: 'admin', name: '妈妈', status: 'active' },
+      { family_id: 'fam_x', created_by: 'u2', __table: 'gg_families' },
+    ],
+  });
+  const id = await family.refreshIdentity();
+  assert.equal(id.role, 'creator');
+});
+
+test('创建人不能降级为 member', async () => {
+  const { family } = loadFamily({
+    identity: { familyId: 'fam_x', uid: 'u2', role: 'creator', status: 'active' },
+    rows: [
+      { family_id: 'fam_x', uid: 'u2', member_key: 'mama', role: 'admin', name: '妈妈', status: 'active' },
+      { family_id: 'fam_x', created_by: 'u2', __table: 'gg_families' },
+    ],
+  });
+  await assert.rejects(family.setMemberRole('u2', 'member'), /创建人角色不可更改/);
 });

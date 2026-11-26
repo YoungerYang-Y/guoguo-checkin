@@ -61,7 +61,7 @@ Page({
     this.setData({
       scheduleRows, targetRows,
       members: store.getFamily().members.map(m => Object.assign({}, m, {
-        roleLabel: m.role === 'admin' ? '管理员' : '成员',
+        roleLabel: (require('../../utils/family.js').ROLE_LABELS || {})[m.role] || '成员',
       })),
       remindTime: settings.remindTime,
       remindEnabled: settings.remindEnabled,

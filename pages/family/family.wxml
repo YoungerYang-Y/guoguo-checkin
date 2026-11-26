@@ -149,7 +149,7 @@
           <view wx:if="{{item.canEditName && editingNameUid !== item.uid}}" class="mini-action"
                 hover-class="ui-hover" data-uid="{{item.uid}}" data-name="{{item.name}}" bindtap="onEditMemberName">改名</view>
           <view wx:if="{{item.canSwitchRole}}" class="mini-action" hover-class="ui-hover"
-                data-uid="{{item.uid}}" data-role="{{item.roleValue}}" bindtap="onToggleRole">{{item.roleValue === 'admin' ? '设为成员' : '设为管理员'}}</view>
+                wx:if="{{item.roleValue !== 'creator'}}" data-uid="{{item.uid}}" data-role="{{item.roleValue}}" bindtap="onToggleRole">{{item.roleValue === 'admin' ? '设为成员' : '设为管理员'}}</view>
         </view>
       </view>
     </view>
@@ -187,6 +187,24 @@
           <button class="btn btn-danger btn-mini" bindtap="revokeVisitorLink">撤销链接</button>
         </view>
       </view>
+    </view>
+
+    <view class="card">
+      <view class="row-between">
+        <text class="section-title" style="margin:0">操作日志</text>
+        <view class="mini-action" hover-class="ui-hover" bindtap="toggleLogs">{{showLogs ? '收起' : '查看'}}</view>
+      </view>
+      <block wx:if="{{showLogs}}">
+        <view class="log-row" wx:for="{{logs}}" wx:key="id">
+          <text class="log-time">{{item.atText}}</text>
+          <text class="log-body">{{item.actorName}} · {{item.actionText}}<text wx:if="{{item.target}}"> · {{item.target}}</text><text wx:if="{{item.detail}}"> · {{item.detail}}</text></text>
+        </view>
+        <view class="empty-block compact" wx:if="{{logs.length === 0}}">
+          <view class="empty-mark"></view>
+          <text class="empty-title">还没有操作记录</text>
+        </view>
+      </block>
+      <text class="hint-line" wx:else>记录谁在什么时候打卡、撤销及家庭设置变更，最多保留最近 500 条。</text>
     </view>
 
     <view class="card leave-box">

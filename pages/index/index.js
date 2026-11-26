@@ -188,11 +188,11 @@ Page({
       return;
     }
     if (!this.canEditDate()) return;
-    // 代打卡二次确认：当前操作者 = 登录家庭成员；代签需 admin/parent 权限
+    // 代打卡二次确认：只要是登录的家庭成员就能代签任何家人，与角色无关
     const currentOperator = this.data.operatorKey;
     if (member !== currentOperator) {
-      if (['admin', 'parent'].indexOf(this.data.operatorRole) < 0) {
-        wx.showToast({ title: '当前角色不能代签', icon: 'none' });
+      if (!family.canProxy(family.getIdentity())) {
+        wx.showToast({ title: '当前身份不能代签', icon: 'none' });
         return;
       }
       this.setData({ confirmMember: member, confirmName: this.memberName(member), pending: { code, kind, isCustom, standard } });
@@ -215,14 +215,10 @@ Page({
   cancelCheckin() { this.setData({ confirmMember: '' }); },
 
   canWriteMember(member) {
-    const role = this.data.operatorRole;
     const operator = this.data.operatorKey;
-    if (!operator || ['admin', 'member', 'parent'].indexOf(role) < 0) {
-      wx.showToast({ title: '当前身份不能修改打卡', icon: 'none' });
-      return false;
-    }
-    if (member !== operator && ['admin', 'member', 'parent'].indexOf(role) < 0) {
-      wx.showToast({ title: '当前角色不能代签', icon: 'none' });
+    // 统一判定：登录的家庭成员可写自己、可代签任何家人；不再按角色白名单区分
+    if (!operator || !family.canProxy(family.getIdentity())) {
+      wx.showToast({ title: '当前身份不能操作打卡', icon: 'none' });
       return false;
     }
     return true;

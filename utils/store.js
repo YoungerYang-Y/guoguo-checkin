@@ -18,6 +18,7 @@ const KEYS = {
   EXTRA_SETTINGS: 'gg_extra_settings',
   POEMS: 'gg_poems',
   WORDS: 'gg_words',
+  LOGS: 'gg_logs',
 };
 
 function read(key, fallback) {
@@ -63,6 +64,7 @@ function initFamily(force) {
   if (!read(KEYS.SCHEDULE, null)) write(KEYS.SCHEDULE, defaultSchedule());
   if (!read(KEYS.TARGETS, null)) write(KEYS.TARGETS, Object.assign({}, DEFAULT_WEEKLY_TARGETS));
   if (!read(KEYS.CUSTOM, null)) write(KEYS.CUSTOM, []);
+  if (!read(KEYS.LOGS, null)) write(KEYS.LOGS, []);
   if (!read(KEYS.SETTINGS, null)) {
     write(KEYS.SETTINGS, { remindTime: '20:30', remindEnabled: false, weekRemind: true });
   }
@@ -71,9 +73,22 @@ function initFamily(force) {
 }
 
 function getFamily() { return read(KEYS.FAMILY, null) || initFamily(); }
+// 兼容测试/旧环境里 family mock 可能没提供新方法：本地回退判定
+function roleCanManage(id) {
+  const fam = require('./family.js');
+  if (typeof fam.isManager === 'function') return fam.isManager(id);
+  return !!(id && id.status === 'active' && ['creator', 'admin'].indexOf(id.role) >= 0);
+}
+function roleCanProxy(id) {
+  const fam = require('./family.js');
+  if (typeof fam.canProxy === 'function') return fam.canProxy(id);
+  if (!id || id.status !== 'active' || !id.memberKey) return false;
+  return String(id.memberKey).trim().toLowerCase() !== 'guoguo';
+}
 function canManage() {
-  const id = require('./family.js').getIdentity();
-  return id && id.status === 'active' ? id.role === 'admin' : !read('gg_family_adopted', '');
+  const fam = require('./family.js');
+  const id = fam.getIdentity();
+  return id && id.status === 'active' ? roleCanManage(id) : !read('gg_family_adopted', '');
 }
 function updateMemberName(memberId, name) {
   const id = require('./family.js').getIdentity();
@@ -117,10 +132,8 @@ function getRecords() { return mergeRecords([], read(KEYS.RECORDS, [])); }
 function recordOperator() {
   const id = require('./family.js').getIdentity();
   if (id && id.status === 'active') {
-    // 角色与身份分离：admin / member 都可写；兼容旧值 parent，
-    // 旧「孩子身份」child 按原约定不代签共享记录。
-    if (id.role === 'child') return null;
-    return ['admin', 'member', 'parent'].indexOf(id.role) >= 0 ? id.memberKey : null;
+    // 代签与角色无关：任何 active 登录家庭成员都能代签，用 member_key 记录实际操作人
+    return roleCanProxy(id) ? id.memberKey : null;
   }
   return read('gg_family_adopted', '') ? null : 'mama';
 }
@@ -154,6 +167,7 @@ function saveRecord(rec) {
     list.push(record);
   }
   const w = write(KEYS.RECORDS, list);
+  if (!w.error) appendLog('checkin', { target: rec.member_id, detail: rec.item_code + ' / ' + rec.biz_date });
   return w.error ? w : { data: record, error: null };
 }
 
@@ -168,6 +182,7 @@ function revokeRecord(memberId, itemCode, date) {
   list[idx].operator = operator;
   list[idx].updated_at = new Date().toISOString();
   const w = write(KEYS.RECORDS, list);
+  if (!w.error) appendLog('revoke', { target: memberId, detail: itemCode + ' / ' + date });
   return w.error ? w : { data: list[idx], error: null };
 }
 
@@ -240,7 +255,7 @@ function getCustomTargetsAt(memberId, date) {
 function canEditTarget(target) {
   const id = require('./family.js').getIdentity();
   if (!id || id.status !== 'active') return !read('gg_family_adopted', '');
-  if (id.role === 'admin') return true;
+  if (roleCanManage(id)) return true;
   return target.created_by ? target.created_by === id.uid : targetMemberIds(target).length === 1 && targetMemberIds(target)[0] === id.memberKey;
 }
 function createCustomTarget(t) {
@@ -249,7 +264,7 @@ function createCustomTarget(t) {
   const ids = normalizeMemberIds(t);
   const identity = require('./family.js').getIdentity();
   if ((!identity || identity.status !== 'active') && read('gg_family_adopted', '')) return { data: null, error: 'FORBIDDEN' };
-  if (identity && identity.status === 'active' && identity.role !== 'admin' && (ids.length !== 1 || ids[0] !== identity.memberKey)) return { data: null, error: 'FORBIDDEN' };
+  if (identity && identity.status === 'active' && !roleCanManage(identity) && (ids.length !== 1 || ids[0] !== identity.memberKey)) return { data: null, error: 'FORBIDDEN' };
   if (!ids.length) return { data: null, error: 'NO_MEMBER' };
   // 每位成员分别计算进行中目标数，都不能超过 10 个
   for (let i = 0; i < ids.length; i++) {
@@ -296,7 +311,7 @@ function updateCustomTarget(targetId, patch) {
     next.member_ids = normalizeMemberIds(next);
     if (!next.member_ids.length) return { data: null, error: 'NO_MEMBER' };
     const identity = require('./family.js').getIdentity();
-    if (identity && identity.status === 'active' && identity.role !== 'admin' && (next.member_ids.length !== 1 || next.member_ids[0] !== identity.memberKey)) return { data: null, error: 'FORBIDDEN' };
+    if (identity && identity.status === 'active' && !roleCanManage(identity) && (next.member_ids.length !== 1 || next.member_ids[0] !== identity.memberKey)) return { data: null, error: 'FORBIDDEN' };
     next.member_id = next.member_ids[0];
   }
   const snapshot = value => { const out = Object.assign({}, value); delete out.__history; return out; };
@@ -351,6 +366,32 @@ function getSnapshot(type, key) {
   return read(KEYS.SNAPSHOTS, []).find(s => s.type === type && s.key === key) || null;
 }
 
+// ---------- 操作日志（只追加，随家庭云同步） ----------
+// 每条：{ id, at, actor, actorName, action, target, detail }
+// action: checkin / revoke / role / rename / family / join / leave / target / schedule
+const LOG_LIMIT = 500;
+function appendLog(action, detail) {
+  const id = require('./family.js').getIdentity();
+  const actor = (id && id.memberKey) || '';
+  const actorName = (id && id.name) || actor || '本机';
+  const entry = Object.assign({
+    id: 'log_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    at: new Date().toISOString(),
+    actor, actorName, action,
+    target: '', detail: '',
+  }, detail || {});
+  const logs = getLogs();
+  logs.push(entry);
+  // 只保留最近 500 条，防止本地与云端无限膨胀
+  const trimmed = logs.length > LOG_LIMIT ? logs.slice(logs.length - LOG_LIMIT) : logs;
+  write(KEYS.LOGS, trimmed);
+  return entry;
+}
+function getLogs() {
+  const v = read(KEYS.LOGS, []);
+  return Array.isArray(v) ? v : [];
+}
+
 // 清空所有数据（设置页使用）
 function resetAll() { return require('./cloudstore.js').resetFamilyData(); }
 
@@ -360,5 +401,5 @@ module.exports = {
   getRecords, saveRecord, revokeRecord, getRecord, getDayRecords, canBackfill, exportCSV,
   getCustomTargets, createCustomTarget, updateCustomTarget, archiveCustomTarget, getCustomTarget, checkCustomTarget,
   targetMemberIds, normalizeMemberIds, getCustomTargetsAt, canEditTarget, canManage,
-  saveSnapshot, getSnapshot, resetAll,
+  saveSnapshot, getSnapshot, appendLog, getLogs, resetAll,
 };

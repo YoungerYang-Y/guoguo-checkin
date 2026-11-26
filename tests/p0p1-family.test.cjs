@@ -236,7 +236,7 @@ test('admin can rename the family; a plain member cannot', async () => {
     identity: Object.assign({}, ADMIN, { role: 'member', uid: 'u2' }),
     rows: [{ family_id: 'fam_one', name: '旧名', created_by: 'u1' }],
   });
-  await assert.rejects(b.family.renameFamily('改不了'), /只有管理员/);
+  await assert.rejects(b.family.renameFamily('改不了'), /只有创建人或管理员/);
 });
 
 test('last admin cannot demote itself, but can promote another member', async () => {
@@ -245,8 +245,8 @@ test('last admin cannot demote itself, but can promote another member', async ()
     { family_id: 'fam_one', uid: 'u2', name: '爸爸', role: 'member', status: 'active', member_key: 'papa', created_at: '2026-11-02T00:00:00Z' },
   ];
   const a = loadFamily({ identity: ADMIN, rows });
-  await assert.rejects(a.family.setMemberRole('u1', 'member'), /至少保留一名管理员/);
-  assert.equal(await a.family.setMemberRole('u2', 'admin'), 'admin');
+  assert.equal(await a.family.setMemberRole('u2', 'admin'), 'admin', '先提拔继任者');
+  assert.equal(await a.family.setMemberRole('u1', 'member'), 'member', '再自行降级，家庭仍有管理员');
   assert.equal(a.db.rows[1].role, 'admin');
 });
 

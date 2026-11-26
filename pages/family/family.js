@@ -26,7 +26,7 @@ Page({
     roleOptions: [
       { key: 'mama', label: '妈妈' },
       { key: 'papa', label: '爸爸' },
-      { key: 'guoguo', label: '孩子' },
+      { key: 'guoguo', label: '宝宝' },
     ],
     joinCode: '',
     joinRole: 'papa',
@@ -49,6 +49,8 @@ Page({
     nameDraft: '',
     isAdmin: false,
     createDisplayName: '',
+    logs: [],
+    showLogs: false,
   },
 
   onLoad(options) {
@@ -171,6 +173,7 @@ Page({
       this.setData({ loggedIn: !!state.loggedIn });
       if (!state.loggedIn) { this.goLoginHint(); return; }
 
+      store.appendLog('join', { detail: '通过邀请加入' });
       const joined = await family.joinByInvite(token, this.data.joinRole, this.data.joinName.trim());
       // 立刻用真实身份接管本机：否则首页会读不到 active 身份而回落成默认「妈妈」
       if (joined && joined.status === 'active') {
@@ -423,6 +426,7 @@ Page({
     this.setData({ busy: true });
     try {
       const name = await family.renameFamily(v);
+      store.appendLog('family', { detail: '家庭名改为 ' + name });
       this.setData({ familyName: name, familyNameDraft: name, editingFamilyName: false });
       toast('家庭名称已更新', 'success');
     } catch (e) { toast((e && e.message) || '保存失败'); }
@@ -442,6 +446,7 @@ Page({
     this.setData({ busy: true });
     try {
       await family.updateDisplayName(uid, v);
+      store.appendLog('rename', { target: uid, detail: v });
       // 本地成员表里的显示名同步更新，保证首页/报表称谓一致
       const m = this.data.members.find(x => x.uid === uid);
       if (m && m.member_key) store.updateMemberName(m.member_key, v);
@@ -454,17 +459,19 @@ Page({
 
   onToggleRole(e) {
     const { uid, role } = e.currentTarget.dataset;
+    if (role === 'creator') { toast('创建人角色不可更改'); return; }
     const next = role === 'admin' ? 'member' : 'admin';
     wx.showModal({
       title: next === 'admin' ? '设为管理员' : '设为成员',
       content: next === 'admin'
-        ? '管理员可审批成员、修改家庭名与角色、生成邀请和访客链接。'
-        : '成员可打卡、代签、管理自己的目标，但不能管理家庭设置。',
+        ? '管理员可管设置、成员、邀请与访客链接，也能打卡和代签。'
+        : '成员可打卡、代签任何家人、管理自己的目标，但不能管理家庭设置。',
       success: async (res) => {
         if (!res.confirm) return;
         this.setData({ busy: true });
         try {
           await family.setMemberRole(uid, next);
+          store.appendLog('role', { target: uid, detail: next });
           toast('角色已更新', 'success');
           await this.refresh();
         } catch (err) { toast((err && err.message) || '角色更新失败'); }
@@ -483,6 +490,7 @@ Page({
         this.setData({ busy: true });
         try {
           await family.leaveFamily();
+          store.appendLog('leave', {});
           cloudstore.forgetFamily();
           this.setData({ inviteToken: '', visitorToken: '', familyName: '', members: [], isAdmin: false });
           toast('已退出家庭', 'success');
@@ -491,6 +499,32 @@ Page({
         finally { this.setData({ busy: false }); }
       },
     });
+  },
+
+  // ---------- 操作日志 ----------
+  loadLogs() {
+    try {
+      const logs = store.getLogs().slice().reverse().slice(0, 100);
+      this.setData({ logs: logs.map(l => Object.assign({}, l, {
+        atText: this.fmtDateTime(l.at),
+        actionText: ({
+          checkin: '打卡', revoke: '撤销', role: '角色变更', rename: '改名',
+          family: '家庭设置', join: '加入家庭', leave: '退出家庭', target: '目标', schedule: '排期',
+        })[l.action] || l.action,
+      })) });
+    } catch (e) { this.setData({ logs: [] }); }
+  },
+  toggleLogs() {
+    const show = !this.data.showLogs;
+    this.setData({ showLogs: show });
+    if (show) this.loadLogs();
+  },
+  fmtDateTime(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    const p = n => (n < 10 ? '0' : '') + n;
+    return (d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
   },
 
   fmtDate(iso) {

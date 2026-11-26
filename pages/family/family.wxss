@@ -46,3 +46,7 @@
 .member-edit-row { display: flex; gap: 10rpx; align-items: center; margin-top: 12rpx; }
 .hint-line { display: block; font-size: 24rpx; color: var(--c-muted); margin-top: 12rpx; line-height: 1.6; }
 .leave-box { margin-top: 24rpx; }
+.log-row { display: flex; padding: 14rpx 0; border-bottom: 2rpx solid var(--c-line-soft, #F5F6F7); }
+.log-row:last-child { border-bottom: none; }
+.log-time { width: 110rpx; flex-shrink: 0; font-size: 22rpx; color: var(--c-muted, #6B7280); }
+.log-body { flex: 1; min-width: 0; font-size: 24rpx; color: var(--c-ink, #33262E); word-break: break-all; }
