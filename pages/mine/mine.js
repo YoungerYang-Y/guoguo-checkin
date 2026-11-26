@@ -18,12 +18,6 @@ Page({
     targetCount: 0,
     memberCount: '—',
     menuGroups: [
-      { key: 'records', title: '学习与成长', items: [
-        { key: 'weight', text: '体重与身高', path: '/pages/weight/weight' },
-        { key: 'fees', text: '培训费', path: '/pages/fees/fees' },
-        { key: 'poems', text: '古诗与每周复习', path: '/pages/poems/poems' },
-        { key: 'words', text: '单词句子与每周复习', path: '/pages/words/words' },
-      ]},
       { key: 'data', title: '设置与数据', items: [
         { key: 'settings', text: '排期、周目标与提醒', path: '/pages/settings/settings' },
         { key: 'targets', text: '自定义目标管理', path: '/pages/target-edit/target-edit?list=1' },

@@ -26,7 +26,8 @@ Page({
     overview: { weekLabel: '', bankCount: 0 },
   },
 
-  onLoad() {
+  onLoad(options) {
+    if (options && options.tab === 'review') this.setData({ tab: 'review' });
     const opts = review.weekOptions(8);
     this.setData({
       weekKeys: opts.map(o => o.key),
