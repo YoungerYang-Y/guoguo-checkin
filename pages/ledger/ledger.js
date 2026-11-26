@@ -26,6 +26,7 @@ Page({
     cat2Names: [],
     cat1Index: 0,
     cat2Index: 0,
+    cat1Hint: '',               // 一级分类的记账口径提示（餐次/买菜/外卖怎么分）
     memberChips: [],
     // 明细 / 汇总
     months: [],
@@ -96,6 +97,7 @@ Page({
       cat1Index: cat1Idx,
       cat2Names: cat1.children.map(c => c.name),
       cat2Index: 0,
+      cat1Hint: cat1.hint || '',
       publicOnly,
       'form.cat1': cat1.code,
       'form.cat2': cat1.children[0].code,

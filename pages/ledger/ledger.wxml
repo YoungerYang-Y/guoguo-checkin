@@ -38,6 +38,7 @@
         <picker mode="selector" range="{{cat1Names}}" value="{{cat1Index}}" bindchange="onCat1Change">
           <view class="field-input picker-view">{{cat1Names[cat1Index]}} <text class="picker-arrow">›</text></view>
         </picker>
+        <text class="hint-line" wx:if="{{cat1Hint}}">{{cat1Hint}}</text>
       </view>
 
       <view class="form-field">

@@ -34,7 +34,7 @@ function loadLedger(seed = []) {
 
 test('记账：新增一条正常记录', () => {
   const { ledger } = loadLedger();
-  const r = ledger.add({ date: '2026-11-26', cat2: '1-02', amount: 35.5, member: 'mama', note: '买菜' });
+  const r = ledger.add({ date: '2026-11-26', cat2: '1-02', amount: 35.5, member: 'mama', note: '工作日午饭' });
   assert.equal(r.error, null);
   assert.equal(r.data.cat1, '1');
   assert.equal(r.data.ym, '2026-11');
@@ -123,13 +123,32 @@ test('明细：按月过滤并按日期倒序', () => {
   assert.equal(ledger.months()[0], '2026-11', '默认含本月，倒序');
 });
 
-test('分类表：13 个一级、71 个二级，居住为公共专属', () => {
+test('分类表：13 个一级、74 个二级，居住为公共专属', () => {
   const C = require(path.join(root, 'utils/ledger-categories.js'));
   assert.equal(C.CATEGORIES.length, 13);
   const total = C.CATEGORIES.reduce((n, c) => n + c.children.length, 0);
-  assert.equal(total, 71);
+  assert.equal(total, 74);
   assert.equal(C.isPublicOnly('2'), true);
   assert.equal(C.isPublicOnly('1'), false);
   assert.equal(C.findCat2('2-02').name, '房贷');
   assert.equal(C.cat1Name('2'), '居住');
+});
+
+test('餐饮：三餐拆成早/中/晚/夜宵，编码连续且不重复', () => {
+  const C = require(path.join(root, 'utils/ledger-categories.js'));
+  const food = C.findCat1('1');
+  assert.equal(food.children.length, 10);
+  const meals = food.children.slice(0, 4).map(c => c.name);
+  assert.equal(meals.join('/'), '早餐/中餐/晚餐/夜宵');
+  assert.equal(C.cat2Name('1-05'), '买菜食材');
+  assert.equal(C.cat2Name('1-06'), '外卖外带');
+  food.children.forEach((c, i) => {
+    assert.equal(c.code, '1-' + String(i + 1).padStart(2, '0'), '编码按顺序连续');
+  });
+});
+
+test('分类表：所有一级/二级编码全局唯一', () => {
+  const C = require(path.join(root, 'utils/ledger-categories.js'));
+  const codes = C.CATEGORIES.flatMap(c => [c.code, ...c.children.map(x => x.code)]);
+  assert.equal(new Set(codes).size, codes.length, '存在重复编码');
 });
