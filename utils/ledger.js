@@ -15,7 +15,15 @@ function toCents(v) {
   return isFinite(n) ? Math.round(n * 100) : 0;
 }
 function fromCents(c) { return Math.round(c) / 100; }
-function money(cents) { return (cents / 100).toFixed(2); }
+// 千分位分组：账本金额常是四五位数，5800.00 与 15800.00 光看数字很难分辨
+function group(text) {
+  const parts = String(text).split('.');
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return parts.join('.');
+}
+function money(cents) { return group((cents / 100).toFixed(2)); }
+// 元（number）→ 分组后的两位小数字符串，供页面直接展示单笔金额
+function moneyOf(amount) { return money(toCents(amount)); }
 
 function listAll() {
   const v = store.read(KEY(), []);
@@ -150,5 +158,5 @@ function getRecord(id) { return listAll().find(r => r.id === id) || null; }
 
 module.exports = {
   add, update, remove, listAll, listByMonth, byYm, summary, months, getRecord,
-  toCents, fromCents, money,
+  toCents, fromCents, money, moneyOf,
 };

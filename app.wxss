@@ -27,6 +27,7 @@ page {
   --c-fill: #F2F3F5;           /* 中性填充 */
   --c-fill-soft: #F7F8FA;      /* 浅中性填充 */
   --c-danger: #D93026;
+  --c-danger-soft: #FFF0EF;    /* 危险浅底（删除按钮/错误输入框） */
   --c-warn: #D97706;
   --c-success: #0B8A5F;
   --c-on-brand: #FFFFFF;       /* 品牌渐变/实色底上的文字 */
@@ -319,6 +320,23 @@ button::after { border: none; }
   border-color: rgba(236, 91, 140, 0.55);
   box-shadow: 0 0 0 4rpx rgba(236, 91, 140, 0.1);
 }
+/* 错误态：由页面在校验失败时切 .is-error，并配 .field-error 文案 */
+.field-input.is-error,
+.field-textarea.is-error {
+  background: var(--c-danger-soft, #FFF0EF);
+  border-color: rgba(217, 48, 38, 0.55);
+}
+.field-input.is-error.is-focus,
+.field-textarea.is-error.is-focus {
+  box-shadow: 0 0 0 4rpx rgba(217, 48, 38, 0.12);
+}
+.field-error {
+  display: block;
+  margin-top: 8rpx;
+  font-size: var(--fs-aux, 24rpx);
+  color: var(--c-danger, #D93026);
+  line-height: 1.5;
+}
 
 /* ---------- 选择胶囊（全站唯一一套，页面不要重复定义） ---------- */
 /* 高度 88rpx：与全站可点下限一致，一排 3~4 个仍排得下 */
@@ -404,8 +422,14 @@ button::after { border: none; }
 /* ---------- 每周复习模块（古诗 / 单词句子共用） ---------- */
 .rv-tabs { display: flex; }
 .rv-tab {
-  flex: 1; text-align: center; padding: 16rpx 0; margin-right: 12rpx;
-  border-radius: 12rpx; background: #f4f5f7; font-size: 26rpx; color: var(--c-muted, #6b7280);
+  flex: 1;
+  display: flex; align-items: center; justify-content: center;
+  min-height: 88rpx;
+  margin-right: 12rpx;
+  border-radius: var(--r-sm, 12rpx);
+  background: var(--c-fill, #F2F3F5);
+  font-size: 26rpx; color: var(--c-muted, #6B7280);
+  transition: background 0.15s, color 0.15s;
 }
 .rv-tab:last-child { margin-right: 0; }
 .rv-tab.on { background: var(--c-brand-soft, #FFEAF2); color: var(--c-brand, #EC5B8C); font-weight: 600; }

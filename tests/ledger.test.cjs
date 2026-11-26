@@ -80,13 +80,13 @@ test('汇总：按成员与分类分组，占比合计约等于 100%', () => {
   ledger.add({ date: '2026-11-26', cat2: '4-02', amount: 700, member: 'guoguo' });
   ledger.add({ date: '2026-11-26', cat2: '2-04', amount: 1000, member: 'papa' });
   const sum = ledger.summary('2026-11');
-  assert.equal(sum.totalText, '2000.00');
+  assert.equal(sum.totalText, '2,000.00', '四位以上金额带千分位');
   assert.equal(sum.count, 3);
   const mama = sum.members.find(m => m.id === 'mama');
   assert.equal(mama.amountText, '300.00');
   assert.equal(mama.pct, 15);
   const pub = sum.members.find(m => m.id === 'public');
-  assert.equal(pub.amountText, '1000.00', '居住类归到公共');
+  assert.equal(pub.amountText, '1,000.00', '居住类归到公共');
   assert.equal(sum.cats[0].code, '2', '分类按金额倒序');
   assert.equal(sum.cats[0].pct, 50);
 });
@@ -151,4 +151,16 @@ test('分类表：所有一级/二级编码全局唯一', () => {
   const C = require(path.join(root, 'utils/ledger-categories.js'));
   const codes = C.CATEGORIES.flatMap(c => [c.code, ...c.children.map(x => x.code)]);
   assert.equal(new Set(codes).size, codes.length, '存在重复编码');
+});
+
+test('金额格式：千分位分组且保留两位小数', () => {
+  const { ledger } = loadLedger();
+  assert.equal(ledger.moneyOf(35.5), '35.50');
+  assert.equal(ledger.moneyOf(5800), '5,800.00');
+  assert.equal(ledger.moneyOf(123456.789), '123,456.79');
+  // 单笔明细与汇总走同一格式，避免同一数字两种写法
+  ledger.add({ date: '2026-11-26', cat2: '1-01', amount: 12345.6, member: 'papa' });
+  const sum = ledger.summary('2026-11');
+  assert.equal(sum.totalText, '12,345.60');
+  assert.equal(ledger.listByMonth('2026-11')[0].amount, 12345.6);
 });

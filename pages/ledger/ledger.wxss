@@ -1,10 +1,11 @@
-/* 记账页：复用 app.wxss 的 rv-tabs / chip / field-* / empty-block，这里只写页面特有部分 */
+/* 记账页：复用 app.wxss 的 rv-tabs / chip / field-* / empty-block，这里只写页面特有部分。
+   走查要点：所有交互元素 ≥88rpx；金额统一 tabular-nums；长分类名截断不撑破行高。 */
 
+/* ---------- 期间切换 ---------- */
 .period-nav {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 20rpx;
 }
 .nav-btn {
   /* 88rpx ≈ 44pt 可点区域 */
@@ -16,21 +17,87 @@
   background: var(--c-brand-soft, #FFEAF2);
   color: var(--c-brand, #EC5B8C);
   font-size: 44rpx;
+  transition: background 0.15s, color 0.15s;
 }
-.period-title { margin: 0 32rpx; font-size: 30rpx; font-weight: 600; color: var(--c-ink, #33262E); }
+/* 到头了就把箭头置灰，取代「点一下才弹一句已经是最新月份」 */
+.nav-btn.is-off {
+  background: var(--c-fill, #F2F3F5);
+  color: var(--c-line-strong, #D0D3D6);
+}
+.period-title {
+  margin: 0 32rpx;
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--c-ink, #33262E);
+}
 
-.sum-line { margin: 8rpx 0 4rpx; font-size: 26rpx; color: var(--c-text-sub, #4A5568); }
-.sum-num { margin: 0 10rpx; font-size: 36rpx; font-weight: 600; color: var(--c-brand, #EC5B8C); }
+/* ---------- 金额头部：金额是本页最重要的信息，单独成块并居中 ---------- */
+.sum-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 24rpx;
+}
+.sum-caption {
+  font-size: 24rpx;
+  color: var(--c-muted, #6B7280);
+}
+.sum-amount {
+  display: flex;
+  align-items: baseline;
+  margin-top: 8rpx;
+}
+.sum-cur {
+  margin-right: 4rpx;
+  font-size: 30rpx;
+  color: var(--c-brand, #EC5B8C);
+}
+.sum-val {
+  font-size: 56rpx;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--c-brand, #EC5B8C);
+}
+.sum-count {
+  margin-top: 4rpx;
+  font-size: 22rpx;
+  color: var(--c-muted, #6B7280);
+}
+
+/* ---------- 表单 ---------- */
+.form-head { margin-bottom: 8rpx; }
+.form-title { margin: 0; }
+/* 编辑锚点：说清「现在在改哪一条」，避免改错记录 */
+.edit-anchor {
+  display: block;
+  margin-bottom: 16rpx;
+  padding: 12rpx 20rpx;
+  border-radius: var(--r-sm, 12rpx);
+  background: var(--c-brand-tint, #FDF6F9);
+  font-size: 22rpx;
+  color: var(--c-text-sub, #4A5568);
+  line-height: 1.5;
+}
+/* 取消：文字按钮也要守住 88rpx 触区，靠右对齐不破坏标题基线 */
+.edit-cancel {
+  display: flex;
+  align-items: center;
+  min-height: 88rpx;
+  padding-left: 24rpx;
+  font-size: 24rpx;
+  color: var(--c-brand, #EC5B8C);
+  flex-shrink: 0;
+}
 
 .form-field { margin-top: 24rpx; }
 .picker-view { display: flex; align-items: center; justify-content: space-between; }
 .picker-arrow { color: var(--c-brand, #EC5B8C); font-size: 36rpx; }
 
-/* 明细行 */
+/* ---------- 明细行 ---------- */
 .led-row {
   display: flex;
   align-items: center;
-  min-height: 108rpx;
+  min-height: 112rpx;
   padding: 16rpx 0;
   border-bottom: 2rpx solid var(--c-line-soft, #F5F6F7);
 }
@@ -38,21 +105,45 @@
 .led-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .led-cat { font-size: 28rpx; font-weight: 600; color: var(--c-ink, #33262E); }
 .led-meta { margin-top: 6rpx; font-size: 22rpx; color: var(--c-muted, #6B7280); }
-.led-amount { margin-left: 16rpx; font-size: 30rpx; font-weight: 600; color: var(--c-ink, #33262E); }
-.led-del {
+.led-amount {
   margin-left: 16rpx;
-  padding: 12rpx 16rpx;
-  font-size: 24rpx;
-  color: var(--c-danger, #D93026);
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--c-ink, #33262E);
+  white-space: nowrap;
+}
+/* 删除：原来 58rpx 高、约 80rpx 宽，低于 44pt 且紧挨金额；现在撑满 88rpx 并与「点行编辑」区分底色 */
+.led-del {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 96rpx;
+  min-height: 88rpx;
+  margin-left: 12rpx;
   border-radius: var(--r-sm, 12rpx);
-  background: #FFF0EF;
+  background: var(--c-danger-soft, #FFF0EF);
+  color: var(--c-danger, #D93026);
+  font-size: 24rpx;
+  flex-shrink: 0;
 }
 
-/* 汇总条形 */
-.bar-row { display: flex; align-items: center; min-height: 72rpx; }
-.bar-name { width: 150rpx; flex-shrink: 0; font-size: 26rpx; color: var(--c-text-sub, #4A5568); }
+/* ---------- 汇总条形 ---------- */
+/* 行高 88rpx：数值列改成「金额 + 占比」两行，需要比原来 72rpx 更松 */
+.bar-row {
+  display: flex;
+  align-items: center;
+  min-height: 88rpx;
+}
+/* 176rpx ≈ 6.7 个 26rpx 汉字，「车辆保养维修」这类 6 字分类不会挤成两行 */
+.bar-name {
+  width: 176rpx;
+  flex-shrink: 0;
+  font-size: 26rpx;
+  color: var(--c-text-sub, #4A5568);
+}
 .bar-track {
   flex: 1;
+  min-width: 80rpx;
   height: 16rpx;
   margin: 0 16rpx;
   border-radius: 999rpx;
@@ -64,4 +155,21 @@
   border-radius: 999rpx;
   background: linear-gradient(90deg, var(--c-brand-light, #FF8FB4), var(--c-brand, #EC5B8C));
 }
-.bar-val { width: 130rpx; flex-shrink: 0; text-align: right; font-size: 24rpx; color: var(--c-ink, #33262E); }
+.bar-val {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  min-width: 148rpx;
+  flex-shrink: 0;
+}
+.bar-amount {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: var(--c-ink, #33262E);
+  white-space: nowrap;
+}
+.bar-pct {
+  margin-top: 2rpx;
+  font-size: 20rpx;
+  color: var(--c-muted, #6B7280);
+}

@@ -21,6 +21,9 @@ Page({
     // 表单
     form: { date: '', cat1: '1', cat2: '1-01', amount: '', note: '', member: 'public' },
     editingId: '',
+    formTitle: '记一笔支出',      // 编辑态显示「编辑：11-26 中餐 ¥35.50」，给用户一个视觉锚点
+    editingLabel: '',
+    amountError: '',            // 金额内联错误，取代只弹 toast
     publicOnly: false,
     cat1Names: [],
     cat2Names: [],
@@ -36,6 +39,8 @@ Page({
     monthCount: 0,
     sum: null,
     monthLabel: '',
+    canPrev: false,             // 更早有没有记录，决定左右箭头是否置灰
+    canNext: false,
     fieldFocus: false,
   },
 
@@ -60,7 +65,7 @@ Page({
       cat1Name: C.cat1Name(r.cat1),
       cat2Name: C.cat2Name(r.cat2),
       memberName: C.memberName(r.member),
-      amountText: Number(r.amount).toFixed(2),
+      amountText: ledger.moneyOf(r.amount),
       dayText: String(r.date).slice(5),
     }));
     const sum = ledger.summary(ym);
@@ -71,6 +76,8 @@ Page({
       monthCount: sum.count,
       sum,
       monthLabel,
+      canPrev: this.data.monthIndex < this.data.months.length - 1,
+      canNext: this.data.monthIndex > 0,
     });
   },
 
@@ -116,23 +123,31 @@ Page({
     this.setData({ 'form.member': e.currentTarget.dataset.id });
   },
 
-  onAmountInput(e) { this.setData({ 'form.amount': e.detail.value }); },
+  onAmountInput(e) {
+    this.setData({ 'form.amount': e.detail.value, amountError: '' });
+  },
   onNoteInput(e) { this.setData({ 'form.note': e.detail.value }); },
 
   saveEntry() {
     const f = this.data.form;
-    if (this.data.editingId) {
-      const r = ledger.update(this.data.editingId, f);
-      if (r.error) { toast(ERR[r.error] || '保存失败'); return; }
-      toast('已保存修改', 'success');
-    } else {
-      const r = ledger.add(f);
-      if (r.error) { toast(ERR[r.error] || '保存失败'); return; }
-      toast('已记账', 'success');
+    const wasEditing = !!this.data.editingId;
+    const r = wasEditing ? ledger.update(this.data.editingId, f) : ledger.add(f);
+    if (r.error) {
+      // 金额是唯一由用户手输、最容易错的字段，错误就近显示在输入框下方
+      if (r.error === 'BAD_AMOUNT') {
+        this.setData({ amountError: '请填大于 0 的金额，最多两位小数' });
+        return;
+      }
+      toast(ERR[r.error] || '保存失败');
+      return;
     }
+    toast(wasEditing ? '已保存修改' : '已记账', 'success');
     // 清空金额与备注，保留日期/分类/成员，方便连续记同类支出
     this.setData({
       editingId: '',
+      formTitle: '记一笔支出',
+      editingLabel: '',
+      amountError: '',
       'form.amount': '',
       'form.note': '',
       months: ledger.months(),
@@ -149,12 +164,17 @@ Page({
     const cat1Idx = Math.max(0, C.CATEGORIES.findIndex(c => c.code === rec.cat1));
     const cat1 = C.CATEGORIES[cat1Idx];
     const cat2Idx = Math.max(0, cat1.children.findIndex(c => c.code === rec.cat2));
+    const label = rec.date.slice(5) + ' ' + C.cat2Name(rec.cat2) + ' ¥' + ledger.moneyOf(rec.amount);
     this.setData({
       tab: 'add',
       editingId: id,
+      formTitle: '编辑这笔支出',
+      editingLabel: label,
+      amountError: '',
       cat1Index: cat1Idx,
       cat2Index: cat2Idx,
       cat2Names: cat1.children.map(c => c.name),
+      cat1Hint: cat1.hint || '',
       publicOnly: C.isPublicOnly(cat1.code),
       form: {
         date: rec.date, cat1: rec.cat1, cat2: rec.cat2,
@@ -164,7 +184,10 @@ Page({
   },
 
   cancelEdit() {
-    this.setData({ editingId: '', 'form.amount': '', 'form.note': '' });
+    this.setData({
+      editingId: '', formTitle: '记一笔支出', editingLabel: '', amountError: '',
+      'form.amount': '', 'form.note': '',
+    });
   },
 
   removeRow(e) {

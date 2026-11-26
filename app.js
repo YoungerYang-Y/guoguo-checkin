@@ -8,7 +8,7 @@ wxCompat.install();
 App({
   globalData: {
     appName: '果果家庭打卡',
-    version: '1.10.1',
+    version: '1.10.2',
     cloud: true,
     // switchTab 不支持 query 传参，用一次性信号告知报表页进入哪个视图（'compare' / ''）
     reportView: '',
