@@ -11,7 +11,6 @@
     "pages/export/export",
     "pages/privacy/privacy",
     "pages/weight/weight",
-    "pages/fees/fees",
     "pages/ledger/ledger",
     "pages/poems/poems",
     "pages/words/words",
@@ -33,21 +32,21 @@
     "list": [
       {
         "pagePath": "pages/index/index",
-        "text": "今日打卡",
+        "text": "打卡",
         "iconPath": "assets/tab/index.png",
         "selectedIconPath": "assets/tab/index_on.png"
       },
       {
-        "pagePath": "pages/calendar/calendar",
-        "text": "日历",
-        "iconPath": "assets/tab/calendar.png",
-        "selectedIconPath": "assets/tab/calendar_on.png"
+        "pagePath": "pages/ledger/ledger",
+        "text": "记账",
+        "iconPath": "assets/tab/ledger.png",
+        "selectedIconPath": "assets/tab/ledger_on.png"
       },
       {
-        "pagePath": "pages/report/report",
-        "text": "报表",
-        "iconPath": "assets/tab/report.png",
-        "selectedIconPath": "assets/tab/report_on.png"
+        "pagePath": "pages/mine/mine",
+        "text": "我的",
+        "iconPath": "assets/tab/mine.png",
+        "selectedIconPath": "assets/tab/mine_on.png"
       },
       {
         "pagePath": "pages/growth/growth",
@@ -56,10 +55,10 @@
         "selectedIconPath": "assets/tab/growth_on.png"
       },
       {
-        "pagePath": "pages/mine/mine",
-        "text": "我的",
-        "iconPath": "assets/tab/mine.png",
-        "selectedIconPath": "assets/tab/mine_on.png"
+        "pagePath": "pages/calendar/calendar",
+        "text": "日历",
+        "iconPath": "assets/tab/calendar.png",
+        "selectedIconPath": "assets/tab/calendar_on.png"
       }
     ]
   },

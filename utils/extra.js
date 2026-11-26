@@ -9,17 +9,6 @@ const MEMBERS = [
   { id: 'mama', name: '妈妈', color: '#F0A93B' },
 ];
 
-const FEE_CATEGORIES = [
-  { key: 'swim', name: '游泳', color: '#3BA99C' },
-  { key: 'skate', name: '轮滑', color: '#F0A93B' },
-  { key: 'reading', name: '阅读课', color: '#7F77DD' },
-  { key: 'thinking', name: '思维课', color: '#378ADD' },
-  { key: 'english', name: '英语课', color: '#EC5B8C' },
-  { key: 'member', name: '会员课', color: '#D85A30' },
-  { key: 'art', name: '美术课', color: '#F58AAE' },
-  { key: 'books', name: '书籍购买', color: '#0F6E56' },
-];
-
 const CHART = { w: 620, h: 300, padL: 64, padT: 18 };
 
 function uid(p) { return p + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
@@ -27,7 +16,6 @@ function ymOf(y, m) { return y + '-' + D.pad(m); }
 function num(v) { return Math.round(Number(v) * 100) / 100; }
 function money(v) { return num(v).toFixed(2).replace(/\.00$/, ''); }
 function pct(part, total) { return total > 0 ? Math.round(part / total * 1000) / 10 : 0; }
-function catOf(key) { return FEE_CATEGORIES.find(c => c.key === key) || { key, name: key, color: '#B4B2A9' }; }
 function validYm(s) { return /^\d{4}-\d{2}$/.test(s || ''); }
 
 // ---------- 体重 ----------
@@ -296,128 +284,6 @@ function heightYearCompare() {
   return { empty: false, rows, latest: rows[rows.length - 1] };
 }
 
-// ---------- 培训费 ----------
-function getFees() { return store.read(store.KEYS.FEES, []); }
-
-function addFee(entry) {
-  const ym = entry.ym, amount = num(entry.amount);
-  if (!validYm(ym)) return { data: null, error: 'BAD_MONTH' };
-  if (!FEE_CATEGORIES.some(c => c.key === entry.category)) return { data: null, error: 'BAD_CATEGORY' };
-  if (!isFinite(amount) || amount <= 0 || amount > 10000000) return { data: null, error: 'BAD_AMOUNT' };
-  const list = getFees();
-  const now = new Date().toISOString();
-  const rec = {
-    id: uid('f'), ym, category: entry.category, amount,
-    note: String(entry.note || '').slice(0, 200),
-    created_at: now, updated_at: now,
-  };
-  list.push(rec);
-  const w = store.write(store.KEYS.FEES, list);
-  return w.error ? w : { data: rec, error: null };
-}
-
-function removeFee(id) {
-  const list = getFees().filter(f => f.id !== id);
-  const w = store.write(store.KEYS.FEES, list);
-  return w.error ? w : { data: null, error: null };
-}
-
-function feeYears() {
-  const set = {};
-  getFees().forEach(f => { set[f.ym.slice(0, 4)] = 1; });
-  const years = Object.keys(set).map(Number);
-  const cur = Number(D.today().slice(0, 4));
-  if (years.indexOf(cur) < 0) years.push(cur);
-  return years.sort((a, b) => a - b);
-}
-
-function sumFees(list) { return num(list.reduce((s, f) => s + Number(f.amount), 0)); }
-
-function monthAnalysis(ym) {
-  const list = getFees().filter(f => f.ym === ym);
-  const total = sumFees(list);
-  const rows = FEE_CATEGORIES.map(c => {
-    const amount = sumFees(list.filter(f => f.category === c.key));
-    return { key: c.key, name: c.name, color: c.color, amount, amountText: money(amount), pct: pct(amount, total) };
-  }).filter(r => r.amount > 0).sort((a, b) => b.amount - a.amount);
-  return { ym, total, totalText: money(total), rows, count: list.length, list: list.slice().sort((a, b) => b.created_at.localeCompare(a.created_at)) };
-}
-
-function yearAnalysis(year) {
-  const all = getFees().filter(f => Number(f.ym.slice(0, 4)) === year);
-  const total = sumFees(all);
-  const months = Array.from({ length: 12 }, (_, i) => {
-    const ym = ymOf(year, i + 1);
-    const list = all.filter(f => f.ym === ym);
-    const t = sumFees(list);
-    return { ym, label: (i + 1) + '月', total: t, totalText: money(t), count: list.length };
-  });
-  const categories = FEE_CATEGORIES.map(c => {
-    const amount = sumFees(all.filter(f => f.category === c.key));
-    return { key: c.key, name: c.name, color: c.color, amount, amountText: money(amount), pct: pct(amount, total) };
-  }).filter(r => r.amount > 0).sort((a, b) => b.amount - a.amount);
-  const prevTotal = sumFees(getFees().filter(f => Number(f.ym.slice(0, 4)) === year - 1));
-  const diff = num(total - prevTotal);
-  const diffPct = prevTotal > 0 ? Math.round(diff / prevTotal * 1000) / 10 : null;
-  return {
-    year, total, totalText: money(total), months, categories, count: all.length,
-    prevTotal, prevTotalText: money(prevTotal), diff, diffText: money(Math.abs(diff)),
-    diffPct, diffWord: diff >= 0 ? '增加' : '减少',
-    diffLabel: diffPct === null ? '—' : (diff >= 0 ? '+' : '-') + Math.abs(diffPct) + '%',
-    hasPrev: getFees().some(f => Number(f.ym.slice(0, 4)) === year - 1),
-  };
-}
-
-function yearTotals() {
-  const byYear = {};
-  getFees().forEach(f => {
-    const y = Number(f.ym.slice(0, 4));
-    byYear[y] = (byYear[y] || 0) + Number(f.amount);
-  });
-  const cur = Number(D.today().slice(0, 4));
-  if (!byYear[cur]) byYear[cur] = 0;
-  const years = Object.keys(byYear).map(Number).sort((a, b) => a - b);
-  let max = 0;
-  const rows = years.map((y, i) => {
-    const total = num(byYear[y]);
-    const prev = i > 0 ? num(byYear[years[i - 1]]) : 0;
-    max = Math.max(max, total);
-    return {
-      year: y, total, totalText: money(total),
-      diff: num(total - prev), diffText: money(Math.abs(num(total - prev))),
-      diffPct: prev > 0 ? Math.round((total - prev) / prev * 1000) / 10 : null,
-      isUp: total >= prev,
-    };
-  });
-  rows.forEach(r => {
-    r.barHeight = max > 0 ? Math.max(6, Math.round(r.total / max * 100)) : 6;
-    r.barColor = r.isUp ? '#EC5B8C' : '#F0A93B';
-    r.diffLabel = r.diffPct === null ? '—' : (r.isUp ? '+' : '-') + Math.abs(r.diffPct) + '%';
-  });
-  return { rows, max, sumText: money(num(rows.reduce((s, r) => s + r.total, 0))) };
-}
-
-// 按果果年龄逐年求和：年龄按自然年估算（年份 - 出生年）
-function ageTotals(birthYm) {
-  if (!validYm(birthYm)) return null;
-  const birthYear = Number(birthYm.slice(0, 4));
-  const rows = yearTotals().rows.map(r => ({ year: r.year, age: r.year - birthYear, total: r.total, totalText: r.totalText }));
-  return { birthYm, rows, sumText: money(num(rows.reduce((s, r) => s + r.total, 0))) };
-}
-
-// 环形占比图：CSS conic-gradient
-function pieGradient(rows) {
-  const total = rows.reduce((s, r) => s + r.amount, 0);
-  if (total <= 0) return 'background: conic-gradient(#F1EFE8 0%, #F1EFE8 100%)';
-  let acc = 0;
-  const parts = rows.map(r => {
-    const start = acc;
-    acc += r.amount / total * 100;
-    return r.color + ' ' + start.toFixed(2) + '%, ' + r.color + ' ' + acc.toFixed(2) + '%';
-  });
-  return 'background: conic-gradient(' + parts.join(', ') + ')';
-}
-
 // ---------- 扩展设置 ----------
 function getExtraSettings() { return store.read(store.KEYS.EXTRA_SETTINGS, { guoguoBirth: '' }); }
 function setGuoguoBirth(ym) {
@@ -428,9 +294,8 @@ function setGuoguoBirth(ym) {
 }
 
 module.exports = {
-  MEMBERS, FEE_CATEGORIES, money, pct, catOf, ymOf,
+  MEMBERS, money, pct, ymOf,
   getWeights, saveWeight, removeWeight, weightYears, weightTable, weightYearChart, weightCrossChart,
   heightYears, heightTable, heightYearChart, heightCrossChart, heightYearCompare,
-  getFees, addFee, removeFee, feeYears, monthAnalysis, yearAnalysis, yearTotals, ageTotals, pieGradient,
   getExtraSettings, setGuoguoBirth,
 };

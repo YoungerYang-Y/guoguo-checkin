@@ -2,7 +2,7 @@
 const { getCloud, ensureSession, getLastAuthError, describeCloudError } = require('./cloud.js');
 const family = require('./family.js');
 const { merge, mergeRecords } = require('./sync-merge.js');
-const DOC_KEYS = ['gg_family', 'gg_records', 'gg_schedule', 'gg_targets', 'gg_custom', 'gg_settings', 'gg_snapshots', 'gg_weights', 'gg_fees', 'gg_extra_settings', 'gg_poems', 'gg_words', 'gg_logs', 'gg_ledger'];
+const DOC_KEYS = ['gg_family', 'gg_records', 'gg_schedule', 'gg_targets', 'gg_custom', 'gg_settings', 'gg_snapshots', 'gg_weights', 'gg_extra_settings', 'gg_poems', 'gg_words', 'gg_logs', 'gg_ledger'];
 const META_KEY = 'gg_reset_state';
 const PENDING_KEY = 'gg_pending_keys';
 const BASE_KEY = 'gg_sync_base';

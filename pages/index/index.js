@@ -386,8 +386,8 @@ Page({
 
   goCalendar() { wx.switchTab({ url: '/pages/calendar/calendar' }); },
   goReport() {
-    // 周日 20:00 后提示周报入口
-    wx.switchTab({ url: '/pages/report/report' });
+    // 周日 20:00 后提示周报入口；报表已并入日历 tab，不再是 tabBar 页面
+    wx.navigateTo({ url: '/pages/report/report' });
   },
   goAddTarget() {
     wx.navigateTo({ url: '/pages/target-edit/target-edit' });

@@ -1,6 +1,7 @@
 const store = require('./utils/store.js');
 const cloudstore = require('./utils/cloudstore.js');
 const wxCompat = require('./utils/wx-compat.js');
+const ledgerMigrate = require('./utils/ledger-migrate.js');
 
 // 预览面板只模拟了部分微信 API，先补齐缺失项，避免交互中断
 wxCompat.install();
@@ -8,7 +9,7 @@ wxCompat.install();
 App({
   globalData: {
     appName: '果果家庭打卡',
-    version: '1.10.2',
+    version: '1.11.0',
     cloud: true,
     // switchTab 不支持 query 传参，用一次性信号告知报表页进入哪个视图（'compare' / ''）
     reportView: '',
@@ -17,6 +18,9 @@ App({
     wxCompat.install();
     // 本地初始化保证首屏立即可用
     store.initFamily();
+    // 历史培训费并入记账：必须在 bootstrap 之前跑，新增账目才能随首轮同步上传；
+    // 内部按 src 幂等，重复启动不会重复入账，写盘失败则不写标记、下次重试。
+    try { this.feeMigration = ledgerMigrate.migrateFees(); } catch (e) { this.feeMigration = null; }
     // 异步引导云同步：登录 + 判定家庭身份 + 按家庭合并云端数据
     this.cloudReady = cloudstore.bootstrap();
     this._lastFullSync = 0;

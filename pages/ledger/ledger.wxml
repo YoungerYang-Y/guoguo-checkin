@@ -105,60 +105,114 @@
     </view>
   </block>
 
-  <!-- 汇总 -->
+  <!-- 汇总：按月 / 按年两种范围 -->
   <block wx:if="{{tab === 'summary'}}">
     <view class="card">
-      <view class="period-nav">
+      <view class="chip-row scope-row">
+        <view class="chip {{scope === 'month' ? 'active' : ''}}" data-scope="month" hover-class="ui-hover" bindtap="switchScope">按月</view>
+        <view class="chip {{scope === 'year' ? 'active' : ''}}" data-scope="year" hover-class="ui-hover" bindtap="switchScope">按年</view>
+      </view>
+
+      <view class="period-nav" wx:if="{{scope === 'month'}}">
         <text class="nav-btn {{canPrev ? '' : 'is-off'}}" bindtap="prevMonth" hover-class="ui-hover">‹</text>
         <text class="period-title">{{monthLabel}}</text>
         <text class="nav-btn {{canNext ? '' : 'is-off'}}" bindtap="nextMonth" hover-class="ui-hover">›</text>
       </view>
+      <view class="period-nav" wx:else>
+        <text class="nav-btn {{canPrevYear ? '' : 'is-off'}}" bindtap="prevYear" hover-class="ui-hover">‹</text>
+        <text class="period-title">{{yearLabel}}</text>
+        <text class="nav-btn {{canNextYear ? '' : 'is-off'}}" bindtap="nextYear" hover-class="ui-hover">›</text>
+      </view>
+
       <view class="sum-hero">
-        <text class="sum-caption">总支出</text>
+        <text class="sum-caption">{{scope === 'month' ? '本月支出' : '本年支出'}}</text>
         <view class="sum-amount">
           <text class="sum-cur">¥</text>
-          <text class="sum-val num">{{monthTotal}}</text>
+          <text class="sum-val num">{{scope === 'month' ? monthTotal : yearView.totalText}}</text>
         </view>
-        <text class="sum-count">{{monthCount}} 笔</text>
+        <text class="sum-count">{{scope === 'month' ? monthCount : yearView.count}} 笔</text>
+        <text class="sum-diff" wx:if="{{scope === 'year' && yearView.hasPrev}}">
+          较去年{{yearView.diffWord}} {{yearView.diffText}}（{{yearView.diffPct}}%）
+        </text>
+        <text class="sum-diff" wx:elif="{{scope === 'year' && yearView.count > 0}}">去年没有记账记录，暂无可比数据</text>
       </view>
     </view>
 
-    <block wx:if="{{monthCount > 0}}">
-      <view class="card">
-        <text class="section-title">按成员</text>
-        <view class="bar-row" wx:for="{{sum.members}}" wx:key="id">
-          <text class="bar-name ellipsis">{{item.name}}</text>
-          <view class="bar-track"><view class="bar-fill" style="width:{{item.pct}}%"></view></view>
-          <view class="bar-val">
-            <text class="bar-amount num">{{item.amountText}}</text>
-            <text class="bar-pct num">{{item.pct}}%</text>
+    <!-- 按月 -->
+    <block wx:if="{{scope === 'month'}}">
+      <block wx:if="{{monthCount > 0}}">
+        <view class="card">
+          <text class="section-title">按成员</text>
+          <view class="bar-row" wx:for="{{sum.members}}" wx:key="id">
+            <text class="bar-name ellipsis">{{item.name}}</text>
+            <view class="bar-track"><view class="bar-fill" style="width:{{item.pct}}%"></view></view>
+            <view class="bar-val">
+              <text class="bar-amount num">{{item.amountText}}</text>
+              <text class="bar-pct num">{{item.pct}}%</text>
+            </view>
           </view>
         </view>
-      </view>
 
-      <view class="card">
-        <view class="row-between" style="margin-bottom:8rpx">
-          <text class="section-title" style="margin:0">按分类</text>
-          <text class="text-muted text-small" wx:if="{{sum.pendingPct > 5}}">待整理占 {{sum.pendingPct}}%</text>
-        </view>
-        <view class="bar-row" wx:for="{{sum.cats}}" wx:key="code">
-          <text class="bar-name ellipsis">{{item.name}}</text>
-          <view class="bar-track"><view class="bar-fill" style="width:{{item.pct}}%"></view></view>
-          <view class="bar-val">
-            <text class="bar-amount num">{{item.amountText}}</text>
-            <text class="bar-pct num">{{item.pct}}%</text>
+        <view class="card">
+          <view class="row-between" style="margin-bottom:8rpx">
+            <text class="section-title" style="margin:0">按分类</text>
+            <text class="text-muted text-small" wx:if="{{sum.pendingPct > 5}}">待整理占 {{sum.pendingPct}}%</text>
           </view>
+          <view class="bar-row" wx:for="{{sum.cats}}" wx:key="code">
+            <text class="bar-name ellipsis">{{item.name}}</text>
+            <view class="bar-track"><view class="bar-fill" style="width:{{item.pct}}%"></view></view>
+            <view class="bar-val">
+              <text class="bar-amount num">{{item.amountText}}</text>
+              <text class="bar-pct num">{{item.pct}}%</text>
+            </view>
+          </view>
+          <text class="hint-line" wx:if="{{sum.pendingPct > 5}}">「其他支出」占比已超过 5%，建议把待整理记录改成具体分类</text>
         </view>
-        <text class="hint-line" wx:if="{{sum.pendingPct > 5}}">「其他支出」占比已超过 5%，建议把待整理记录改成具体分类</text>
+      </block>
+      <view class="card" wx:else>
+        <view class="empty-block">
+          <view class="empty-mark"></view>
+          <text class="empty-title">本月还没有记账</text>
+          <text class="empty-desc">记一笔后，这里会按成员和分类汇总占比</text>
+        </view>
       </view>
     </block>
-    <view class="card" wx:else>
-      <view class="empty-block">
-        <view class="empty-mark"></view>
-        <text class="empty-title">本月还没有记账</text>
-        <text class="empty-desc">记一笔后，这里会按成员和分类汇总占比</text>
+
+    <!-- 按年 -->
+    <block wx:else>
+      <block wx:if="{{yearView.count > 0}}">
+        <view class="card">
+          <text class="section-title">按月</text>
+          <view class="bar-row" wx:for="{{yearView.months}}" wx:key="ym">
+            <text class="bar-name ellipsis">{{item.label}}</text>
+            <view class="bar-track"><view class="bar-fill" style="width:{{item.pct}}%"></view></view>
+            <view class="bar-val">
+              <text class="bar-amount num">{{item.amountText}}</text>
+              <text class="bar-pct num">{{item.pct}}%</text>
+            </view>
+          </view>
+        </view>
+
+        <view class="card">
+          <text class="section-title">按分类</text>
+          <view class="bar-row" wx:for="{{yearView.cats}}" wx:key="code">
+            <text class="bar-name ellipsis">{{item.name}}</text>
+            <view class="bar-track"><view class="bar-fill" style="width:{{item.pct}}%"></view></view>
+            <view class="bar-val">
+              <text class="bar-amount num">{{item.amountText}}</text>
+              <text class="bar-pct num">{{item.pct}}%</text>
+            </view>
+          </view>
+        </view>
+      </block>
+      <view class="card" wx:else>
+        <view class="empty-block">
+          <view class="empty-mark"></view>
+          <text class="empty-title">这一年还没有记账</text>
+          <text class="empty-desc">切换年份，或去「记一笔」记录第一笔</text>
+        </view>
       </view>
-    </view>
+    </block>
   </block>
 
 </view>

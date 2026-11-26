@@ -41,3 +41,10 @@
 .mp-bar { flex: 1; height: 16rpx; background: #F4ECEF; border-radius: 8rpx; overflow: hidden; margin: 0 16rpx; }
 .mp-fill { height: 100%; border-radius: 8rpx; }
 .mp-val { width: 80rpx; text-align: right; font-size: 24rpx; color: var(--c-muted); }
+
+/* 报表入口：原「报表」tab 合并进日历页后保留的入口 */
+.report-entry { display: flex; align-items: center; }
+.report-entry-main { flex: 1; min-width: 0; }
+.report-entry-title { display: block; font-size: 28rpx; font-weight: 600; color: var(--c-ink, #33262E); }
+.report-entry-desc { display: block; margin-top: 6rpx; font-size: 22rpx; color: var(--c-muted, #6B7280); }
+.entry-arrow { margin-left: 16rpx; font-size: 36rpx; color: #C9CCD2; line-height: 1; }

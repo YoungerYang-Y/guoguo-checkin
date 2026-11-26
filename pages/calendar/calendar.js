@@ -96,6 +96,8 @@ Page({
     if (!date) return;
     this.setData({ selected: date }, () => this.build());
   },
+  goReport() { wx.navigateTo({ url: '/pages/report/report' }); },
+
   goCheckin() {
     const date = this.data.selected || D.today();
     // 首页是 tabBar 页面，navigateTo 无法跳转且不能带 query；

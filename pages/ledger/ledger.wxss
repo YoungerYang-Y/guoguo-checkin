@@ -1,6 +1,19 @@
 /* 记账页：复用 app.wxss 的 rv-tabs / chip / field-* / empty-block，这里只写页面特有部分。
    走查要点：所有交互元素 ≥88rpx；金额统一 tabular-nums；长分类名截断不撑破行高。 */
 
+/* 汇总范围：复用全局 .chip（88rpx 触区），只补居中与间距 */
+.scope-row {
+  justify-content: center;
+  margin-bottom: 8rpx;
+}
+
+/* 同比：只做说明，不参与主视觉，避免和金额抢注意力 */
+.sum-diff {
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  color: var(--c-muted, #6B7280);
+}
+
 /* ---------- 期间切换 ---------- */
 .period-nav {
   display: flex;

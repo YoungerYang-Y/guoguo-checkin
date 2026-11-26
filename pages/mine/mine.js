@@ -64,7 +64,8 @@ Page({
     });
   },
 
-  goLedger() { wx.navigateTo({ url: '/pages/ledger/ledger' }); },
+  // 记账已是 tabBar 页面，navigateTo 会失败
+  goLedger() { wx.switchTab({ url: '/pages/ledger/ledger' }); },
 
   refreshSyncState(state) {
     const s = state || cloudstore.getState();

@@ -1,4 +1,13 @@
 <view class="page">
+  <!-- 报表 tab 已并入日历：入口收在这里，避免底部 tab 超过 5 个 -->
+  <view class="card report-entry" hover-class="ui-hover" bindtap="goReport">
+    <view class="report-entry-main">
+      <text class="report-entry-title">报表与成员对比</text>
+      <text class="report-entry-desc">{{title}}的完成率、排行与雷达对比</text>
+    </view>
+    <text class="entry-arrow">›</text>
+  </view>
+
   <view class="card">
     <view class="month-nav">
       <text class="nav-btn" bindtap="prevMonth" hover-class="ui-hover">‹</text>

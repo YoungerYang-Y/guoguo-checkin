@@ -72,6 +72,33 @@ function add(input) {
   return { data: rec, error: null };
 }
 
+// 批量导入（历史数据迁移用）：一次性归一化并写盘，避免 N 条记录触发 N 次云同步。
+// src 是幂等标记，同一条来源只会导入一次，重复执行不会产生重复账。
+function bulkAdd(entries) {
+  const list = listAll();
+  const seen = {};
+  list.forEach(r => { if (r.src) seen[r.src] = true; });
+  const now = new Date().toISOString();
+  const added = [];
+  let skipped = 0;
+  (entries || []).forEach(e => {
+    const n = normalize(e);
+    if (n.error) { skipped += 1; return; }
+    const src = e && e.src ? String(e.src) : '';
+    if (src && seen[src]) { skipped += 1; return; }
+    if (src) seen[src] = true;
+    const rec = Object.assign({ id: uid('led_'), created_at: now, updated_at: now }, n.value);
+    if (src) rec.src = src;
+    list.push(rec);
+    added.push(rec);
+  });
+  if (added.length) {
+    const w = writeAll(list);
+    if (w.error) return { data: [], skipped, error: w.error };
+  }
+  return { data: added, skipped, error: null };
+}
+
 function update(id, patch) {
   const list = listAll();
   const idx = list.findIndex(r => r.id === id);
@@ -137,6 +164,57 @@ function summary(ym) {
   };
 }
 
+// 年度汇总：原培训费页有「年度对比 / 按月趋势」，合并进记账后这部分能力不能丢。
+function yearSummary(year) {
+  const y = String(year);
+  const all = listAll();
+  let totalCents = 0;
+  let prevCents = 0;
+  let count = 0;
+  const catMap = {};
+  const monthMap = {};
+  all.forEach(r => {
+    const c = toCents(r.amount);
+    const ry = String(r.date).slice(0, 4);
+    if (ry === y) {
+      totalCents += c;
+      count += 1;
+      catMap[r.cat1] = (catMap[r.cat1] || 0) + c;
+      const m = String(r.date).slice(5, 7);
+      monthMap[m] = (monthMap[m] || 0) + c;
+    } else if (ry === String(Number(y) - 1)) {
+      prevCents += c;
+    }
+  });
+  const pct = c => (totalCents ? Math.round((c / totalCents) * 1000) / 10 : 0);
+  const cats = C.CATEGORIES.map(c => ({
+    code: c.code, name: c.name,
+    amount: fromCents(catMap[c.code] || 0),
+    amountText: money(catMap[c.code] || 0),
+    pct: pct(catMap[c.code] || 0),
+  })).filter(c => c.amount > 0).sort((a, b) => b.amount - a.amount);
+  const months = Object.keys(monthMap).sort().map(m => ({
+    ym: y + '-' + m,
+    label: Number(m) + '月',
+    amount: fromCents(monthMap[m]),
+    amountText: money(monthMap[m]),
+    pct: pct(monthMap[m]),
+  }));
+  const diffCents = totalCents - prevCents;
+  const prevTotal = fromCents(prevCents);
+  return {
+    year: Number(y), count,
+    total: fromCents(totalCents), totalText: money(totalCents),
+    months, cats,
+    prevTotal, prevTotalText: money(prevCents),
+    // 去年没记录时不报「增长 100%」，那只会误导
+    hasPrev: prevCents > 0,
+    diffWord: diffCents === 0 ? '持平' : (diffCents > 0 ? '增加' : '减少'),
+    diffText: money(Math.abs(diffCents)),
+    diffPct: prevCents > 0 ? Math.round(Math.abs(diffCents) / prevCents * 1000) / 10 : 0,
+  };
+}
+
 // 有记录的月份列表（倒序），用于汇总页切换
 function months() {
   const set = {};
@@ -157,6 +235,6 @@ function listByMonth(ym) {
 function getRecord(id) { return listAll().find(r => r.id === id) || null; }
 
 module.exports = {
-  add, update, remove, listAll, listByMonth, byYm, summary, months, getRecord,
+  add, bulkAdd, update, remove, listAll, listByMonth, byYm, summary, yearSummary, months, getRecord,
   toCents, fromCents, money, moneyOf,
 };

@@ -45,6 +45,13 @@ Page({
     monthLabel: '',
     canPrev: false,             // 更早有没有记录，决定左右箭头是否置灰
     canNext: false,
+    // 汇总范围：按月 / 按年（原培训费页的年度对比能力，合并后保留）
+    scope: 'month',
+    year: 0,
+    yearLabel: '',
+    yearView: null,
+    canPrevYear: true,
+    canNextYear: false,
     focusField: '',              // 当前聚焦的字段名，避免多个输入框同时高亮
   },
 
@@ -56,14 +63,27 @@ Page({
       memberChips: C.MEMBERS.map(m => ({ id: m.id, name: m.name })),
       form: Object.assign({}, this.data.form, { date: today }),
       months: ledger.months(),
+      year: Number(today.slice(0, 4)),
     });
     this.syncCat2(0);
     this.refresh();
   },
 
-  onShow() { this.refresh(); },
+  onShow() {
+    // switchTab 不支持 query：成长页等入口用 globalData 指定落在「汇总 · 按年」
+    const app = getApp();
+    if (app && app.globalData && app.globalData.ledgerView) {
+      const wantYear = app.globalData.ledgerView === 'year';
+      app.globalData.ledgerView = '';
+      if (wantYear) this.setData({ tab: 'summary', scope: 'year' });
+    }
+    this.refresh();
+  },
 
   refresh() {
+    const currentYear = Number(D.today().slice(0, 4));
+    const year = this.data.year || currentYear;
+    const yearView = ledger.yearSummary(year);
     const ym = this.data.months[this.data.monthIndex] || D.today().slice(0, 7);
     const rows = ledger.listByMonth(ym).map(r => Object.assign({}, r, {
       cat1Name: C.cat1Name(r.cat1),
@@ -82,6 +102,11 @@ Page({
       monthLabel,
       canPrev: this.data.monthIndex < this.data.months.length - 1,
       canNext: this.data.monthIndex > 0,
+      year,
+      yearLabel: year + ' 年',
+      yearView,
+      canPrevYear: year > 2000,
+      canNextYear: year < currentYear,
     });
   },
 
@@ -211,6 +236,22 @@ Page({
         this.refresh();
       },
     });
+  },
+
+  // ---------- 汇总范围：按月 / 按年 ----------
+  switchScope(e) {
+    const scope = e.currentTarget.dataset.scope;
+    if (scope === this.data.scope) return;
+    this.setData({ scope });
+  },
+  prevYear() {
+    if (this.data.year <= 2000) { toast('已经没有更早的年份'); return; }
+    this.setData({ year: this.data.year - 1 }, () => this.refresh());
+  },
+  nextYear() {
+    const currentYear = Number(D.today().slice(0, 4));
+    if (this.data.year >= currentYear) { toast('已经是最新年份'); return; }
+    this.setData({ year: this.data.year + 1 }, () => this.refresh());
   },
 
   // ---------- 月份切换 ----------
