@@ -51,16 +51,16 @@
 
       <view class="form-field">
         <text class="field-label">金额（元）</text>
-        <input class="field-input {{fieldFocus ? 'is-focus' : ''}} {{amountError ? 'is-error' : ''}}" type="digit"
-               value="{{form.amount}}" placeholder="如 35.50"
+        <input class="field-input {{focusField === 'amount' ? 'is-focus' : ''}} {{amountError ? 'is-error' : ''}}" type="digit"
+               value="{{form.amount}}" placeholder="如 35.50" data-field="amount"
                bindinput="onAmountInput" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
         <text class="field-error" wx:if="{{amountError}}">{{amountError}}</text>
       </view>
 
       <view class="form-field">
         <text class="field-label">备注（选填）</text>
-        <input class="field-input {{fieldFocus ? 'is-focus' : ''}}" value="{{form.note}}" maxlength="40"
-               placeholder="如：周末超市采购"
+        <input class="field-input {{focusField === 'note' ? 'is-focus' : ''}}" value="{{form.note}}" maxlength="40"
+               placeholder="如：周末超市采购" data-field="note"
                bindinput="onNoteInput" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
       </view>
 

@@ -12,8 +12,12 @@ const ERR = {
 };
 
 Page({
-  onFieldFocus() { if (!this.data.fieldFocus) this.setData({ fieldFocus: true }); },
-  onFieldBlur() { if (this.data.fieldFocus) this.setData({ fieldFocus: false }); },
+  // 聚焦态按字段区分：一个布尔管多个输入框会让「聚焦金额时备注也高亮」
+  onFieldFocus(e) {
+    const field = (e.currentTarget.dataset && e.currentTarget.dataset.field) || '';
+    if (field && this.data.focusField !== field) this.setData({ focusField: field });
+  },
+  onFieldBlur() { if (this.data.focusField) this.setData({ focusField: '' }); },
 
   data: {
     tab: 'add',                 // add | list | summary
@@ -41,7 +45,7 @@ Page({
     monthLabel: '',
     canPrev: false,             // 更早有没有记录，决定左右箭头是否置灰
     canNext: false,
-    fieldFocus: false,
+    focusField: '',              // 当前聚焦的字段名，避免多个输入框同时高亮
   },
 
   onLoad() {
