@@ -34,17 +34,9 @@
 }
 .inline-edit { display: flex; gap: 12rpx; align-items: center; margin-top: 14rpx; }
 .inline-input { flex: 1; min-width: 0; padding: 16rpx 20rpx; background: var(--c-fill-soft); border-radius: 12rpx; font-size: 28rpx; }
-.mini-action {
-  min-height: 64rpx; padding: 0 20rpx;
-  display: flex; align-items: center; justify-content: center;
-  border-radius: 8rpx; font-size: 24rpx;
-  background: #f3f4f6; color: #374151; white-space: nowrap;
-}
-.mini-action.primary { background: var(--c-brand); color: var(--c-surface); }
-.mini-action.danger { background: #FDECEC; color: var(--c-danger); }
 .member-actions { display: flex; flex-direction: column; gap: 8rpx; align-items: flex-end; flex-shrink: 0; }
 .member-edit-row { display: flex; gap: 10rpx; align-items: center; margin-top: 12rpx; }
-.hint-line { display: block; font-size: 24rpx; color: var(--c-muted); margin-top: 12rpx; line-height: 1.6; }
+
 .leave-box { margin-top: 24rpx; }
 .log-row { display: flex; padding: 14rpx 0; border-bottom: 2rpx solid var(--c-line-soft, #F5F6F7); }
 .log-row:last-child { border-bottom: none; }

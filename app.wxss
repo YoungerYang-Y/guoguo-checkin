@@ -202,6 +202,31 @@ button::after { border: none; }
   box-shadow: none;
   pointer-events: none;
 }
+/* 紧凑操作按钮：家庭管理/我的页的「修改」「去记账」等次级操作 */
+.mini-action {
+  min-height: 64rpx;
+  padding: 0 20rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-sm, 12rpx);
+  font-size: 24rpx;
+  background: var(--c-fill, #F2F3F5);
+  color: var(--c-text-sub, #4A5568);
+  white-space: nowrap;
+}
+.mini-action.primary { background: var(--c-brand, #EC5B8C); color: var(--c-on-brand, #FFFFFF); }
+.mini-action.danger { background: #FDECEC; color: var(--c-danger, #D93026); }
+
+/* 提示行：表单字段下方的一句说明，比 text-muted 更紧凑 */
+.hint-line {
+  display: block;
+  margin-top: 12rpx;
+  font-size: var(--fs-aux, 24rpx);
+  color: var(--c-muted, #6B7280);
+  line-height: 1.6;
+}
+
 /* 加载态：转圈 + 文案保持可读 */
 .btn.is-loading { position: relative; color: transparent; }
 .btn.is-loading::after {

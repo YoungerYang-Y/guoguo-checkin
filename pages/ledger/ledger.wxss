@@ -1,0 +1,67 @@
+/* 记账页：复用 app.wxss 的 rv-tabs / chip / field-* / empty-block，这里只写页面特有部分 */
+
+.period-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20rpx;
+}
+.nav-btn {
+  /* 88rpx ≈ 44pt 可点区域 */
+  width: 88rpx;
+  height: 88rpx;
+  line-height: 84rpx;
+  text-align: center;
+  border-radius: 50%;
+  background: var(--c-brand-soft, #FFEAF2);
+  color: var(--c-brand, #EC5B8C);
+  font-size: 44rpx;
+}
+.period-title { margin: 0 32rpx; font-size: 30rpx; font-weight: 600; color: var(--c-ink, #33262E); }
+
+.sum-line { margin: 8rpx 0 4rpx; font-size: 26rpx; color: var(--c-text-sub, #4A5568); }
+.sum-num { margin: 0 10rpx; font-size: 36rpx; font-weight: 600; color: var(--c-brand, #EC5B8C); }
+
+.form-field { margin-top: 24rpx; }
+.picker-view { display: flex; align-items: center; justify-content: space-between; }
+.picker-arrow { color: var(--c-brand, #EC5B8C); font-size: 36rpx; }
+
+/* 明细行 */
+.led-row {
+  display: flex;
+  align-items: center;
+  min-height: 108rpx;
+  padding: 16rpx 0;
+  border-bottom: 2rpx solid var(--c-line-soft, #F5F6F7);
+}
+.led-row:last-child { border-bottom: none; }
+.led-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.led-cat { font-size: 28rpx; font-weight: 600; color: var(--c-ink, #33262E); }
+.led-meta { margin-top: 6rpx; font-size: 22rpx; color: var(--c-muted, #6B7280); }
+.led-amount { margin-left: 16rpx; font-size: 30rpx; font-weight: 600; color: var(--c-ink, #33262E); }
+.led-del {
+  margin-left: 16rpx;
+  padding: 12rpx 16rpx;
+  font-size: 24rpx;
+  color: var(--c-danger, #D93026);
+  border-radius: var(--r-sm, 12rpx);
+  background: #FFF0EF;
+}
+
+/* 汇总条形 */
+.bar-row { display: flex; align-items: center; min-height: 72rpx; }
+.bar-name { width: 150rpx; flex-shrink: 0; font-size: 26rpx; color: var(--c-text-sub, #4A5568); }
+.bar-track {
+  flex: 1;
+  height: 16rpx;
+  margin: 0 16rpx;
+  border-radius: 999rpx;
+  background: var(--c-fill, #F2F3F5);
+  overflow: hidden;
+}
+.bar-fill {
+  height: 100%;
+  border-radius: 999rpx;
+  background: linear-gradient(90deg, var(--c-brand-light, #FF8FB4), var(--c-brand, #EC5B8C));
+}
+.bar-val { width: 130rpx; flex-shrink: 0; text-align: right; font-size: 24rpx; color: var(--c-ink, #33262E); }
