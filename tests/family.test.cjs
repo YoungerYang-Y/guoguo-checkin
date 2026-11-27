@@ -166,6 +166,22 @@ test('family page does not show stale active identity as successful when cloud r
   assert.match(page.data.errorMsg, /身份刷新失败/);
 });
 
+test('active guoguo identity is flagged as unable to check in', async () => {
+  const child = { familyId: 'fam_test', memberKey: 'guoguo', role: 'member', name: '宝宝', uid: 'u1', status: 'active' };
+  const page = pageHarness({
+    cloudReady: Promise.resolve(),
+    cloudState: { loggedIn: true, familyId: 'fam_test' },
+    refreshMembership: async () => ({ loggedIn: true, familyId: 'fam_test' }),
+    getIdentity: () => child,
+    membership: { family_id: 'fam_test', status: 'active' },
+  });
+  await page.refreshState();
+  assert.equal(page.data.status, 'active');
+  assert.equal(page.data.requiresAdultIdentity, true);
+  const markup = fs.readFileSync(path.join(root, 'pages/family/family.wxml'), 'utf8');
+  assert.match(markup, /wx:if="\{\{requiresAdultIdentity\}\}"/);
+});
+
 test('adopted family without a current identity cannot fall back to local admin writes', () => {
   const adopted = indexHarness({ adopted: true });
   adopted.resetOperator();

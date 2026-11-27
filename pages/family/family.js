@@ -19,6 +19,7 @@ Page({
     focusField: '',        // 当前聚焦的字段名，避免多输入框串色
     status: 'loading',        // loading | noauth | none | pending | active
     identity: null,           // { familyId, memberKey, role, name }
+    requiresAdultIdentity: false,
     pendingFamilyId: '',      // 我的待审家庭码
     members: [],
     loggedIn: false,
@@ -30,7 +31,6 @@ Page({
     roleOptions: [
       { key: 'mama', label: '妈妈' },
       { key: 'papa', label: '爸爸' },
-      { key: 'guoguo', label: '宝宝' },
     ],
     joinCode: '',
     joinRole: 'papa',
@@ -71,7 +71,7 @@ Page({
   },
 
   async refreshState() {
-    this.setData({ status: 'loading', errorMsg: '' });
+    this.setData({ status: 'loading', errorMsg: '', requiresAdultIdentity: false });
     try {
       if (app.cloudReady && typeof app.cloudReady.then === 'function') await app.cloudReady;
       if (this._incomingToken && !this._inviteResolved) {
@@ -96,7 +96,10 @@ Page({
       const id = family.getIdentity();
       if (id && id.status === 'active' && id.familyId) {
         const admin = family.isAdmin(id);
-        this.setData({ status: 'active', identity: id, isAdmin: admin, errorMsg: state.lastError || '' });
+        this.setData({
+          status: 'active', identity: id, isAdmin: admin, errorMsg: state.lastError || '',
+          requiresAdultIdentity: String(id.memberKey || '').trim().toLowerCase() === 'guoguo',
+        });
         await this.loadMembers();
         this.loadVisitorToken();
         try {

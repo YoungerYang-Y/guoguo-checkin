@@ -10,7 +10,7 @@ const { getCloud, ensureSession } = require('./cloud.js');
 
 // 角色（权限）与身份（member_key，数据归属/代签对象）是两个独立概念：
 // role 三级：creator（创建人，唯一且不可降级）/ admin（管理员）/ member（成员）。
-// member_key 可为 mama / papa / guoguo 或任意自定义，与 role 正交。
+// 登录账号的 member_key 为 mama / papa；guoguo 仅作为被代签对象，与 role 正交。
 // 旧数据 role=parent/child 一律按 member 兼容。
 const ROLES = { CREATOR: 'creator', ADMIN: 'admin', MEMBER: 'member' };
 const ROLE_LABELS = { creator: '创建人', admin: '管理员', member: '成员', parent: '成员', child: '成员' };
@@ -19,6 +19,13 @@ const ROLE_LABELS = { creator: '创建人', admin: '管理员', member: '成员'
 const IDENTITY_LABELS = { mama: '妈妈', papa: '爸爸', guoguo: '宝宝' };
 function identityLabel(memberKey) {
   return IDENTITY_LABELS[String(memberKey || '').trim().toLowerCase()] || '家人';
+}
+function requireLoginMemberKey(memberKey, fallback) {
+  const key = String(memberKey || '').trim().toLowerCase() || fallback;
+  if (key !== 'mama' && key !== 'papa') {
+    throw new Error('宝宝身份仅用于被代签，登录账号请选择爸爸或妈妈');
+  }
+  return key;
 }
 function normalizeRole(role) {
   if (role === ROLES.CREATOR) return ROLES.CREATOR;
@@ -156,6 +163,7 @@ async function getMyMembership() {
 
 // 创建家庭：调用者成为 admin。memberKey 为家庭内标识（papa/mama）
 async function createFamily(name, memberKey, displayName) {
+  const mk = requireLoginMemberKey(memberKey, 'mama');
   const session = await ensureSession();
   const uid = uidOf(session);
   if (!uid) throw new Error('未登录，暂不能创建家庭（请用微信扫码打开小程序）');
@@ -163,7 +171,6 @@ async function createFamily(name, memberKey, displayName) {
   if (identity && identity.status === 'active') throw new Error('当前账号已加入家庭，不能重复创建');
   const cloud = getCloud();
   const familyId = await generateFamilyId();
-  const mk = memberKey || 'mama';
   const { error: e1 } = await cloud.database.from('gg_families').insert({
     family_id: familyId,
     name: name || '果果家庭',
@@ -185,6 +192,7 @@ async function createFamily(name, memberKey, displayName) {
 // 通过家庭码加入：家庭码 fam_xxx 由创建人发出，凭证即授权，直接成为 active/member，无需审批。
 // 与 joinByInvite 的区别只是入口不同（手动输入 vs 点邀请卡片），落库语义完全一致。
 async function requestJoin(familyCode, memberKey, name) {
+  const mk = requireLoginMemberKey(memberKey, 'papa');
   const session = await ensureSession();
   const uid = uidOf(session);
   if (!uid) throw new Error('未登录，暂不能加入家庭（请用微信扫码打开小程序）');
@@ -196,7 +204,6 @@ async function requestJoin(familyCode, memberKey, name) {
     throw new Error(identity.familyId === fid ? '你已经加入这个家庭' : '当前账号已加入其他家庭，不能再加入');
   }
   const cloud = getCloud();
-  const mk = String(memberKey || '').trim() || 'papa';
   const displayName = String(name || '').trim().slice(0, 12) || identityLabel(mk);
 
   // 身份查重：与 joinByInvite 一致，避免两个 mama 串数据
@@ -224,6 +231,7 @@ async function requestJoin(familyCode, memberKey, name) {
 // 通过邀请链接加入：token 即创建人授权，直接成为 active/member，无需二次批准。
 // 与 requestJoin（手动家庭码）是两条独立入口，落库语义一致，不要混用。
 async function joinByInvite(token, memberKey, name) {
+  const mk = requireLoginMemberKey(memberKey, 'papa');
   const invite = await resolveInvite(token);
   if (!invite.valid) throw new Error(invite.reason || '邀请链接无效');
 
@@ -237,7 +245,6 @@ async function joinByInvite(token, memberKey, name) {
     throw new Error('当前账号已加入其他家庭，不能再加入');
   }
   const cloud = getCloud();
-  const mk = String(memberKey || '').trim() || 'papa';
   const displayName = String(name || '').trim().slice(0, 12) || identityLabel(mk);
 
   // 身份查重：同一家庭里 member_key 决定数据归属与代签对象，重复会串数据
@@ -542,6 +549,6 @@ module.exports = {
   createFamily, requestJoin, joinByInvite, listMembers, approveMember,
   createInviteLink, resolveInvite, revokeInviteLink, getCachedInvite,
   createVisitorLink, revokeVisitorLink, getVisitorSnapshot, randomCode, generateFamilyId,
-  ROLES, ROLE_LABELS, IDENTITY_LABELS, identityLabel, normalizeRole, isManager, isCreator, isAdmin, canProxy,
+  ROLES, ROLE_LABELS, IDENTITY_LABELS, identityLabel, requireLoginMemberKey, normalizeRole, isManager, isCreator, isAdmin, canProxy,
   getFamilyName, renameFamily, setMemberRole, updateDisplayName, leaveFamily,
 };

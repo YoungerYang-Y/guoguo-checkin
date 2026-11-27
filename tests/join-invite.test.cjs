@@ -94,6 +94,21 @@ test('邀请直连：有效 token + 未入家庭 → 一次插入即 active/memb
   assert.equal(storage.get('gg_my_identity').memberKey, 'papa', '身份立即写入缓存');
 });
 
+test('宝宝身份不能创建或加入家庭，且在任何云查询前拒绝', async t => {
+  const cases = [
+    ['创建家庭', family => family.createFamily('测试家庭', 'guoguo', '宝宝')],
+    ['家庭码加入', family => family.requestJoin('fam_x', 'guoguo', '宝宝')],
+    ['邀请链接加入', family => family.joinByInvite('inv_ok', 'guoguo', '宝宝')],
+  ];
+  for (const [label, run] of cases) {
+    await t.test(label, async () => {
+      const { family, db } = loadFamily({ invites: [validInvite()] });
+      await assert.rejects(run(family), /宝宝身份仅用于被代签/);
+      assert.equal(db.calls.length, 0, 'invalid login identity must be rejected before cloud access');
+    });
+  }
+});
+
 test('身份查重：同家庭已有 active 成员占用该身份时拒绝加入', async () => {
   const inv = validInvite();
   const { family, db } = loadFamily({
