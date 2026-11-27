@@ -3,6 +3,7 @@ const privacy = require('../../utils/privacy.js');
 Page({
   data: {
     version: privacy.VERSION,
+    icp: '',
     updatedAt: privacy.UPDATED_AT,
     intro: privacy.INTRO,
     sections: privacy.SECTIONS,
@@ -10,7 +11,8 @@ Page({
   },
 
   onShow() {
-    this.setData({ agreed: privacy.hasAgreed() });
+    const app = getApp();
+    this.setData({ agreed: privacy.hasAgreed(), icp: (app && app.globalData && app.globalData.icp) || '' });
   },
 
   agree() {

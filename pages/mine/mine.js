@@ -12,6 +12,7 @@ const toast = (title, icon) => {
 Page({
   data: {
     version: '',
+    icp: '',
     syncState: null,
     syncing: false,
     recordCount: 0,
@@ -32,7 +33,7 @@ Page({
   },
 
   onLoad() {
-    this.setData({ version: app.globalData.version });
+    this.setData({ version: app.globalData.version, icp: app.globalData.icp || '' });
     // 等待启动引导完成，再刷新同步状态
     const ready = () => { this.refreshSyncState(); this.refreshCounts(); this.loadMemberCount(); };
     if (app.cloudReady && typeof app.cloudReady.then === 'function') app.cloudReady.then(ready);
@@ -124,7 +125,7 @@ Page({
     if (key === 'about') {
       wx.showModal({
         title: '果果家庭打卡',
-        content: '版本 v' + this.data.version + '\n课程、学习与运动打卡及周/月/年报表分析\n登录微信后，家庭数据自动同步到云端，换设备也能查看。',
+        content: '版本 v' + this.data.version + '\n备案号 ' + (this.data.icp || '—') + '\n课程、学习与运动打卡及周/月/年报表分析\n登录微信后，家庭数据自动同步到云端，换设备也能查看。',
         showCancel: false,
       });
       return;

@@ -9,7 +9,8 @@ wxCompat.install();
 App({
   globalData: {
     appName: '果果家庭打卡',
-    version: '1.11.3',
+    version: '1.11.4',
+    icp: '湘ICP备2023008600号-2X',   // ICP 备案号，展示在「我的」与隐私页底部
     cloud: true,
     // switchTab 不支持 query 传参，用一次性信号告知报表页进入哪个视图（'compare' / ''）
     reportView: '',

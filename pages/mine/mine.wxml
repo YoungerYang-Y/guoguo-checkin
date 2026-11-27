@@ -48,5 +48,6 @@
   </block>
 
   <view class="version">果果家庭打卡 v{{version}} · 家庭内部使用</view>
+  <view class="icp-footer" wx:if="{{icp}}">备案号 {{icp}}</view>
   <view class="privacy-footer" data-key="privacy" data-path="/pages/privacy/privacy" hover-class="ui-hover" bindtap="handleMenu">《用户隐私保护指引》</view>
 </view>

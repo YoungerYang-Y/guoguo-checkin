@@ -29,4 +29,5 @@
   </view>
 
   <view class="version">果果家庭打卡 · 家庭内部使用</view>
+  <view class="icp-footer" wx:if="{{icp}}">备案号 {{icp}}</view>
 </view>

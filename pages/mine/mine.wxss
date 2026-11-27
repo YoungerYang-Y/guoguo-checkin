@@ -58,6 +58,7 @@
 .menu-item:last-child { border-bottom: none; }
 .menu-arrow { color: #c0c4c9; font-size: 36rpx; }
 .version { text-align: center; color: var(--c-muted); font-size: 22rpx; padding: 32rpx 0 8rpx; }
+.icp-footer { text-align: center; color: var(--c-muted); font-size: 20rpx; padding: 0 0 8rpx; }
 .privacy-footer { text-align: center; color: var(--c-brand); font-size: 24rpx; padding: 8rpx 0 24rpx; }
 
 /* ========== 我的页视觉增强（重复声明已并入上方同名类） ========== */
