@@ -61,6 +61,8 @@ Page({
     // 选中日期统计
     const sel = this.data.selected;
     const gs = stats.dayStat('guoguo', sel), ps = stats.dayStat('papa', sel), ms = stats.dayStat('mama', sel);
+    const members = store.getFamily().members || [];
+    const memberName = (id, fallback) => (members.find(member => member.id === id) || {}).name || fallback;
     this.setData({
       canPrev: anchor > '2020-01',
       selectedStat: {
@@ -71,9 +73,9 @@ Page({
         canBackfill: store.canBackfill(sel),
         isFuture: sel > today,
         members: [
-          { name: '果果', done: gs.doneRequired, req: gs.required, full: gs.isFull, color: '#F58AAE' },
-          { name: '爸爸', done: ps.doneRequired, req: ps.required, full: ps.isFull, color: '#61DDAA' },
-          { name: '妈妈', done: ms.doneRequired, req: ms.required, full: ms.isFull, color: '#F6BD16' },
+          { name: memberName('guoguo', '果果'), done: gs.doneRequired, req: gs.required, full: gs.isFull, color: '#F58AAE' },
+          { name: memberName('papa', '爸爸'), done: ps.doneRequired, req: ps.required, full: ps.isFull, color: '#61DDAA' },
+          { name: memberName('mama', '妈妈'), done: ms.doneRequired, req: ms.required, full: ms.isFull, color: '#F6BD16' },
         ],
       },
     });
