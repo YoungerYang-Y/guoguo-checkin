@@ -59,14 +59,6 @@
         </view>
         <text class="entry-arrow">›</text>
       </view>
-      <view class="entry-card" hover-class="ui-hover" data-kind="fees" bindtap="goLedger">
-        <view class="entry-icon icon-fee">费</view>
-        <view class="entry-main">
-          <text class="entry-title">培训支出</text>
-          <text class="entry-desc">{{feeYear}} {{feeTotal}} · 已并入记账</text>
-        </view>
-        <text class="entry-arrow">›</text>
-      </view>
     </view>
 
     <!-- 本周待复习 -->

@@ -2,7 +2,6 @@ const store = require('../../utils/store.js');
 const cloudstore = require('../../utils/cloudstore.js');
 const privacy = require('../../utils/privacy.js');
 const family = require('../../utils/family.js');
-const ledger = require('../../utils/ledger.js');
 
 const app = getApp();
 
@@ -18,13 +17,11 @@ Page({
     recordCount: 0,
     targetCount: 0,
     memberCount: '—',
-    ledgerTotal: '0.00',
-    ledgerCount: 0,
     menuGroups: [
       { key: 'data', title: '设置与数据', items: [
         { key: 'settings', text: '排期、周目标与提醒', path: '/pages/settings/settings' },
         { key: 'targets', text: '自定义目标管理', path: '/pages/target-edit/target-edit?list=1' },
-        { key: 'export', text: '导出打卡明细', path: '/pages/export/export' },
+        { key: 'export', text: '数据导出', path: '/pages/export/export' },
       ]},
       { key: 'about', title: '关于', items: [
         { key: 'about', text: '关于与版本', path: '' },
@@ -49,23 +46,11 @@ Page({
   },
 
   refreshCounts() {
-    let ledgerTotal = '0.00';
-    let ledgerCount = 0;
-    try {
-      const sum = ledger.summary(new Date().toISOString().slice(0, 7));
-      ledgerTotal = sum.totalText;
-      ledgerCount = sum.count;
-    } catch (e) { /* 记账模块异常不影响其他统计 */ }
     this.setData({
       recordCount: store.getRecords().filter(r => r.status === 1).length,
       targetCount: store.getCustomTargets().filter(t => t.status === 1).length,
-      ledgerTotal,
-      ledgerCount,
     });
   },
-
-  // 记账已是 tabBar 页面，navigateTo 会失败
-  goLedger() { wx.switchTab({ url: '/pages/ledger/ledger' }); },
 
   refreshSyncState(state) {
     const s = state || cloudstore.getState();

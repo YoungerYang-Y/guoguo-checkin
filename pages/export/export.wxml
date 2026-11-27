@@ -1,11 +1,22 @@
 <view class="page">
   <view class="card">
-    <text class="section-title">导出打卡明细</text>
-    <text class="export-desc">将本机当前保存的有效打卡记录导出为 CSV，可用 Excel 查看。</text>
-    <text class="text-muted text-small export-note">仅包含打卡明细，不包含体重身高、培训费和复习记录；已撤销的打卡不导出。</text>
+    <text class="section-title">数据导出</text>
+    <text class="export-desc">将本机保存的数据导出为文件，用于备份迁移或在 Excel 中查看。</text>
+    <text class="text-muted text-small export-note">导出前请先完成同步，确保包含家人的最新记录；完整备份含家庭码与成员信息，请仅自己保管、勿外发。</text>
   </view>
 
+  <!-- 模式切换 -->
   <view class="card">
+    <text class="section-title">导出内容</text>
+    <view class="chip-row">
+      <view wx:for="{{modes}}" wx:key="key" class="chip {{mode === item.key ? 'active' : ''}}"
+            data-key="{{item.key}}" hover-class="ui-hover" bindtap="setMode">{{item.label}}</view>
+    </view>
+    <text class="text-muted text-small export-note">{{mode === 'backup' ? '全部本机数据（打卡、记账、体重身高、古诗、单词、目标、排期、家庭与操作日志），JSON 格式。' : '仅有效打卡明细，CSV 格式，可用 Excel 打开；已撤销的打卡不导出。'}}</text>
+  </view>
+
+  <!-- 打卡明细：范围选择 -->
+  <view class="card" wx:if="{{mode === 'csv'}}">
     <text class="section-title">选择范围</text>
     <view class="chip-row">
       <view wx:for="{{ranges}}" wx:key="key" class="chip {{exportRange === item.key ? 'active' : ''}}"
@@ -13,15 +24,19 @@
     </view>
     <text class="range-label">{{rangeLabel}}</text>
     <text class="record-count">共 {{recordCount}} 条有效打卡</text>
-    <text class="text-muted text-small export-note">如需包含家人最新记录，请先返回「我的」完成同步。</text>
-    <button class="btn btn-primary btn-block export-button" disabled="{{recordCount === 0}}" hover-class="btn-hover" bindtap="exportCSV">生成 CSV 文件</button>
+  </view>
+
+  <view class="card">
+    <button class="btn btn-primary btn-block export-button" disabled="{{mode === 'csv' && recordCount === 0}}"
+            hover-class="btn-hover" bindtap="exportData">{{mode === 'backup' ? '生成备份文件' : '生成 CSV 文件'}}</button>
+    <text class="text-muted text-small export-note">{{mode === 'backup' ? '文件名：' + fileName : ''}}</text>
   </view>
 
   <view class="card" wx:if="{{exportReady}}">
-    <text class="section-title">{{exportFallback ? '复制打卡明细' : 'CSV 文件已生成'}}</text>
-    <text class="text-muted text-small export-note">{{exportFallback ? '当前环境无法生成文件，可将 CSV 明细复制后另行保存。' : '文件已保存在本机，以下是文件路径。'}}</text>
+    <text class="section-title">{{exportFallback ? '复制导出内容' : '文件已生成'}}</text>
+    <text class="text-muted text-small export-note">{{exportFallback ? '当前环境无法生成文件，可将内容复制后另行保存。' : '文件已保存在本机，以下是文件路径。'}}</text>
     <text class="export-path" selectable="true" wx:if="{{!exportFallback}}">{{exportPath}}</text>
-    <button class="btn btn-ghost btn-block export-button" disabled="{{copying}}" bindtap="copyExport">{{copying ? '复制中…' : (exportFallback ? '复制 CSV 明细' : '复制文件路径')}}</button>
+    <button class="btn btn-ghost btn-block export-button" disabled="{{copying}}" bindtap="copyExport">{{copying ? '复制中…' : (exportFallback ? '复制内容' : '复制文件路径')}}</button>
     <view class="manual-copy" wx:if="{{manualContent}}">
       <text class="text-muted text-small">长按下方内容，选择并复制。</text>
       <textarea class="manual-content" value="{{manualContent}}" maxlength="-1" />
@@ -29,7 +44,7 @@
   </view>
 
   <view class="export-fields">
-    <text class="field-label">文件包含</text>
-    <text class="text-muted text-small">日期、成员、打卡项、完成状态、节数、数量、备注、来源与达标标准快照。</text>
+    <text class="field-label">{{mode === 'backup' ? '备份包含' : '文件包含'}}</text>
+    <text class="text-muted text-small">{{mode === 'backup' ? '家庭与成员、打卡记录、排期、周目标、自定义目标、设置、报表快照、体重身高、培训费历史、古诗、单词、操作日志、家庭记账。' : '日期、成员、打卡项、完成状态、节数、数量、备注、来源与达标标准快照。'}}</text>
   </view>
 </view>

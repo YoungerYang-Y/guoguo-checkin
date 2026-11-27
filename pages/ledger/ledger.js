@@ -69,16 +69,7 @@ Page({
     this.refresh();
   },
 
-  onShow() {
-    // switchTab 不支持 query：成长页等入口用 globalData 指定落在「汇总 · 按年」
-    const app = getApp();
-    if (app && app.globalData && app.globalData.ledgerView) {
-      const wantYear = app.globalData.ledgerView === 'year';
-      app.globalData.ledgerView = '';
-      if (wantYear) this.setData({ tab: 'summary', scope: 'year' });
-    }
-    this.refresh();
-  },
+  onShow() { this.refresh(); },
 
   refresh() {
     const currentYear = Number(D.today().slice(0, 4));

@@ -28,17 +28,6 @@
 
   <text class="overview-note">按本机数据统计，不含未绑定微信的孩子档案。</text>
 
-  <!-- 家庭记账 -->
-  <view class="card">
-    <view class="row-between">
-      <view class="col">
-        <text class="section-title" style="margin:0">家庭记账</text>
-        <text class="text-muted text-small">本月支出 ¥{{ledgerTotal}} · {{ledgerCount}} 笔</text>
-      </view>
-      <view class="mini-action primary" hover-class="ui-hover" bindtap="goLedger">去记账</view>
-    </view>
-  </view>
-
   <!-- 家庭：管理入口 + 分享统一收口在这里 -->
   <view class="card">
     <text class="section-title">家庭与分享</text>

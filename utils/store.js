@@ -222,6 +222,23 @@ function exportCSV(start, end) {
   return [head].concat(rows).join('\n');
 }
 
+// ---------- 全量备份 ----------
+// 导出本机全部家庭数据为结构化 JSON，供备份/迁移。
+// 只导出 store.KEYS 内的数据；访客/邀请 token 等凭证不在其中，避免随备份外泄。
+function exportAll() {
+  const payload = {
+    app: '果果家庭打卡',
+    schema: 1,
+    exportedAt: new Date().toISOString(),
+    data: {},
+  };
+  Object.keys(KEYS).forEach(k => {
+    const v = read(KEYS[k], null);
+    payload.data[KEYS[k]] = v === undefined ? null : v;
+  });
+  return JSON.stringify(payload, null, 2);
+}
+
 // ---------- 自定义目标 ----------
 // 兼容旧数据：早期目标只有单个 member_id，现在一个目标可分配给多名成员
 function targetMemberIds(t) {
@@ -400,7 +417,7 @@ function resetAll() { return require('./cloudstore.js').resetFamilyData(); }
 module.exports = {
   KEYS, read, write, initFamily, getFamily, updateMemberName,
   getSchedule, setRequired, getTargets, setTarget, getSettings, setSettings,
-  getRecords, saveRecord, revokeRecord, getRecord, getDayRecords, canBackfill, exportCSV,
+  getRecords, saveRecord, revokeRecord, getRecord, getDayRecords, canBackfill, exportCSV, exportAll,
   getCustomTargets, createCustomTarget, updateCustomTarget, archiveCustomTarget, getCustomTarget, checkCustomTarget,
   targetMemberIds, normalizeMemberIds, getCustomTargetsAt, canEditTarget, canManage,
   saveSnapshot, getSnapshot, appendLog, getLogs, resetAll,
