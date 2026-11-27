@@ -49,6 +49,8 @@
         </picker>
       </view>
 
+      <view class="form-divider"></view>
+
       <view class="form-field">
         <text class="field-label">金额（元）</text>
         <input class="field-input {{focusField === 'amount' ? 'is-focus' : ''}} {{amountError ? 'is-error' : ''}}" type="digit"
@@ -64,13 +66,13 @@
                bindinput="onNoteInput" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
       </view>
 
-      <button class="btn btn-primary btn-block" style="margin-top:32rpx" bindtap="saveEntry">{{editingId ? '保存修改' : '保存'}}</button>
+      <button class="btn btn-primary btn-block save-btn" bindtap="saveEntry">{{editingId ? '保存修改' : '保存'}}</button>
     </view>
   </block>
 
   <!-- 明细 -->
   <block wx:if="{{tab === 'list'}}">
-    <view class="card">
+    <view class="card hero-card">
       <view class="period-nav">
         <text class="nav-btn {{canPrev ? '' : 'is-off'}}" bindtap="prevMonth" hover-class="ui-hover">‹</text>
         <text class="period-title">{{monthLabel}}</text>
@@ -90,7 +92,8 @@
       <view class="led-row" wx:for="{{rows}}" wx:key="id" hover-class="ui-hover" data-id="{{item.id}}" bindtap="editRow">
         <view class="led-main">
           <text class="led-cat ellipsis">{{item.cat2Name}}</text>
-          <text class="led-meta ellipsis">{{item.dayText}} · {{item.cat1Name}} · {{item.memberName}}<text wx:if="{{item.note}}"> · {{item.note}}</text></text>
+          <text class="led-meta">{{item.dayText}} · {{item.cat1Name}} · {{item.memberName}}</text>
+          <text class="led-note ellipsis" wx:if="{{item.note}}">{{item.note}}</text>
         </view>
         <text class="led-amount num">¥{{item.amountText}}</text>
         <text class="led-del" data-id="{{item.id}}" hover-class="ui-hover" catchtap="removeRow">删除</text>
@@ -107,7 +110,7 @@
 
   <!-- 汇总：按月 / 按年两种范围 -->
   <block wx:if="{{tab === 'summary'}}">
-    <view class="card">
+    <view class="card hero-card">
       <view class="chip-row scope-row">
         <view class="chip {{scope === 'month' ? 'active' : ''}}" data-scope="month" hover-class="ui-hover" bindtap="switchScope">按月</view>
         <view class="chip {{scope === 'year' ? 'active' : ''}}" data-scope="year" hover-class="ui-hover" bindtap="switchScope">按年</view>
@@ -131,7 +134,7 @@
           <text class="sum-val num">{{scope === 'month' ? monthTotal : yearView.totalText}}</text>
         </view>
         <text class="sum-count">{{scope === 'month' ? monthCount : yearView.count}} 笔</text>
-        <text class="sum-diff" wx:if="{{scope === 'year' && yearView.hasPrev}}">
+        <text class="sum-diff {{yearView.diffWord == '增加' ? 'is-up' : (yearView.diffWord == '减少' ? 'is-down' : '')}}" wx:if="{{scope === 'year' && yearView.hasPrev}}">
           较去年{{yearView.diffWord}} {{yearView.diffText}}（{{yearView.diffPct}}%）
         </text>
         <text class="sum-diff" wx:elif="{{scope === 'year' && yearView.count > 0}}">去年没有记账记录，暂无可比数据</text>
@@ -143,7 +146,7 @@
       <block wx:if="{{monthCount > 0}}">
         <view class="card">
           <text class="section-title">按成员</text>
-          <view class="bar-row" wx:for="{{sum.members}}" wx:key="id">
+          <view class="bar-row {{index < 3 ? 'is-top' : ''}}" wx:for="{{sum.members}}" wx:key="id">
             <text class="bar-name ellipsis">{{item.name}}</text>
             <view class="bar-track"><view class="bar-fill" style="width:{{item.pct}}%"></view></view>
             <view class="bar-val">
@@ -158,7 +161,7 @@
             <text class="section-title" style="margin:0">按分类</text>
             <text class="text-muted text-small" wx:if="{{sum.pendingPct > 5}}">待整理占 {{sum.pendingPct}}%</text>
           </view>
-          <view class="bar-row" wx:for="{{sum.cats}}" wx:key="code">
+          <view class="bar-row {{index < 3 ? 'is-top' : ''}}" wx:for="{{sum.cats}}" wx:key="code">
             <text class="bar-name ellipsis">{{item.name}}</text>
             <view class="bar-track"><view class="bar-fill" style="width:{{item.pct}}%"></view></view>
             <view class="bar-val">
@@ -183,7 +186,7 @@
       <block wx:if="{{yearView.count > 0}}">
         <view class="card">
           <text class="section-title">按月</text>
-          <view class="bar-row" wx:for="{{yearView.months}}" wx:key="ym">
+          <view class="bar-row {{index < 3 ? 'is-top' : ''}}" wx:for="{{yearView.months}}" wx:key="ym">
             <text class="bar-name ellipsis">{{item.label}}</text>
             <view class="bar-track"><view class="bar-fill" style="width:{{item.pct}}%"></view></view>
             <view class="bar-val">
@@ -195,7 +198,7 @@
 
         <view class="card">
           <text class="section-title">按分类</text>
-          <view class="bar-row" wx:for="{{yearView.cats}}" wx:key="code">
+          <view class="bar-row {{index < 3 ? 'is-top' : ''}}" wx:for="{{yearView.cats}}" wx:key="code">
             <text class="bar-name ellipsis">{{item.name}}</text>
             <view class="bar-track"><view class="bar-fill" style="width:{{item.pct}}%"></view></view>
             <view class="bar-val">
