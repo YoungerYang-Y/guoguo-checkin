@@ -139,14 +139,18 @@ function createHarness({ database = new MemoryDatabase(), storage = new Map(), i
     if (request === './sync-merge.js' || request === './policy.js') return require(path.join(utilsRoot, request.slice(2)));
     if (request === './store.js') return holder.store;
     if (request === './cloudstore.js') return holder.sync;
-    if (request === './constants.js' || request === './date.js') return require(path.join(utilsRoot, request.slice(2)));
+    if (request === './ledger.js') return holder.ledger;
+    if (request === './ledger-migrate.js') return holder.migration;
+    if (request === './constants.js' || request === './date.js' || request === './ledger-categories.js') return require(path.join(utilsRoot, request.slice(2)));
     throw new Error(`Unexpected require ${request}`);
   };
   holder.sync = loadModule(path.join(utilsRoot, 'cloudstore.js'), customRequire);
   holder.store = loadModule(path.join(utilsRoot, 'store.js'), customRequire);
+  holder.ledger = loadModule(path.join(utilsRoot, 'ledger.js'), customRequire);
+  holder.migration = loadModule(path.join(utilsRoot, 'ledger-migrate.js'), customRequire);
   const { store, sync } = holder;
   return {
-    database, storage, wx, store, sync,
+    database, storage, wx, store, sync, ledger: holder.ledger, migration: holder.migration,
     setIdentity(value) { currentIdentity = value; },
     setUserId(value) { currentUserId = value; },
     getIdentity() { return currentIdentity; },
@@ -500,4 +504,138 @@ test('records from two devices deduplicate by business key, preferring the newer
   assert.equal(records.length, 1);
   assert.equal(records[0].record_id, 'rec_newer');
   assert.equal(records[0].note, 'newer');
+});
+
+const legacyFee = { id: 'fee-original', ym: '2026-11', category: 'swim', amount: 1200 };
+
+test('cloud-only legacy fees migrate on first adoption and remain deleted on another device', async () => {
+  const oldFeeRow = row('fam_test', 'gg_fees', [legacyFee]);
+  oldFeeRow.doc_value = [legacyFee]; // v1.3 未包装的旧云文档也须兼容。
+  const database = new MemoryDatabase([oldFeeRow]);
+  const a = createHarness({ database });
+  await a.sync.bootstrap();
+  await waitIdle(a);
+  assert.equal(a.ledger.summary('2026-11').total, 1200);
+  assert.equal(cloudValue(database, 'fam_test', 'gg_ledger').length, 1);
+  const id = a.ledger.listAll()[0].id;
+  assert.equal(a.ledger.remove(id).error, null);
+  await waitIdle(a);
+  assert.equal(a.ledger.summary('2026-11').total, 0);
+
+  const b = createHarness({ database });
+  await b.sync.bootstrap();
+  await waitIdle(b);
+  assert.equal(b.ledger.listAll().length, 0);
+  assert.equal(b.ledger.hasSource('fees:' + legacyFee.id), true);
+  assert.equal(cloudValue(database, 'fam_test', 'gg_fees').length, 1, 'legacy cloud source remains available');
+});
+
+test('two upgraded devices import one fee once and repair existing random-id duplicates in cloud', async () => {
+  const database = new MemoryDatabase([row('fam_test', 'gg_ledger', [])]);
+  const initial = () => new Map([
+    ['gg_family_adopted', 'fam_test'], ['gg_sync_epoch', 'legacy'],
+    ['gg_fees', [legacyFee]], ['gg_sync_base', { gg_ledger: [] }],
+  ]);
+  const a = createHarness({ database, storage: initial() });
+  const b = createHarness({ database, storage: initial() });
+  a.migration.migrateFees(); b.migration.migrateFees();
+  await a.sync.bootstrap(); await b.sync.bootstrap();
+  await waitIdle(a); await waitIdle(b);
+  assert.equal(cloudValue(database, 'fam_test', 'gg_ledger').length, 1);
+  assert.equal(b.ledger.summary('2026-11').total, 1200);
+
+  const migrated = cloudValue(database, 'fam_test', 'gg_ledger')[0];
+  const legacyRows = [
+    { ...migrated, id: 'old-random-a', amount: 100, updated_at: '2026-11-20T00:00:00.000Z' },
+    { ...migrated, id: 'old-random-b', amount: 1250, updated_at: '2026-11-21T00:00:00.000Z' },
+  ];
+  database.rows.find(r => r.doc_key === 'gg_ledger').doc_value.value = legacyRows;
+  const fresh = createHarness({ database });
+  await fresh.sync.bootstrap();
+  await waitIdle(fresh);
+  assert.equal(fresh.ledger.summary('2026-11').total, 1250, 'newer edited migration wins');
+  assert.equal(cloudValue(database, 'fam_test', 'gg_ledger').length, 1, 'repair is persisted remotely');
+});
+
+test('a completed local migration stays deleted after restart and cloud-source backfill', async () => {
+  const database = new MemoryDatabase([row('fam_test', 'gg_fees', [legacyFee])]);
+  const storage = new Map([
+    ['gg_family_adopted', 'fam_test'], ['gg_sync_epoch', 'legacy'], ['gg_fees', [legacyFee]],
+  ]);
+  const a = createHarness({ database, storage });
+  a.migration.migrateFees();
+  await a.sync.bootstrap(); await waitIdle(a);
+  a.ledger.remove(a.ledger.listAll()[0].id);
+  await waitIdle(a);
+  const restarted = createHarness({ database, storage });
+  assert.equal(restarted.migration.migrateFees().migrated, 0);
+  await restarted.sync.bootstrap(); await waitIdle(restarted);
+  assert.equal(restarted.ledger.listAll().length, 0);
+  assert.equal(cloudValue(database, 'fam_test', 'gg_ledger').filter(r => !r.deleted_at).length, 0);
+});
+
+test('old migration completion preserves a physical deletion made before tombstones existed', async () => {
+  const database = new MemoryDatabase([
+    row('fam_test', 'gg_fees', [legacyFee]), row('fam_test', 'gg_ledger', []),
+  ]);
+  const a = createHarness({ database, storage: new Map([
+    ['gg_family_adopted', 'fam_test'], ['gg_sync_epoch', 'legacy'],
+    ['gg_fees', [legacyFee]], ['gg_fees_migrated_v1', true], ['gg_ledger', []],
+  ]) });
+  await a.sync.bootstrap(); await waitIdle(a);
+  assert.equal(a.ledger.listAll().length, 0);
+  assert.equal(a.ledger.hasSource('fees:' + legacyFee.id), true);
+  const b = createHarness({ database });
+  await b.sync.bootstrap(); await waitIdle(b);
+  assert.equal(b.ledger.listAll().length, 0);
+});
+
+test('family reset removes local fee sources and old cloud fees cannot return in the new epoch', async () => {
+  const database = new MemoryDatabase([row('fam_test', 'gg_fees', [legacyFee])]);
+  const admin = { ...makeIdentity(), role: 'admin' };
+  const a = createHarness({ database, identity: admin });
+  await a.sync.bootstrap(); await waitIdle(a);
+  a.wx.setStorageSync('gg_fees', [legacyFee]);
+  a.wx.setStorageSync('gg_fees_migrated_v1', true);
+  const result = await a.sync.resetFamilyData();
+  assert.equal(result.error, null);
+  assert.equal(a.wx.getStorageSync('gg_fees'), '');
+  const restarted = createHarness({ database, storage: a.storage, identity: admin });
+  restarted.migration.migrateFees();
+  await restarted.sync.bootstrap(); await waitIdle(restarted);
+  assert.equal(restarted.ledger.listAll().length, 0);
+  const fresh = createHarness({ database });
+  await fresh.sync.bootstrap(); await waitIdle(fresh);
+  assert.equal(fresh.ledger.listAll().length, 0);
+});
+
+test('switching families discards stale local fee sources before the next launch', async () => {
+  const database = new MemoryDatabase();
+  const a = createHarness({ database, storage: new Map([
+    ['gg_family_adopted', 'fam_old'], ['gg_sync_epoch', 'legacy'], ['gg_fees', [legacyFee]],
+    ['gg_fees_migrated_v1', true],
+  ]) });
+  await a.sync.bootstrap(); await waitIdle(a);
+  assert.equal(a.wx.getStorageSync('gg_fees'), '');
+  const restarted = createHarness({ database, storage: a.storage });
+  restarted.migration.migrateFees();
+  await restarted.sync.bootstrap(); await waitIdle(restarted);
+  assert.equal(restarted.ledger.listAll().length, 0);
+});
+
+test('creating a family after changing accounts never seeds the prior adopted family cache', async () => {
+  const database = new MemoryDatabase();
+  const a = createHarness({ database, identity: { status: 'none', uid: 'new-account' }, storage: new Map([
+    ['gg_family_adopted', 'fam_previous'], ['gg_sync_epoch', 'legacy'],
+    ['gg_fees', [legacyFee]], ['gg_fees_migrated_v1', true],
+    ['gg_ledger', [{ id: 'private-old-fee', src: 'fees:' + legacyFee.id, amount: 1200 }]],
+  ]) });
+  await a.sync.bootstrap();
+  const nextIdentity = { ...makeIdentity('fam_new'), uid: 'new-account', role: 'admin' };
+  a.setIdentity(nextIdentity);
+  await a.sync.adoptCreatedFamily(nextIdentity);
+  await waitIdle(a);
+  assert.equal(a.wx.getStorageSync('gg_fees'), '');
+  assert.equal(a.ledger.listAll().length, 0);
+  assert.deepEqual(cloudValue(database, 'fam_new', 'gg_ledger'), []);
 });

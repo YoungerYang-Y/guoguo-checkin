@@ -32,6 +32,8 @@ function buildNote(fee) {
 
 // 返回 { migrated, skipped, total, error? }
 function migrateFees() {
+  // 完成标记是删除语义的一部分，不能靠当前账本是否仍有 src 来重复迁移。
+  if (isMigrated()) return { migrated: 0, skipped: 0, total: 0 };
   let fees = [];
   try { fees = store.read(store.KEYS.FEES, []) || []; } catch (e) { fees = []; }
   if (!Array.isArray(fees) || !fees.length) {
@@ -39,7 +41,7 @@ function migrateFees() {
     return { migrated: 0, skipped: 0, total: 0 };
   }
 
-  const entries = fees.map(f => ({
+  const entries = fees.filter(f => f && f.id).map(f => ({
     // 只有月份，统一落 1 号
     date: String(f.ym || '').slice(0, 7) + '-01',
     cat2: mapCat2(f.category),
@@ -54,12 +56,28 @@ function migrateFees() {
     // 写盘失败：不写完成标记，下次启动重试
     return { migrated: 0, skipped: r.skipped || 0, total: fees.length, error: r.error };
   }
-  try { store.write(MARK, true); } catch (e) {}
+  const marked = store.write(MARK, true);
+  if (marked && marked.error) return { migrated: r.data.length, skipped: r.skipped || 0, total: fees.length, error: marked.error };
   return { migrated: r.data.length, skipped: r.skipped || 0, total: fees.length };
+}
+
+// 仅由同步层在当前家庭 legacy 代次成功拉取后调用。删除凭据与账目在同一文档
+// 中同步，新设备不会把旧云费用再次导入；清空后的新代次不再消费旧费用文档。
+function migrateCloudFees(fees) {
+  const local = store.read(store.KEYS.FEES, []);
+  const handled = new Set(isMigrated() && Array.isArray(local) ? local.filter(f => f && f.id).map(f => String(f.id)) : []);
+  const entries = (Array.isArray(fees) ? fees : []).filter(f => f && f.id).map(f => ({
+    date: String(f.ym || '').slice(0, 7) + '-01',
+    cat2: mapCat2(f.category), amount: f.amount, member: 'guoguo', note: buildNote(f),
+    src: 'fees:' + f.id,
+    // 兼容旧客户端：已完成本机迁移但账本来源消失，保留用户的历史删除。
+    deleted: handled.has(String(f.id)) && !ledger.hasSource('fees:' + f.id),
+  }));
+  return ledger.bulkAdd(entries);
 }
 
 function isMigrated() {
   try { return !!store.read(MARK, false); } catch (e) { return false; }
 }
 
-module.exports = { migrateFees, isMigrated, MARK, CAT_MAP, mapCat2 };
+module.exports = { migrateFees, migrateCloudFees, isMigrated, MARK, CAT_MAP, mapCat2 };

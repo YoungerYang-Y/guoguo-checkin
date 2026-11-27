@@ -20,7 +20,7 @@ App({
     // 本地初始化保证首屏立即可用
     store.initFamily();
     // 历史培训费并入记账：必须在 bootstrap 之前跑，新增账目才能随首轮同步上传；
-    // 内部按 src 幂等，重复启动不会重复入账，写盘失败则不写标记、下次重试。
+    // 完成标记阻止删除后的重放，云端旧费用在成功接入家庭后另行迁移。
     try { this.feeMigration = ledgerMigrate.migrateFees(); } catch (e) { this.feeMigration = null; }
     // 异步引导云同步：登录 + 判定家庭身份 + 按家庭合并云端数据
     this.cloudReady = cloudstore.bootstrap();

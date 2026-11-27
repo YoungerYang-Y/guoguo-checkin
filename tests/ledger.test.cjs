@@ -164,3 +164,68 @@ test('金额格式：千分位分组且保留两位小数', () => {
   assert.equal(sum.totalText, '12,345.60');
   assert.equal(ledger.listByMonth('2026-11')[0].amount, 12345.6);
 });
+
+test('费用来源删除保留 tombstone，查询与统计隐藏已删除记录', () => {
+  const { ledger, mem } = loadLedger();
+  const imported = ledger.bulkAdd([
+    { date: '2026-03-01', cat2: '4-02', amount: 1200, member: 'guoguo', src: 'fees:course-1' },
+  ]).data[0];
+  assert.equal(imported.id, 'fee_fees%3Acourse-1');
+  assert.equal(ledger.remove(imported.id).error, null);
+  assert.equal(ledger.listAll().length, 0);
+  assert.equal(ledger.summary('2026-03').total, 0);
+  assert.equal(ledger.hasSource('fees:course-1'), true);
+  const stored = mem.get('gg_ledger');
+  assert.equal(stored.length, 1);
+  assert.ok(stored[0].deleted_at);
+  assert.equal(ledger.remove(imported.id).error, 'NOT_FOUND');
+});
+
+test('bulkAdd 按来源识别 tombstone，重迁与重复导入均跳过', () => {
+  const { ledger, mem } = loadLedger([
+    { id: 'old-random-id', src: 'fees:course-1', date: '2026-03-01', ym: '2026-03', cat1: '4', cat2: '4-02', amount: 1200, member: 'guoguo', deleted_at: '2026-11-27T00:00:00.000Z' },
+  ]);
+  const r = ledger.bulkAdd([
+    { date: '2026-03-01', cat2: '4-02', amount: 1200, member: 'guoguo', src: 'fees:course-1' },
+    { date: '2026-03-01', cat2: '4-02', amount: 1200, member: 'guoguo', src: 'fees:course-2', deleted: true },
+  ]);
+  assert.equal(r.data.length, 1);
+  assert.equal(r.skipped, 1);
+  assert.equal(r.data[0].id, 'fee_fees%3Acourse-2');
+  assert.ok(r.data[0].deleted_at);
+  assert.equal(mem.get('gg_ledger').length, 2);
+  assert.equal(ledger.hasSource('fees:course-2'), true);
+  assert.equal(ledger.listAll().length, 0);
+});
+
+test('任一同来源 tombstone 阻止较新活动副本重新出现', () => {
+  const deleted = { id: 'old-deleted', src: 'fees:course-1', date: '2026-03-01', ym: '2026-03', cat1: '4', cat2: '4-02', amount: 1200, member: 'guoguo', updated_at: '2026-11-26T00:00:00.000Z', deleted_at: '2026-11-26T00:00:00.000Z' };
+  const staleDevice = Object.assign({}, deleted, { id: 'stale-active', updated_at: '2026-11-28T00:00:00.000Z', deleted_at: undefined });
+  const { ledger } = loadLedger([deleted, staleDevice]);
+  assert.equal(ledger.listAll().length, 0);
+  assert.equal(ledger.update('stale-active', { amount: 1300 }).error, 'NOT_FOUND');
+  assert.equal(ledger.bulkAdd([{ date: '2026-03-01', cat2: '4-02', amount: 1200, member: 'guoguo', src: 'fees:course-1' }]).data.length, 0);
+});
+
+test('旧账本重复费用在查询视图按来源折叠，删除可定位到底层随机 ID', () => {
+  const first = { id: 'old-a', src: 'fees:course-1', date: '2026-03-01', ym: '2026-03', cat1: '4', cat2: '4-02', amount: 1200, member: 'guoguo', updated_at: '2026-11-26T00:00:00.000Z' };
+  const latest = Object.assign({}, first, { id: 'old-b', amount: 1300, updated_at: '2026-11-27T00:00:00.000Z' });
+  const { ledger, mem } = loadLedger([first, latest]);
+  assert.equal(ledger.listAll().length, 1);
+  assert.equal(ledger.listAll()[0].amount, 1300);
+  assert.equal(ledger.remove('old-b').error, null);
+  assert.equal(mem.get('gg_ledger').length, 1);
+  assert.equal(mem.get('gg_ledger')[0].id, 'fee_fees%3Acourse-1');
+  assert.ok(mem.get('gg_ledger')[0].deleted_at);
+});
+
+test('编辑旧重复费用时折叠副本并使用稳定 ID', () => {
+  const first = { id: 'old-a', src: 'fees:course-1', date: '2026-03-01', ym: '2026-03', cat1: '4', cat2: '4-02', amount: 1200, member: 'guoguo', updated_at: '2026-11-26T00:00:00.000Z' };
+  const latest = Object.assign({}, first, { id: 'old-b', amount: 1300, updated_at: '2026-11-27T00:00:00.000Z' });
+  const { ledger, mem } = loadLedger([first, latest]);
+  const updated = ledger.update('old-b', { amount: 1400 });
+  assert.equal(updated.error, null);
+  assert.equal(updated.data.id, 'fee_fees%3Acourse-1');
+  assert.equal(mem.get('gg_ledger').length, 1);
+  assert.equal(mem.get('gg_ledger')[0].amount, 1400);
+});

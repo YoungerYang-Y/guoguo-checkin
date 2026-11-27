@@ -58,6 +58,8 @@ async function compareWrite(key, row, value) {
 }
 function clearLocal() {
   DOC_KEYS.forEach(key => wx.removeStorageSync(key));
+  // 旧费用不再是同步文档，但仍属于原家庭，不能跨家庭或跨重置代次重放。
+  ['gg_fees', 'gg_fees_migrated_v1'].forEach(key => wx.removeStorageSync(key));
   put(PENDING_KEY, []); put(BASE_KEY, {}); put(VERSION_KEY, {});
   // 家庭归属与重置代次一并清除：否则「清空数据 / 退出家庭」后残留的 adopted
   // 会让 store 的写入门禁把本机用户误判成访客，打卡和设置全部锁死。
@@ -74,9 +76,20 @@ async function pullAll(fresh) {
   if (error) throw error;
   if (await getEpoch() !== epoch) throw new Error('FAMILY_RESET_CHANGED');
   const map = {};
+  let legacyFees = [], ledgerNeedsRepair = false;
   (Array.isArray(data) ? data : []).forEach(row => {
+    if (row.family_id === _familyId && row.doc_key === 'gg_fees' && epoch === LEGACY) {
+      const fees = unpack(row.doc_value, epoch);
+      if (Array.isArray(fees)) legacyFees = fees;
+    }
     if (row.family_id === _familyId && DOC_KEYS.indexOf(row.doc_key) >= 0) {
-      const v = unpack(row.doc_value, epoch); if (v !== undefined) map[row.doc_key] = v;
+      let v = unpack(row.doc_value, epoch);
+      if (row.doc_key === 'gg_ledger' && Array.isArray(v)) {
+        const normalized = merge('gg_ledger', undefined, v, v);
+        ledgerNeedsRepair = JSON.stringify(normalized) !== JSON.stringify(v);
+        v = normalized;
+      }
+      if (v !== undefined) map[row.doc_key] = v;
     }
   });
   const changed = read(ADOPTED_KEY, '') !== _familyId || read(EPOCH_KEY, LEGACY) !== epoch;
@@ -101,6 +114,11 @@ async function pullAll(fresh) {
     stampFamily();
     put(ADOPTED_KEY, _familyId); put(EPOCH_KEY, epoch);
   } finally { _initializing = false; }
+  if (ledgerNeedsRepair) markDirty('gg_ledger');
+  if (legacyFees.length) {
+    const result = require('./ledger-migrate.js').migrateCloudFees(legacyFees);
+    if (result.error) throw new Error(result.error);
+  }
 }
 async function pushKey(key) {
   const epoch = _epoch;
@@ -191,7 +209,15 @@ function adoptCreatedFamily(id) {
     _session = await ensureSession();
     if (!_session) throw new Error('登录未完成，请重新连接后重试');
     _familyId = id.familyId; Object.assign(_state, { loggedIn: true, familyId: id.familyId, memberKey: id.memberKey, role: id.role });
-    _epoch = await getEpoch(); put(ADOPTED_KEY, _familyId); put(EPOCH_KEY, _epoch); put(BASE_KEY, {}); stampFamily();
+    _epoch = await getEpoch();
+    // 首个云家庭可接管纯本机记录；换账号后创建新家庭不能接管旧家庭缓存。
+    const previousFamily = read(ADOPTED_KEY, '');
+    if (previousFamily && previousFamily !== _familyId) {
+      _initializing = true;
+      try { clearLocal(); require('./store.js').initFamily(true); }
+      finally { _initializing = false; }
+    }
+    put(ADOPTED_KEY, _familyId); put(EPOCH_KEY, _epoch); put(BASE_KEY, {}); stampFamily();
     put(PENDING_KEY, DOC_KEYS.filter(key => read(key, undefined) !== undefined));
     return runSync(false, true);
   });

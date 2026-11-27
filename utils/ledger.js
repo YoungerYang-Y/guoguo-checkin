@@ -25,12 +25,47 @@ function money(cents) { return group((cents / 100).toFixed(2)); }
 // 元（number）→ 分组后的两位小数字符串，供页面直接展示单笔金额
 function moneyOf(amount) { return money(toCents(amount)); }
 
-function listAll() {
+function isFeeSource(src) { return typeof src === 'string' && src.indexOf('fees:') === 0; }
+function feeId(src) { return 'fee_' + encodeURIComponent(src); }
+function isDeleted(row) { return !!(row && (row.deleted_at || row.deleted === true)); }
+function timestamp(row) { return String(row && (row.updated_at || row.created_at) || ''); }
+function nextTimestamp(rows) {
+  const latest = rows.reduce((max, row) => Math.max(max, Date.parse(row.updated_at || row.created_at) || 0), 0);
+  return new Date(Math.max(Date.now(), latest + 1)).toISOString();
+}
+function preferFeeRow(a, b) {
+  if (isDeleted(a) !== isDeleted(b)) return isDeleted(a) ? a : b;
+  const ta = timestamp(a), tb = timestamp(b);
+  if (ta !== tb) return ta > tb ? a : b;
+  return JSON.stringify(a) >= JSON.stringify(b) ? a : b;
+}
+
+function listStored() {
   const v = store.read(KEY(), []);
   return Array.isArray(v) ? v : [];
 }
 function writeAll(list) {
   return store.write(KEY(), list);
+}
+function listAll() {
+  const stored = listStored();
+  const bySource = new Map();
+  stored.forEach(row => {
+    if (!isFeeSource(row && row.src)) return;
+    const prev = bySource.get(row.src);
+    if (!prev) bySource.set(row.src, row);
+    else bySource.set(row.src, preferFeeRow(prev, row));
+  });
+  const rows = [];
+  const seenSources = new Set();
+  stored.forEach(row => {
+    if (!isFeeSource(row && row.src)) { rows.push(row); return; }
+    if (seenSources.has(row.src)) return;
+    seenSources.add(row.src);
+    const winner = bySource.get(row.src);
+    if (!isDeleted(winner)) rows.push(winner);
+  });
+  return rows;
 }
 
 // 归一化输入并校验；不合法返回 { error }
@@ -62,7 +97,7 @@ function normalize(input) {
 function add(input) {
   const n = normalize(input);
   if (n.error) return { data: null, error: n.error };
-  const list = listAll();
+  const list = listStored();
   const now = new Date().toISOString();
   const rec = Object.assign({ id: uid('led_'), created_at: now, updated_at: now }, n.value);
   list.push(rec);
@@ -75,9 +110,9 @@ function add(input) {
 // 批量导入（历史数据迁移用）：一次性归一化并写盘，避免 N 条记录触发 N 次云同步。
 // src 是幂等标记，同一条来源只会导入一次，重复执行不会产生重复账。
 function bulkAdd(entries) {
-  const list = listAll();
-  const seen = {};
-  list.forEach(r => { if (r.src) seen[r.src] = true; });
+  const list = listStored();
+  const seen = new Set();
+  list.forEach(r => { if (r.src) seen.add(String(r.src)); });
   const now = new Date().toISOString();
   const added = [];
   let skipped = 0;
@@ -85,10 +120,13 @@ function bulkAdd(entries) {
     const n = normalize(e);
     if (n.error) { skipped += 1; return; }
     const src = e && e.src ? String(e.src) : '';
-    if (src && seen[src]) { skipped += 1; return; }
-    if (src) seen[src] = true;
-    const rec = Object.assign({ id: uid('led_'), created_at: now, updated_at: now }, n.value);
+    const deleted = !!(e && e.deleted);
+    if (deleted && !isFeeSource(src)) { skipped += 1; return; }
+    if (src && seen.has(src)) { skipped += 1; return; }
+    if (src) seen.add(src);
+    const rec = Object.assign({ id: isFeeSource(src) ? feeId(src) : uid('led_'), created_at: now, updated_at: now }, n.value);
     if (src) rec.src = src;
+    if (deleted) rec.deleted_at = String(e.deleted_at || now);
     list.push(rec);
     added.push(rec);
   });
@@ -100,22 +138,49 @@ function bulkAdd(entries) {
 }
 
 function update(id, patch) {
-  const list = listAll();
-  const idx = list.findIndex(r => r.id === id);
+  const list = listStored();
+  const idx = list.findIndex(r => r.id === id && !isDeleted(r));
   if (idx < 0) return { data: null, error: 'NOT_FOUND' };
+  const src = list[idx].src;
+  const related = isFeeSource(src) ? list.filter(r => r.src === src) : [];
+  if (related.some(isDeleted)) return { data: null, error: 'NOT_FOUND' };
   const merged = Object.assign({}, list[idx], patch);
   const n = normalize(merged);
   if (n.error) return { data: null, error: n.error };
-  const rec = Object.assign({}, list[idx], n.value, { updated_at: new Date().toISOString() });
-  list[idx] = rec;
-  const w = writeAll(list);
+  const rec = Object.assign({}, list[idx], n.value, {
+    updated_at: related.length ? nextTimestamp(related) : new Date().toISOString(),
+  });
+  let next = list;
+  if (related.length) {
+    rec.id = feeId(src);
+    rec.src = src;
+    next = list.filter(r => r.src !== src);
+    next.push(rec);
+  } else {
+    list[idx] = rec;
+  }
+  const w = writeAll(next);
   return w.error ? { data: null, error: w.error } : { data: rec, error: null };
 }
 
 function remove(id) {
-  const list = listAll();
-  const next = list.filter(r => r.id !== id);
-  if (next.length === list.length) return { data: null, error: 'NOT_FOUND' };
+  const list = listStored();
+  const idx = list.findIndex(r => r.id === id && !isDeleted(r));
+  if (idx < 0) return { data: null, error: 'NOT_FOUND' };
+  const rec = list[idx];
+  let next;
+  if (isFeeSource(rec.src)) {
+    const related = list.filter(r => r.src === rec.src);
+    const latest = related.reduce((winner, row) => preferFeeRow(winner, row));
+    const deletedAt = nextTimestamp(related);
+    const tombstone = Object.assign({}, latest, {
+      id: feeId(rec.src), deleted_at: deletedAt, updated_at: deletedAt,
+    });
+    next = list.filter(r => r.src !== rec.src);
+    next.push(tombstone);
+  } else {
+    next = list.filter(r => r.id !== id);
+  }
   const w = writeAll(next);
   return w.error ? { data: null, error: w.error } : { data: { id }, error: null };
 }
@@ -233,8 +298,9 @@ function listByMonth(ym) {
 }
 
 function getRecord(id) { return listAll().find(r => r.id === id) || null; }
+function hasSource(src) { return listStored().some(r => r && r.src === src); }
 
 module.exports = {
-  add, bulkAdd, update, remove, listAll, listByMonth, byYm, summary, yearSummary, months, getRecord,
+  add, bulkAdd, update, remove, listAll, hasSource, listByMonth, byYm, summary, yearSummary, months, getRecord,
   toCents, fromCents, money, moneyOf,
 };
