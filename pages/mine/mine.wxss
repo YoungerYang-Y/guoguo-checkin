@@ -1,4 +1,4 @@
-/* 资料卡：明显的多色阶粉色渐变（浅粉 → 玫粉 → 深玫红 → 暖紫收尾） */
+/* 资料卡：与成长/记账统一为淡粉 → 白的英雄卡语言，柔光做层次 */
 .profile-card {
   display: flex; align-items: center;
   box-sizing: border-box;
@@ -7,21 +7,18 @@
   padding: 36rpx 32rpx;
   margin-bottom: 32rpx;
   border-radius: var(--r-lg, 24rpx);
-  color: var(--c-surface);
-  background: linear-gradient(120deg, #FFB6D2 0%, var(--c-brand-light) 26%, #F2689B 58%, #D9437C 84%, #C4367E 100%);
-  box-shadow: 0 14rpx 32rpx rgba(236, 91, 140, 0.28);
+  color: var(--c-ink, #33262E);
+  background: linear-gradient(160deg, var(--c-brand-tint, #FDF6F9) 0%, var(--c-surface, #FFFFFF) 72%);
+  border: 1rpx solid rgba(236, 91, 140, 0.08);
+  box-shadow: 0 14rpx 32rpx rgba(236, 91, 140, 0.10);
 }
-.profile-avatar { width: 104rpx; height: 104rpx; border-radius: 50%; background: rgba(255,255,255,0.25); display: flex; align-items: center; justify-content: center; font-size: 44rpx; font-weight: 600; }
+.profile-avatar { width: 104rpx; height: 104rpx; border-radius: 50%; background: rgba(236, 91, 140, 0.14); color: var(--c-brand, #EC5B8C); display: flex; align-items: center; justify-content: center; font-size: 44rpx; font-weight: 600; }
 .profile-info { display: flex; flex-direction: column; margin-left: 24rpx; }
-.profile-info .text-muted { color: rgba(255,255,255,0.85); }
-/* 「果果家庭」渐变文字：先写白色兜底，支持 -webkit-text-fill-color 的环境显示奶白→浅金渐变 */
+.profile-info .text-muted { color: var(--c-muted, #6B7280); }
+/* 「果果家庭」用品牌色实色，去掉渐变裁剪在低版本基础库的兼容风险 */
 .profile-name {
   font-size: 36rpx; font-weight: 700; letter-spacing: 1rpx;
-  color: var(--c-surface);
-  background-image: linear-gradient(90deg, var(--c-surface) 0%, #FFF4D2 46%, #FFE0EC 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--c-brand, #EC5B8C);
 }
 .stat-row {
   display: flex; background: var(--c-surface, var(--c-surface));
@@ -46,7 +43,7 @@
 .sync-label { font-size: 28rpx; font-weight: 600; color: #2b2f36; }
 .sync-action {
   margin-left: auto; font-size: 24rpx; color: var(--c-brand);
-  min-height: 64rpx; padding: 0 20rpx;
+  min-height: 88rpx; padding: 0 24rpx;
   display: flex; align-items: center;
   border-radius: var(--r-sm, 12rpx);
 }
@@ -65,9 +62,9 @@
 
 /* ========== 我的页视觉增强（重复声明已并入上方同名类） ========== */
 /* 半透明光晕，叠在渐变上增加层次 */
-.profile-orb { position: absolute; border-radius: 50%; background: rgba(255,255,255,0.16); z-index: 0; }
+.profile-orb { position: absolute; border-radius: 50%; background: rgba(236, 91, 140, 0.10); z-index: 0; }
 .profile-orb-a { width: 230rpx; height: 230rpx; right: -70rpx; top: -120rpx; }
-.profile-orb-b { width: 160rpx; height: 160rpx; right: 80rpx; bottom: -110rpx; background: rgba(255,255,255,0.10); }
+.profile-orb-b { width: 160rpx; height: 160rpx; right: 80rpx; bottom: -110rpx; background: rgba(236, 91, 140, 0.06); }
 .profile-avatar, .profile-info { position: relative; z-index: 1; }
 /* 第一、二块面板之间留出明确间距（双向 margin 避免折叠后仍贴在一起） */
 .sync-card { margin-top: 32rpx; }
@@ -75,10 +72,10 @@
 .card .btn-block { min-height: 88rpx; padding: 10rpx 24rpx; font-size: 26rpx; border-radius: var(--r-sm, 12rpx); }
 .profile-avatar {
   box-sizing: border-box;
-  border: 4rpx solid rgba(255, 255, 255, 0.45);
-  box-shadow: 0 6rpx 18rpx rgba(0, 0, 0, 0.1);
+  border: 4rpx solid rgba(236, 91, 140, 0.18);
+  box-shadow: 0 6rpx 18rpx rgba(236, 91, 140, 0.08);
 }
 .stat-row { box-shadow: var(--sh-2, 0 12rpx 32rpx rgba(150, 80, 110, 0.07)); }
-.sync-card { background: linear-gradient(135deg, var(--c-surface) 0%, #FFF8FB 100%); }
+.sync-card { background: linear-gradient(160deg, var(--c-surface) 0%, var(--c-brand-tint, #FDF6F9) 100%); }
 
 .overview-note { display: block; margin: -8rpx 8rpx 24rpx; font-size: 22rpx; color: var(--c-muted); line-height: 1.6; }

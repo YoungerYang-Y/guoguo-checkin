@@ -15,11 +15,11 @@
       <text class="text-muted text-small">记录到 {{overview.weekLabel}}，之后 5 周会自动进入每周复习清单</text>
       <view class="form-field">
         <text class="field-label">古诗名称</text>
-        <input class="field-input {{fieldFocus ? 'is-focus' : ''}}" value="{{form.title}}" data-field="title" bindinput="onFieldInput" placeholder="如：静夜思" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
+        <input class="field-input {{focusField === 'title' ? 'is-focus' : ''}}" value="{{form.title}}" data-field="title" bindinput="onFieldInput" placeholder="如：静夜思" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
       </view>
       <view class="form-field">
         <text class="field-label">作者（选填）</text>
-        <input class="field-input {{fieldFocus ? 'is-focus' : ''}}" value="{{form.author}}" data-field="author" bindinput="onFieldInput" placeholder="如：李白" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
+        <input class="field-input {{focusField === 'author' ? 'is-focus' : ''}}" value="{{form.author}}" data-field="author" bindinput="onFieldInput" placeholder="如：李白" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
       </view>
       <text class="text-small" style="display:block;margin-top:12rpx;color:#EC5B8C" wx:if="{{matchHint}}">{{matchHint}}</text>
       <view class="form-field">
@@ -29,7 +29,7 @@
       </view>
       <view class="form-field">
         <text class="field-label">备注（选填）</text>
-        <input class="field-input {{fieldFocus ? 'is-focus' : ''}}" value="{{form.note}}" data-field="note" bindinput="onFieldInput" placeholder="如：第 3 遍仍不熟" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
+        <input class="field-input {{focusField === 'note' ? 'is-focus' : ''}}" value="{{form.note}}" data-field="note" bindinput="onFieldInput" placeholder="如：第 3 遍仍不熟" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
       </view>
       <button class="btn btn-primary btn-block" style="margin-top:28rpx" bindtap="save">保存到本周</button>
     </view>

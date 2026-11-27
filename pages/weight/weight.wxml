@@ -31,15 +31,15 @@
     </view>
     <view class="form-field">
       <text class="field-label">体重（kg，可留空）</text>
-      <input class="field-input {{fieldFocus ? 'is-focus' : ''}}" type="digit" value="{{form.weight}}" bindinput="onWeightInput" placeholder="如 32.5" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
+      <input class="field-input {{focusField === 'weight' ? 'is-focus' : ''}}" type="digit" value="{{form.weight}}" bindinput="onWeightInput" placeholder="如 32.5" data-field="weight" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
     </view>
     <view class="form-field" wx:if="{{form.memberId === 'guoguo'}}">
       <text class="field-label">果果身高（cm）</text>
-      <input class="field-input {{fieldFocus ? 'is-focus' : ''}}" type="digit" value="{{form.height}}" bindinput="onHeightInput" placeholder="如 128.5" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
+      <input class="field-input {{focusField === 'height' ? 'is-focus' : ''}}" type="digit" value="{{form.height}}" bindinput="onHeightInput" placeholder="如 128.5" data-field="height" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
     </view>
     <view class="form-field">
       <text class="field-label">备注（选填）</text>
-      <input class="field-input {{fieldFocus ? 'is-focus' : ''}}" value="{{form.note}}" bindinput="onNoteInput" placeholder="如：体检数据" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
+      <input class="field-input {{focusField === 'note' ? 'is-focus' : ''}}" value="{{form.note}}" bindinput="onNoteInput" placeholder="如：体检数据" data-field="note" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
     </view>
     <button class="btn btn-primary btn-block" style="margin-top:28rpx" bindtap="save">保存记录</button>
     <text class="text-muted text-small" style="display:block;margin-top:14rpx">体重与身高至少填一项；果果可同时记录。同成员同月只保留一条，未填的一项沿用上次数值</text>

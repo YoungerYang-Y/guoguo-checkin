@@ -192,24 +192,24 @@
   <text class="sheet-title">{{sheetCtx.code === 'G-ART' ? '绘画课' : (sheetCtx.code === 'P-AI' ? 'AI 学习' : '运动打卡')}}</text>
   <view class="form-field" wx:if="{{sheetCtx.code === 'G-ART' || sheetCtx.code === 'P-AI'}}">
     <text class="field-label">主题（选填，可写多行）</text>
-    <textarea class="field-textarea field-textarea-sm {{fieldFocus ? 'is-focus' : ''}}" value="{{inputTheme}}" bindinput="onThemeInput"
+    <textarea class="field-textarea field-textarea-sm {{focusField === 'theme' ? 'is-focus' : ''}}" value="{{inputTheme}}" bindinput="onThemeInput"
       placeholder="{{sheetCtx.code === 'G-ART' ? '如：今天画了什么、用了哪些颜色' : '如：今天用的提示词、学到的知识点'}}"
-      maxlength="100" cursor-spacing="24" show-confirm-bar="{{false}}" placeholder-class="field-placeholder" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
+      maxlength="100" cursor-spacing="24" show-confirm-bar="{{false}}" placeholder-class="field-placeholder" data-field="theme" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
     <text class="field-count">{{inputThemeLen}}/100</text>
   </view>
   <view class="form-field" wx:if="{{sheetCtx.code === 'G-ART' || sheetCtx.code === 'G-SKATE' || sheetCtx.code === 'G-SWIM' || sheetCtx.code === 'P-SWIM'}}">
     <text class="field-label">{{sheetCtx.code === 'G-ART' ? '本次时长（分钟，选填）' : (sheetCtx.code === 'G-SKATE' || sheetCtx.code === 'P-SWIM' ? '时长 / 距离（选填）' : '距离或时长（选填）')}}</text>
-    <input class="field-input {{fieldFocus ? 'is-focus' : ''}}" type="number" value="{{inputValue}}" bindinput="onValueInput" placeholder="留空也可完成" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
+    <input class="field-input {{focusField === 'value' ? 'is-focus' : ''}}" type="number" value="{{inputValue}}" bindinput="onValueInput" placeholder="留空也可完成" data-field="value" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
   </view>
   <view class="form-field" wx:if="{{sheetCtx.code === 'G-SWIM' || sheetCtx.code === 'P-SWIM'}}">
     <text class="field-label">单位</text>
-    <input class="field-input {{fieldFocus ? 'is-focus' : ''}}" value="{{inputValue2}}" bindinput="onValue2Input" placeholder="米 / 分钟" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
+    <input class="field-input {{focusField === 'value2' ? 'is-focus' : ''}}" value="{{inputValue2}}" bindinput="onValue2Input" placeholder="米 / 分钟" data-field="value2" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
   </view>
   <view class="form-field">
     <text class="field-label">备注（选填，支持多行）</text>
-    <textarea class="field-textarea {{fieldFocus ? 'is-focus' : ''}}" value="{{inputNote}}" bindinput="onNoteInput"
+    <textarea class="field-textarea {{focusField === 'note' ? 'is-focus' : ''}}" value="{{inputNote}}" bindinput="onNoteInput"
       placeholder="可以换行记录：完成情况、遇到的问题、下次改进…"
-      maxlength="200" cursor-spacing="24" show-confirm-bar="{{false}}" placeholder-class="field-placeholder" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
+      maxlength="200" cursor-spacing="24" show-confirm-bar="{{false}}" placeholder-class="field-placeholder" data-field="note" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
     <text class="field-count">{{inputNoteLen}}/200</text>
   </view>
   <button class="btn btn-primary btn-block" bindtap="confirmMetric">确认完成</button>
@@ -225,9 +225,9 @@
   </view>
   <view class="form-field">
     <text class="field-label">备注（选填，支持多行）</text>
-    <textarea class="field-textarea {{fieldFocus ? 'is-focus' : ''}}" value="{{inputNote}}" bindinput="onNoteInput"
+    <textarea class="field-textarea {{focusField === 'noteCustom' ? 'is-focus' : ''}}" value="{{inputNote}}" bindinput="onNoteInput"
       placeholder="本次完成情况，可以写多行"
-      maxlength="200" cursor-spacing="24" show-confirm-bar="{{false}}" placeholder-class="field-placeholder" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
+      maxlength="200" cursor-spacing="24" show-confirm-bar="{{false}}" placeholder-class="field-placeholder" data-field="noteCustom" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
     <text class="field-count">{{inputNoteLen}}/200</text>
   </view>
   <button class="btn btn-primary btn-block" bindtap="confirmCustom">按标准完成</button>

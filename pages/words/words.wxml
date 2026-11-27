@@ -42,11 +42,11 @@
       </view>
       <view class="form-field">
         <text class="field-label">单词或句子</text>
-        <input class="field-input {{fieldFocus ? 'is-focus' : ''}}" value="{{form.text}}" data-field="text" bindinput="onFieldInput" placeholder="如：apple / Good morning!" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
+        <input class="field-input {{focusField === 'text' ? 'is-focus' : ''}}" value="{{form.text}}" data-field="text" bindinput="onFieldInput" placeholder="如：apple / Good morning!" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
       </view>
       <view class="form-field">
         <text class="field-label">备注（选填）</text>
-        <input class="field-input {{fieldFocus ? 'is-focus' : ''}}" value="{{form.note}}" data-field="note" bindinput="onFieldInput" placeholder="如：课本第 3 页" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
+        <input class="field-input {{focusField === 'note' ? 'is-focus' : ''}}" value="{{form.note}}" data-field="note" bindinput="onFieldInput" placeholder="如：课本第 3 页" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
       </view>
       <button class="btn btn-primary btn-block" style="margin-top:24rpx" bindtap="saveOne">保存到本周</button>
     </view>

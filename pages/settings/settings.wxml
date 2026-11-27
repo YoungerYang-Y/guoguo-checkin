@@ -101,7 +101,7 @@
 <view class="mask" wx:if="{{editNameId}}" bindtap="cancelName" hover-class="ui-hover"></view>
 <view class="sheet" wx:if="{{editNameId}}">
   <text class="sheet-title">修改昵称</text>
-  <input class="field-input {{fieldFocus ? 'is-focus' : ''}}" value="{{editNameValue}}" bindinput="onNameInput" placeholder="输入新昵称" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
+  <input class="field-input {{focusField === 'name' ? 'is-focus' : ''}}" value="{{editNameValue}}" bindinput="onNameInput" placeholder="输入新昵称" data-field="name" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
   <view class="row" style="margin-top:32rpx">
     <button class="btn" style="flex:1;margin-right:16rpx" bindtap="cancelName">取消</button>
     <button class="btn btn-primary" style="flex:1" bindtap="saveName">保存</button>

@@ -4,10 +4,14 @@ const ocr = require('../../utils/ocr.js');
 function toast(title, icon) { try { wx.showToast({ title, icon: icon || 'none' }); } catch (e) {} }
 
 Page({
-  // 输入聚焦反馈：WXSS 无 :focus，只能由事件切换 class
-  onFieldFocus() { if (!this.data.fieldFocus) this.setData({ fieldFocus: true }); },
-  onFieldBlur() { if (this.data.fieldFocus) this.setData({ fieldFocus: false }); },
+  // 聚焦态按字段区分：一个布尔管多个输入框会让「聚焦 A 时 B 也高亮」
+  onFieldFocus(e) {
+    const ds = (e && e.currentTarget && e.currentTarget.dataset) || {};
+    if (ds.field && this.data.focusField !== ds.field) this.setData({ focusField: ds.field });
+  },
+  onFieldBlur() { if (this.data.focusField) this.setData({ focusField: '' }); },
   data: {
+    focusField: '',        // 当前聚焦的字段名，避免多输入框串色
     tab: 'add',
     week: '',
     weekKeys: [],
