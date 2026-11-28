@@ -4,6 +4,7 @@ const wxCompat = require('./utils/wx-compat.js');
 const ledgerMigrate = require('./utils/ledger-migrate.js');
 const learning = require('./utils/learning.js');
 const learningMigrate = require('./utils/learning-migrate.js');
+const weightSeed = require('./utils/weight-seed.js');
 
 // 预览面板只模拟了部分微信 API，先补齐缺失项，避免交互中断
 wxCompat.install();
@@ -25,6 +26,8 @@ App({
     // 且三者都要在 bootstrap 前完成，才能随首轮同步上传。每步独立容错，不阻断启动。
     try { this.seedResult = learning.ensureSeeded(); } catch (e) { this.seedResult = null; }
     try { this.learningMigration = learningMigrate.migrate(); } catch (e) { this.learningMigration = null; }
+    // 果果身高体重历史 13 条：同样必须在 bootstrap 前补入，幂等且不覆盖已有记录
+    try { this.weightSeed = weightSeed.ensureSeeded(); } catch (e) { this.weightSeed = null; }
     // 历史培训费并入记账：必须在 bootstrap 之前跑，新增账目才能随首轮同步上传；
     // 完成标记阻止删除后的重放，云端旧费用在成功接入家庭后另行迁移。
     try { this.feeMigration = ledgerMigrate.migrateFees(); } catch (e) { this.feeMigration = null; }
