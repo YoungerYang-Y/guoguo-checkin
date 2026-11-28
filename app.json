@@ -13,6 +13,7 @@
     "pages/weight/weight",
     "pages/ledger/ledger",
     "pages/poems/poems",
+    "pages/poem-library/poem-library",
     "pages/words/words",
     "pages/family/family",
     "pages/guest/guest"

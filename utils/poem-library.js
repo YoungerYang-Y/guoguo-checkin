@@ -1,0 +1,323 @@
+// 儿童古诗内容库（20 首，家长提供的定稿清单）。
+// 与 utils/poems-data.js（录入时自动带出全文的简表）和 utils/review.js（复习记录）严格分离：
+// 这里只读、不写任何复习状态，不进入每周复习清单。
+// 诗文逐字按来源清单录入，不走模型生成，避免错字串句。
+const POEMS = [
+  {
+    id: 'lichun',
+    title: '立春',
+    dynasty: '宋代',
+    author: '白玉蟾',
+    variant: '以「东风吹散梅梢雪」起句的版本。',
+    content: '东风吹散梅梢雪，\n一夜挽回天下春。\n从此阳春应有脚，\n百花富贵草精神。',
+    explain: '春风吹走了梅花枝头的积雪。诗人觉得，春天像长了脚一样，走到哪里，哪里的花草就有了精神。',
+    highlight: '「阳春应有脚」把春天想象成会走路的样子。',
+    question: '你觉得春天会先走到哪儿？',
+    background: '',
+    clues: ['节气', '春风', '梅梢雪', '春天长脚'],
+    source: 'https://m.gushiwen.cn/shiwenv_faedf6212969.aspx',
+  },
+  {
+    id: 'momei',
+    title: '墨梅',
+    dynasty: '元代',
+    author: '王冕',
+    variant: '《墨梅四首》其三，采用「我家」「朵朵」「好颜色」。',
+    content: '我家洗砚池头树，\n朵朵花开淡墨痕。\n不要人夸好颜色，\n只留清气满乾坤。',
+    explain: '王冕在画上用淡淡的墨画梅花。他在诗里说，比起听别人夸颜色漂亮，他更想让梅花的清香留在天地之间。',
+    highlight: '「清气」可以先听成梅花的清香，也能听出诗人有自己看重的东西。',
+    question: '如果只用深浅不同的黑色，你会怎么画梅花？',
+    background: '',
+    clues: ['画梅花', '淡墨', '淡墨痕', '洗砚池', '清香'],
+    source: 'https://www.guwendao.net/shiwenv_82fd6027caf3.aspx',
+  },
+  {
+    id: 'yongliu',
+    title: '咏柳',
+    dynasty: '唐代',
+    author: '贺知章',
+    variant: '',
+    content: '碧玉妆成一树高，\n万条垂下绿丝绦。\n不知细叶谁裁出，\n二月春风似剪刀。',
+    explain: '高高的柳树垂着细细的绿枝，像挂满了绿色丝带。诗人看着细长的叶子，想象是春风拿着剪刀把它们剪出来的。',
+    highlight: '「丝绦」读 sī tāo，是丝带。',
+    question: '春风还会剪出什么形状的叶子？',
+    background: '',
+    clues: ['柳树', '绿丝带', '丝绦', '春风像剪刀'],
+    source: 'https://www.guwendao.net/shiwenv_9936770100ef.aspx',
+  },
+  {
+    id: 'suxinshi',
+    title: '宿新市徐公店（其二）',
+    dynasty: '宋代',
+    author: '杨万里',
+    variant: '《宿新市徐公店二首》其二，采用「树头新绿未成阴」。',
+    content: '篱落疏疏一径深，\n树头新绿未成阴。\n儿童急走追黄蝶，\n飞入菜花无处寻。',
+    explain: '小路边的树刚长出新叶。一个孩子跑去追黄蝴蝶，蝴蝶飞进一大片黄菜花里，一下就找不着了。',
+    highlight: '「急走」在这里是快跑。',
+    question: '要是你来画这首诗，会把黄蝴蝶藏在哪朵花旁边？',
+    background: '',
+    clues: ['追蝴蝶', '黄蝶', '菜花', '篱笆', '儿童急走'],
+    source: 'https://www.guwendao.net/shiwenv_f92fb36ff846.aspx',
+  },
+  {
+    id: 'jueju-huangli',
+    title: '绝句（两个黄鹂鸣翠柳）',
+    dynasty: '唐代',
+    author: '杜甫',
+    variant: '',
+    content: '两个黄鹂鸣翠柳，\n一行白鹭上青天。\n窗含西岭千秋雪，\n门泊东吴万里船。',
+    explain: '黄鹂在绿柳枝头叫，一排白鹭飞上蓝天。诗人从窗里看见远处的雪山，门前还停着从远方来的船。',
+    highlight: '「窗含」让远处的雪山看起来像装在窗框里的一幅画。',
+    question: '如果你站在诗人的窗前，会先看白鹭还是雪山？',
+    background: '',
+    clues: ['杜甫的绝句', '黄鹂', '白鹭', '翠柳', '窗里的雪山'],
+    source: 'https://www.guwendao.net/shiwenv_549473b5211c.aspx',
+  },
+  {
+    id: 'yesushansi',
+    title: '夜宿山寺',
+    dynasty: '唐代',
+    author: '李白',
+    variant: '',
+    content: '危楼高百尺，\n手可摘星辰。\n不敢高声语，\n恐惊天上人。',
+    explain: '李白在山寺过夜。站在高楼上，他觉得星星近得好像伸手就能碰到，连说话都放轻了，怕惊动天上的人。',
+    highlight: '「危楼」在诗里是高楼。伸手摘星星是在写楼很高的感觉。',
+    question: '如果星星离你这么近，你想悄悄对它说什么？',
+    background: '',
+    clues: ['伸手摘星星', '危楼', '高楼', '山寺', '悄悄说话'],
+    source: 'https://www.guwendao.net/shiwenv_85f036fcc038.aspx',
+  },
+  {
+    id: 'gulangyuexing',
+    title: '古朗月行（节选）',
+    dynasty: '唐代',
+    author: '李白',
+    variant: '按小学古诗文目录所选，收全诗开头四句。',
+    content: '小时不识月，\n呼作白玉盘。\n又疑瑶台镜，\n飞在青云端。',
+    explain: '小时候的李白看着又圆又亮的月亮，觉得它像一个白玉盘，又像神仙的镜子飞到了天上。',
+    highlight: '「瑶台」是传说中神仙住的地方。',
+    question: '你觉得圆月亮还像什么？',
+    background: '',
+    clues: ['月亮像盘子', '白玉盘', '瑶台镜', '小时不识月'],
+    source: 'https://www.guwendao.net/shiwenv_8616581bb564.aspx',
+  },
+  {
+    id: 'wanglushanpubu',
+    title: '望庐山瀑布（其二）',
+    dynasty: '唐代',
+    author: '李白',
+    variant: '《望庐山瀑布二首》其二，采用「前川」「九天」。',
+    content: '日照香炉生紫烟，\n遥看瀑布挂前川。\n飞流直下三千尺，\n疑是银河落九天。',
+    explain: '阳光照在香炉峰的水雾上，远远看去像一团紫色的烟。瀑布从那么高的地方冲下来，李白想象是天上的银河落了下来。',
+    highlight: '「三千尺」让人一下子感到瀑布很高。「香炉」说的是香炉峰。',
+    question: '如果要把瀑布画在纸上，你会从哪里开始画水？',
+    background: '',
+    clues: ['庐山', '香炉峰', '紫烟', '瀑布', '银河落九天'],
+    source: 'https://www.guwendao.net/shiwenv_62802abab937.aspx',
+  },
+  {
+    id: 'tixilinbi',
+    title: '题西林壁',
+    dynasty: '宋代',
+    author: '苏轼',
+    variant: '',
+    content: '横看成岭侧成峰，\n远近高低各不同。\n不识庐山真面目，\n只缘身在此山中。',
+    explain: '苏轼发现，从正面看庐山，山脊连成一长排。从侧面看，又像一座高峰。人在山里，只能看到眼前的一部分。',
+    highlight: '「只缘」是「只因为」。诗里几次换地方看同一座山。',
+    question: '你能找一样东西，从正面和侧面各看一次吗？',
+    background: '',
+    clues: ['横看成岭', '侧成峰', '庐山', '换个角度', '看山'],
+    source: 'https://www.guwendao.net/shiwenv_f2f5469a6044.aspx',
+  },
+  {
+    id: 'dengguanquelou',
+    title: '登鹳雀楼',
+    dynasty: '唐代',
+    author: '王之涣',
+    variant: '',
+    content: '白日依山尽，\n黄河入海流。\n欲穷千里目，\n更上一层楼。',
+    explain: '站在楼上，诗人看到太阳慢慢沉到山后，黄河一路向远方流去。他还想看得更远，就再往上走一层。',
+    highlight: '「鹳」读 guàn。「欲穷千里目」是想把更远的景色看个够。',
+    question: '要画楼上看到的风景，你会把太阳画在哪儿？',
+    background: '',
+    clues: ['鹳雀楼', '登鹤雀楼', '更上一层楼', '黄河', '夕阳'],
+    source: 'https://www.guwendao.net/shiwenv_c90ff9ea5a71.aspx',
+  },
+  {
+    id: 'wangtianmenshan',
+    title: '望天门山',
+    dynasty: '唐代',
+    author: '李白',
+    variant: '',
+    content: '天门中断楚江开，\n碧水东流至此回。\n两岸青山相对出，\n孤帆一片日边来。',
+    explain: '长江从两座山之间穿过去，水到了这里打着回旋。随着船往前走，两边的青山好像也迎面走了过来。',
+    highlight: '「楚江」这里指长江。「相对出」写出了坐在行船上看山的感觉。',
+    question: '船往前走的时候，为什么两边的山好像也在动？',
+    background: '',
+    clues: ['天门山', '楚江', '长江', '青山迎面', '孤帆'],
+    source: 'https://www.guwendao.net/shiwenv_97e6296bfb8d.aspx',
+  },
+  {
+    id: 'zaofabaidicheng',
+    title: '早发白帝城',
+    dynasty: '唐代',
+    author: '李白',
+    variant: '',
+    content: '朝辞白帝彩云间，\n千里江陵一日还。\n两岸猿声啼不住，\n轻舟已过万重山。',
+    explain: '一早，李白坐着小船离开彩云中的白帝城。两岸的猿猴还在叫呢，轻快的小船已经穿过了一座又一座山。',
+    highlight: '「万重山」的「重」读 chóng，表示山一层接一层。',
+    question: '小船开过去的时候，你会先听见什么？',
+    background: '',
+    clues: ['彩云间', '白帝城', '江陵', '小船很快', '猿猴叫'],
+    source: 'https://www.guwendao.net/shiwenv_0f81015a040c.aspx',
+  },
+  {
+    id: 'zhouyeshuojian',
+    title: '舟夜书所见',
+    dynasty: '清代',
+    author: '查慎行',
+    variant: '',
+    content: '月黑见渔灯，\n孤光一点萤。\n微微风簇浪，\n散作满河星。',
+    explain: '天黑时，河上只有一盏渔灯，亮得像一只萤火虫。微风把水吹出细浪，灯光的倒影晃成许多小亮点，好像满河都是星星。',
+    highlight: '「簇浪」在这里写风吹起的一片片细浪。诗里的光从一点变成了许多点。',
+    question: '河里的小星星是怎么变出来的？',
+    background: '',
+    clues: ['渔灯', '萤火虫', '河上夜景', '倒影', '满河星'],
+    source: 'https://www.guwendao.net/shiwenv_d88e3533fc4a.aspx',
+  },
+  {
+    id: 'xiaoerdiayu',
+    title: '小儿垂钓',
+    dynasty: '唐代',
+    author: '胡令能',
+    variant: '',
+    content: '蓬头稚子学垂纶，\n侧坐莓苔草映身。\n路人借问遥招手，\n怕得鱼惊不应人。',
+    explain: '一个头发蓬蓬的小孩坐在草边学钓鱼。有人远远地问路，他只招招手，怕一开口就把鱼吓跑了。',
+    highlight: '「垂纶」是把钓线垂进水里，也就是钓鱼。',
+    question: '如果有人来问路，你会怎么用手势请他轻一点？',
+    background: '',
+    clues: ['钓鱼的小孩', '招手', '问路', '怕吓跑鱼', '垂纶'],
+    source: 'https://www.guwendao.net/shiwenv_200d28227643.aspx',
+  },
+  {
+    id: 'jiangxue',
+    title: '江雪',
+    dynasty: '唐代',
+    author: '柳宗元',
+    variant: '',
+    content: '千山鸟飞绝，\n万径人踪灭。\n孤舟蓑笠翁，\n独钓寒江雪。',
+    explain: '山里看不到飞鸟，小路上也看不到行人。冷冷的江面上只有一条小船，一位老翁在雪里钓鱼。',
+    highlight: '「蓑笠」读 suō lì。这位老翁披着蓑衣、戴着斗笠。',
+    question: '如果把这首诗画下来，你想把那只小船放在画的什么地方？',
+    background: '',
+    clues: ['下雪', '雪中钓鱼', '孤舟', '蓑笠', '寒江'],
+    source: 'https://www.guwendao.net/shiwenv_58313be2d918.aspx',
+  },
+  {
+    id: 'yueke',
+    title: '约客',
+    dynasty: '宋代',
+    author: '赵师秀',
+    variant: '',
+    content: '黄梅时节家家雨，\n青草池塘处处蛙。\n有约不来过夜半，\n闲敲棋子落灯花。',
+    explain: '雨一直下，池塘里的青蛙叫个不停。诗人等朋友等到半夜，就坐在灯旁轻轻敲棋子。',
+    highlight: '「灯花」是旧时灯芯烧出来、形状像小花的结块。',
+    question: '闭上眼听一听，这首诗里能听见哪些声音？',
+    background: '',
+    clues: ['下雨', '蛙叫', '等朋友', '敲棋子', '灯花', '黄梅时节'],
+    source: 'https://www.guwendao.net/gushiwen_012fe46610.aspx',
+  },
+  {
+    id: 'zengwanglun',
+    title: '赠汪伦',
+    dynasty: '唐代',
+    author: '李白',
+    variant: '',
+    content: '李白乘舟将欲行，\n忽闻岸上踏歌声。\n桃花潭水深千尺，\n不及汪伦送我情。',
+    explain: '李白坐上小船正要走，忽然听见好朋友汪伦在岸上一边踏着拍子一边唱歌，来给他送行。李白觉得，潭水再深，也比不上朋友的情意。',
+    highlight: '「踏歌」是一边用脚打拍子一边唱歌。',
+    question: '你想用什么声响送一送要出远门的朋友？',
+    background: '',
+    clues: ['桃花潭', '汪伦', '坐船', '踏歌', '送朋友'],
+    source: 'https://www.guwendao.net/shiwenv_ca9eaf40a6ce.aspx',
+  },
+  {
+    id: 'biedongda',
+    title: '别董大（其一）',
+    dynasty: '唐代',
+    author: '高适',
+    variant: '《别董大二首》其一，首句为「千里黄云白日曛」。',
+    content: '千里黄云白日曛，\n北风吹雁雪纷纷。\n莫愁前路无知己，\n天下谁人不识君。',
+    explain: '北风吹过，大雁飞着，雪也飘起来了。高适送朋友远行，给他打气说，别担心，往前走还会遇到懂你的朋友。',
+    highlight: '「知己」是了解你、懂你的朋友。',
+    question: '如果你要给远行的朋友打气，会说什么？',
+    background: '',
+    clues: ['送别', '下雪', '北风大雁', '知己', '给朋友打气'],
+    source: 'https://www.guwendao.net/shiwenv_4b3ccba01be6.aspx',
+  },
+  {
+    id: 'chusaise',
+    title: '出塞（其一）',
+    dynasty: '唐代',
+    author: '王昌龄',
+    variant: '《出塞二首》其一，首句为「秦时明月汉时关」。',
+    content: '秦时明月汉时关，\n万里长征人未还。\n但使龙城飞将在，\n不教胡马度阴山。',
+    explain: '月亮照着古老的边关，有些远离家乡的人还没能回去。诗人盼望有善于守边的将领，让边关重新安宁。',
+    highlight: '「关」在这里指边关的关口。「还」读 huán，是回去的意思。',
+    question: '远在边关的人看见月亮，会想起家里的什么？',
+    background: '古时候有人要离家远行，到边关驻守。诗人从一轮明月想到了许多迟迟不能回家的人。',
+    clues: ['边关', '边塞', '秦时明月', '龙城飞将', '阴山'],
+    source: 'https://www.guwendao.net/shiwenv_b9e14c6e09aa.aspx',
+  },
+  {
+    id: 'guohuaqinggong',
+    title: '过华清宫绝句三首（其一）',
+    dynasty: '唐代',
+    author: '杜牧',
+    variant: '首句为「长安回望绣成堆」，正文采用「知是」。',
+    content: '长安回望绣成堆，\n山顶千门次第开。\n一骑红尘妃子笑，\n无人知是荔枝来。',
+    explain: '山上的宫门一扇扇打开，马奔过来，扬起一阵尘土。读到最后才知道，快马送来的是荔枝。',
+    highlight: '「次第」就是一个接一个。「红尘」在这里是马跑起来扬起的尘土。',
+    question: '听到马蹄声的时候，你猜快马上会带着什么？',
+    background: '华清宫是唐代的行宫。诗里的妃子是杨贵妃，杜牧借快马送荔枝这件事，让人想一想，为这么一件事动用了多少人力。',
+    clues: ['华清宫', '杨贵妃', '宫门', '快马送荔枝', '一骑红尘'],
+    source: 'https://m.guwendao.net/shiwenv_c5d649eab603.aspx',
+  },
+];
+
+function norm(s) {
+  return String(s || '').replace(/[《》〈〉\s·、，,。．！？!?（）()「」：:；;]/g, '').toLowerCase();
+}
+
+// 首句：原文第一行，去掉句末标点，供「说首句」检索
+function firstLine(p) {
+  return String((p && p.content) || '').split('\n')[0].replace(/[，,。．！？!?、]/g, '');
+}
+
+function all() {
+  return POEMS;
+}
+
+function byId(id) {
+  return POEMS.find(p => p.id === id) || null;
+}
+
+// 按篇名 / 首句 / 画面线索 / 正文 / 讲解检索，返回带 matchType 的结果。
+// 空关键词返回全部（matchType 为空），用于首屏列表。
+function search(keyword) {
+  const q = norm(keyword);
+  if (!q) return POEMS.map(p => Object.assign({}, p, { matchType: '' }));
+  const out = [];
+  POEMS.forEach(p => {
+    let matchType = '';
+    if (norm(p.title).indexOf(q) >= 0) matchType = '篇名';
+    else if (norm(firstLine(p)).indexOf(q) >= 0) matchType = '首句';
+    else if ((p.clues || []).some(c => norm(c).indexOf(q) >= 0)) matchType = '画面线索';
+    else if (norm(p.content).indexOf(q) >= 0) matchType = '正文';
+    else if (norm(p.explain).indexOf(q) >= 0 || norm(p.highlight).indexOf(q) >= 0) matchType = '讲解';
+    if (matchType) out.push(Object.assign({}, p, { matchType }));
+  });
+  return out;
+}
+
+module.exports = { POEMS, all, byId, search, firstLine, norm };

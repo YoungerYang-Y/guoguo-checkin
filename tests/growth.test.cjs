@@ -8,6 +8,7 @@ const root = path.resolve(__dirname, '..');
 const clone = value => value === undefined ? undefined : structuredClone(value);
 
 function loadGrowth({ poems = {}, words = {}, weights = [], navigate = [] } = {}) {
+  const poemLib = { all: () => new Array(20).fill({ id: 'p' }) };
   const source = fs.readFileSync(path.join(root, 'pages/growth/growth.js'), 'utf8');
   let definition;
   const review = {
@@ -35,6 +36,7 @@ function loadGrowth({ poems = {}, words = {}, weights = [], navigate = [] } = {}
       if (name === '../../utils/review.js') return review;
       if (name === '../../utils/extra.js') return extra;
       if (name === '../../utils/date.js') return { today: () => '2026-11-26' };
+      if (name === '../../utils/poem-library.js') return poemLib;
       throw new Error('unexpected module ' + name);
     },
     getApp: () => ({ globalData: {} }),
@@ -76,19 +78,20 @@ test('成长页待复习列表最多 3 条且带模块标记', () => {
   assert.equal(page.data.reviewItems[0].label, '静夜思');
 });
 
-test('成长页入口跳转：三个二级页与复习入口均 navigateTo，无记账跳转', () => {
+test('成长页入口跳转：四个二级页与复习入口均 navigateTo，无记账跳转', () => {
   const navigate = [];
   const page = loadGrowth({ navigate });
-  page.goPoems(); page.goWords(); page.goWeight();
+  page.goPoems(); page.goPoemLibrary(); page.goWords(); page.goWeight();
   page.goReview({ currentTarget: { dataset: { module: 'poems' } } });
   page.goReview({ currentTarget: { dataset: { module: 'words' } } });
   const urls = navigate.map(x => x.url);
-  assert.equal(urls.length, 5);
+  assert.equal(urls.length, 6);
   assert.equal(urls[0], '/pages/poems/poems');
-  assert.equal(urls[1], '/pages/words/words');
-  assert.equal(urls[2], '/pages/weight/weight');
-  assert.equal(urls[3], '/pages/poems/poems?tab=review');
-  assert.equal(urls[4], '/pages/words/words?tab=review');
+  assert.equal(urls[1], '/pages/poem-library/poem-library');
+  assert.equal(urls[2], '/pages/words/words');
+  assert.equal(urls[3], '/pages/weight/weight');
+  assert.equal(urls[4], '/pages/poems/poems?tab=review');
+  assert.equal(urls[5], '/pages/words/words?tab=review');
   assert.equal(typeof page.goLedger, 'undefined', '培训支出冗余入口已移除');
 });
 
@@ -102,6 +105,7 @@ test('某模块读取失败不拖垮落地页', () => {
       if (name === '../../utils/review.js') return { overview: () => { throw new Error('boom'); } };
       if (name === '../../utils/extra.js') return {};
       if (name === '../../utils/date.js') return { today: () => '2026-11-26' };
+      if (name === '../../utils/poem-library.js') return { all: () => [] };
       throw new Error('unexpected module ' + name);
     },
     getApp: () => ({ globalData: {} }),

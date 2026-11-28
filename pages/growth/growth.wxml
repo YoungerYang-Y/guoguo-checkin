@@ -38,6 +38,14 @@
         </view>
         <text class="entry-arrow">›</text>
       </view>
+      <view class="entry-card" hover-class="ui-hover" data-kind="poem-lib" bindtap="goPoemLibrary">
+        <view class="entry-icon icon-lib">库</view>
+        <view class="entry-main">
+          <text class="entry-title">诗词库</text>
+          <text class="entry-desc">{{poemLibCount}} 首 · 只读内容库，不进入复习</text>
+        </view>
+        <text class="entry-arrow">›</text>
+      </view>
       <view class="entry-card" hover-class="ui-hover" data-kind="words" bindtap="goWords">
         <view class="entry-icon icon-word">词</view>
         <view class="entry-main">

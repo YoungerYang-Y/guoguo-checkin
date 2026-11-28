@@ -3,11 +3,13 @@
 const review = require('../../utils/review.js');
 const extra = require('../../utils/extra.js');
 const D = require('../../utils/date.js');
+const poemLib = require('../../utils/poem-library.js');
 
 Page({
   data: {
     weekLabel: '',
     poem: { learned: 0, pending: 0, bank: 0 },
+    poemLibCount: 0,
     word: { learned: 0, pending: 0, bank: 0 },
     heightLatest: '',
     weightLatest: '',
@@ -61,6 +63,7 @@ Page({
         weightLatest,
         heightLatest,
         reviewItems,
+        poemLibCount: poemLib.all().length,
         loading: false,
       });
     } catch (e) {
@@ -70,6 +73,7 @@ Page({
   },
 
   goPoems() { wx.navigateTo({ url: '/pages/poems/poems' }); },
+  goPoemLibrary() { wx.navigateTo({ url: '/pages/poem-library/poem-library' }); },
   goWords() { wx.navigateTo({ url: '/pages/words/words' }); },
   goWeight() { wx.navigateTo({ url: '/pages/weight/weight' }); },
   goReview(e) {
