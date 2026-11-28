@@ -1,122 +1,87 @@
 <view class="page">
 
-  <!-- 视图切换 -->
-  <view class="rv-tabs">
-    <view class="rv-tab {{tab === 'add' ? 'on' : ''}}" data-tab="add" hover-class="ui-hover" bindtap="switchTab">{{editingId ? '编辑' : '记一笔'}}</view>
-    <view class="rv-tab {{tab === 'list' ? 'on' : ''}}" data-tab="list" hover-class="ui-hover" bindtap="switchTab">明细</view>
-    <view class="rv-tab {{tab === 'summary' ? 'on' : ''}}" data-tab="summary" hover-class="ui-hover" bindtap="switchTab">汇总</view>
+  <!-- 两个入口：账本（默认）/ 看账。记一笔已提升为动作按钮，不占 tab -->
+  <view class="seg-tabs">
+    <view class="seg-tab {{tab === 'book' ? 'on' : ''}}" data-tab="book" hover-class="ui-hover" bindtap="switchTab">账本</view>
+    <view class="seg-tab {{tab === 'view' ? 'on' : ''}}" data-tab="view" hover-class="ui-hover" bindtap="switchTab">看账</view>
   </view>
 
-  <!-- 记一笔 / 编辑 -->
-  <block wx:if="{{tab === 'add'}}">
-    <view class="card">
-      <view class="row-between form-head">
-        <text class="section-title ellipsis form-title">{{formTitle}}</text>
-        <text class="edit-cancel" wx:if="{{editingId}}" hover-class="ui-hover" bindtap="cancelEdit">取消</text>
-      </view>
-      <text class="edit-anchor ellipsis" wx:if="{{editingId}}">正在修改 {{editingLabel}}，保存后覆盖原记录</text>
-
-      <view class="form-field">
-        <text class="field-label">日期</text>
-        <picker mode="date" value="{{form.date}}" bindchange="onDateChange">
-          <view class="field-input picker-view">{{form.date}} <text class="picker-arrow">›</text></view>
-        </picker>
-      </view>
-
-      <view class="form-field">
-        <text class="field-label">谁花的</text>
-        <view class="chip-row">
-          <view wx:for="{{memberChips}}" wx:key="id"
-                class="chip {{form.member === item.id ? 'active' : ''}} {{publicOnly && item.id !== 'public' ? 'is-disabled' : ''}}"
-                data-id="{{item.id}}" hover-class="{{publicOnly && item.id !== 'public' ? 'none' : 'ui-hover'}}"
-                bindtap="pickMember">{{item.name}}</view>
-        </view>
-        <text class="hint-line" wx:if="{{publicOnly}}">居住类支出统一计入公共支出</text>
-      </view>
-
-      <view class="form-field">
-        <text class="field-label">一级分类</text>
-        <picker mode="selector" range="{{cat1Names}}" value="{{cat1Index}}" bindchange="onCat1Change">
-          <view class="field-input picker-view">{{cat1Names[cat1Index]}} <text class="picker-arrow">›</text></view>
-        </picker>
-        <text class="hint-line" wx:if="{{cat1Hint}}">{{cat1Hint}}</text>
-      </view>
-
-      <view class="form-field">
-        <text class="field-label">二级分类</text>
-        <picker mode="selector" range="{{cat2Names}}" value="{{cat2Index}}" bindchange="onCat2Change">
-          <view class="field-input picker-view">{{cat2Names[cat2Index]}} <text class="picker-arrow">›</text></view>
-        </picker>
-      </view>
-
-      <view class="form-divider"></view>
-
-      <view class="form-field">
-        <text class="field-label">金额（元）</text>
-        <input class="field-input {{focusField === 'amount' ? 'is-focus' : ''}} {{amountError ? 'is-error' : ''}}" type="digit"
-               value="{{form.amount}}" placeholder="如 35.50" data-field="amount"
-               bindinput="onAmountInput" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
-        <text class="field-error" wx:if="{{amountError}}">{{amountError}}</text>
-      </view>
-
-      <view class="form-field">
-        <text class="field-label">备注（选填）</text>
-        <input class="field-input {{focusField === 'note' ? 'is-focus' : ''}}" value="{{form.note}}" maxlength="40"
-               placeholder="如：周末超市采购" data-field="note"
-               bindinput="onNoteInput" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
-      </view>
-
-      <button class="btn btn-primary btn-block save-btn" bindtap="saveEntry">{{editingId ? '保存修改' : '保存'}}</button>
-    </view>
-  </block>
-
-  <!-- 明细 -->
-  <block wx:if="{{tab === 'list'}}">
-    <view class="card hero-card">
-      <view class="period-nav">
-        <text class="nav-btn {{canPrev ? '' : 'is-off'}}" bindtap="prevMonth" hover-class="ui-hover">‹</text>
-        <text class="period-title">{{monthLabel}}</text>
-        <text class="nav-btn {{canNext ? '' : 'is-off'}}" bindtap="nextMonth" hover-class="ui-hover">›</text>
-      </view>
-      <view class="sum-hero">
-        <text class="sum-caption">本月合计</text>
+  <!-- ============ 账本首页（默认落地） ============ -->
+  <block wx:if="{{tab === 'book'}}">
+    <view class="card hero-card book-hero">
+      <view class="book-hero-top">
+        <text class="book-caption">{{monthLabel}} · 本月支出</text>
         <view class="sum-amount">
           <text class="sum-cur">¥</text>
           <text class="sum-val num">{{monthTotal}}</text>
         </view>
-        <text class="sum-count">{{monthCount}} 笔</text>
+        <view class="sum-tags">
+          <text class="sum-count">{{monthCount}} 笔</text>
+          <text class="sum-trend {{monthTrendDir}}" wx:if="{{monthTrend}}">{{monthTrend}}</text>
+        </view>
+      </view>
+      <!-- 全局动作：记一笔，账本首屏最重要的一块 -->
+      <view class="book-add" hover-class="ui-hover" bindtap="openForm">
+        <view class="book-add-plus">+</view>
+        <view class="book-add-text">
+          <text class="book-add-title">记一笔</text>
+          <text class="book-add-desc">把今天的花销记下来</text>
+        </view>
       </view>
     </view>
 
-    <view class="card" wx:if="{{rows.length > 0}}">
-      <view class="led-row" wx:for="{{rows}}" wx:key="id" hover-class="ui-hover" data-id="{{item.id}}" bindtap="editRow">
+    <!-- 分类 Top3 迷你条 -->
+    <view class="card" wx:if="{{topCats.length > 0}}">
+      <view class="card-head">
+        <text class="section-title">本月花在哪</text>
+        <text class="text-muted text-small">前 {{topCats.length}} 类</text>
+      </view>
+      <view class="rank-row" wx:for="{{topCats}}" wx:key="code">
+        <text class="rank-index">{{index + 1}}</text>
+        <text class="rank-name ellipsis">{{item.name}}</text>
+        <view class="rank-track"><view class="rank-fill" style="width:{{item.pct}}%"></view></view>
+        <text class="rank-amount num">¥{{item.amountText}}</text>
+      </view>
+    </view>
+
+    <!-- 最近 5 笔 -->
+    <view class="card" wx:if="{{recent.length > 0}}">
+      <view class="card-head">
+        <text class="section-title">最近记录</text>
+        <text class="text-muted text-small">点一条可编辑</text>
+      </view>
+      <view class="led-row" wx:for="{{recent}}" wx:key="id" hover-class="ui-hover" data-id="{{item.id}}" bindtap="editRow">
+        <view class="led-tone tone-{{item.catTone}}"></view>
         <view class="led-main">
           <text class="led-cat ellipsis">{{item.cat2Name}}</text>
-          <text class="led-meta">{{item.dayText}} · {{item.cat1Name}} · {{item.memberName}}</text>
-          <text class="led-note ellipsis" wx:if="{{item.note}}">{{item.note}}</text>
+          <text class="led-meta">{{item.dayText}} · {{item.memberName}}</text>
         </view>
         <text class="led-amount num">¥{{item.amountText}}</text>
-        <text class="led-del" data-id="{{item.id}}" hover-class="ui-hover" catchtap="removeRow">删除</text>
       </view>
     </view>
     <view class="card" wx:else>
       <view class="empty-block">
         <view class="empty-mark"></view>
-        <text class="empty-title">本月还没有记账</text>
-        <text class="empty-desc">切到「记一笔」，把今天的花销记下来</text>
+        <text class="empty-title">还没有记账记录</text>
+        <text class="empty-desc">点上方「记一笔」，记下第一笔花销</text>
       </view>
+    </view>
+
+    <view class="book-foot" hover-class="ui-hover" data-tab="view" bindtap="switchTab">
+      <text>看完整账目和占比</text><text class="foot-arrow">›</text>
     </view>
   </block>
 
-  <!-- 汇总：按月 / 按年两种范围 -->
-  <block wx:if="{{tab === 'summary'}}">
+  <!-- ============ 看账（一个读视图，流水 / 占比分段） ============ -->
+  <block wx:elif="{{tab === 'view'}}">
     <view class="card hero-card">
-      <view class="chip-row scope-row">
-        <view class="chip {{scope === 'month' ? 'active' : ''}}" data-scope="month" hover-class="ui-hover" bindtap="switchScope">按月</view>
-        <view class="chip {{scope === 'year' ? 'active' : ''}}" data-scope="year" hover-class="ui-hover" bindtap="switchScope">按年</view>
+      <view class="seg-tabs is-sub">
+        <view class="seg seg-tab is-sub {{viewMode === 'list' ? 'on' : ''}}" data-mode="list" hover-class="ui-hover" bindtap="switchViewMode">流水</view>
+        <view class="seg seg-tab is-sub {{viewMode === 'chart' ? 'on' : ''}}" data-mode="chart" hover-class="ui-hover" bindtap="switchViewMode">占比</view>
       </view>
 
-      <view class="period-nav" wx:if="{{scope === 'month'}}">
+      <!-- 统一时间：按月则月份导航，按年则年份导航 -->
+      <view class="period-nav" wx:if="{{period.scope === 'month'}}">
         <text class="nav-btn {{canPrev ? '' : 'is-off'}}" bindtap="prevMonth" hover-class="ui-hover">‹</text>
         <text class="period-title">{{monthLabel}}</text>
         <text class="nav-btn {{canNext ? '' : 'is-off'}}" bindtap="nextMonth" hover-class="ui-hover">›</text>
@@ -127,95 +92,200 @@
         <text class="nav-btn {{canNextYear ? '' : 'is-off'}}" bindtap="nextYear" hover-class="ui-hover">›</text>
       </view>
 
+      <!-- 范围切换：流水段固定按月，占比段可按月/按年 -->
+      <view class="scope-row-wrap" wx:if="{{viewMode === 'chart'}}">
+        <view class="chip-row scope-row">
+          <view class="chip {{period.scope === 'month' ? 'active' : ''}}" data-scope="month" hover-class="ui-hover" bindtap="switchScope">按月</view>
+          <view class="chip {{period.scope === 'year' ? 'active' : ''}}" data-scope="year" hover-class="ui-hover" bindtap="switchScope">按年</view>
+        </view>
+      </view>
+
       <view class="sum-hero">
-        <text class="sum-caption">{{scope === 'month' ? '本月支出' : '本年支出'}}</text>
+        <text class="sum-caption">{{period.scope === 'month' ? '本月支出' : '本年支出'}}</text>
         <view class="sum-amount">
           <text class="sum-cur">¥</text>
-          <text class="sum-val num">{{scope === 'month' ? monthTotal : yearView.totalText}}</text>
+          <text class="sum-val num">{{period.scope === 'month' ? monthTotal : yearView.totalText}}</text>
         </view>
-        <text class="sum-count">{{scope === 'month' ? monthCount : yearView.count}} 笔</text>
-        <text class="sum-diff {{yearView.diffWord == '增加' ? 'is-up' : (yearView.diffWord == '减少' ? 'is-down' : '')}}" wx:if="{{scope === 'year' && yearView.hasPrev}}">
-          较去年{{yearView.diffWord}} {{yearView.diffText}}（{{yearView.diffPct}}%）
-        </text>
-        <text class="sum-diff" wx:elif="{{scope === 'year' && yearView.count > 0}}">去年没有记账记录，暂无可比数据</text>
+        <view class="sum-tags">
+          <text class="sum-count">{{period.scope === 'month' ? monthCount : yearView.count}} 笔</text>
+          <text class="sum-diff {{yearView.diffWord == '增加' ? 'is-up' : (yearView.diffWord == '减少' ? 'is-down' : '')}}" wx:if="{{period.scope === 'year' && yearView.hasPrev}}">
+            较去年{{yearView.diffWord}} {{yearView.diffText}}（{{yearView.diffPct}}%）
+          </text>
+          <text class="sum-diff" wx:elif="{{period.scope === 'year' && yearView.count > 0}}">去年没有记账记录，暂无可比数据</text>
+          <text class="sum-trend {{monthTrendDir}}" wx:if="{{period.scope === 'month' && monthTrend}}">{{monthTrend}}</text>
+        </view>
       </view>
     </view>
 
-    <!-- 按月 -->
-    <block wx:if="{{scope === 'month'}}">
-      <block wx:if="{{monthCount > 0}}">
-        <view class="card">
-          <text class="section-title">按成员</text>
-          <view class="bar-row {{index < 3 ? 'is-top' : ''}}" wx:for="{{sum.members}}" wx:key="id">
-            <text class="bar-name ellipsis">{{item.name}}</text>
-            <view class="bar-track"><view class="bar-fill" style="width:{{item.pct}}%"></view></view>
-            <view class="bar-val">
-              <text class="bar-amount num">{{item.amountText}}</text>
-              <text class="bar-pct num">{{item.pct}}%</text>
-            </view>
+    <!-- 流水段 -->
+    <block wx:if="{{viewMode === 'list'}}">
+      <view class="card" wx:if="{{rows.length > 0}}">
+        <view class="led-row" wx:for="{{rows}}" wx:key="id" hover-class="ui-hover" data-id="{{item.id}}" bindtap="editRow">
+          <view class="led-tone tone-{{item.catTone}}"></view>
+          <view class="led-main">
+            <text class="led-cat ellipsis">{{item.cat2Name}}</text>
+            <text class="led-meta">{{item.dayText}} · {{item.cat1Name}} · {{item.memberName}}</text>
+            <text class="led-note ellipsis" wx:if="{{item.note}}">{{item.note}}</text>
           </view>
+          <text class="led-amount num">¥{{item.amountText}}</text>
+          <view class="led-del" data-id="{{item.id}}" hover-class="ui-hover" catchtap="removeRow" aria-label="删除这笔记录">删除</view>
         </view>
-
-        <view class="card">
-          <view class="row-between" style="margin-bottom:8rpx">
-            <text class="section-title" style="margin:0">按分类</text>
-            <text class="text-muted text-small" wx:if="{{sum.pendingPct > 5}}">待整理占 {{sum.pendingPct}}%</text>
-          </view>
-          <view class="bar-row {{index < 3 ? 'is-top' : ''}}" wx:for="{{sum.cats}}" wx:key="code">
-            <text class="bar-name ellipsis">{{item.name}}</text>
-            <view class="bar-track"><view class="bar-fill" style="width:{{item.pct}}%"></view></view>
-            <view class="bar-val">
-              <text class="bar-amount num">{{item.amountText}}</text>
-              <text class="bar-pct num">{{item.pct}}%</text>
-            </view>
-          </view>
-          <text class="hint-line" wx:if="{{sum.pendingPct > 5}}">「其他支出」占比已超过 5%，建议把待整理记录改成具体分类</text>
-        </view>
-      </block>
+      </view>
       <view class="card" wx:else>
         <view class="empty-block">
           <view class="empty-mark"></view>
           <text class="empty-title">本月还没有记账</text>
-          <text class="empty-desc">记一笔后，这里会按成员和分类汇总占比</text>
+          <text class="empty-desc">点「记一笔」把今天的花销记下来</text>
         </view>
       </view>
     </block>
 
-    <!-- 按年 -->
+    <!-- 占比段 -->
     <block wx:else>
-      <block wx:if="{{yearView.count > 0}}">
-        <view class="card">
-          <text class="section-title">按月</text>
-          <view class="bar-row {{index < 3 ? 'is-top' : ''}}" wx:for="{{yearView.months}}" wx:key="ym">
-            <text class="bar-name ellipsis">{{item.label}}</text>
-            <view class="bar-track"><view class="bar-fill" style="width:{{item.pct}}%"></view></view>
-            <view class="bar-val">
-              <text class="bar-amount num">{{item.amountText}}</text>
-              <text class="bar-pct num">{{item.pct}}%</text>
+      <block wx:if="{{period.scope === 'month'}}">
+        <block wx:if="{{monthCount > 0}}">
+          <view class="card sum-card sum-card-members">
+            <view class="card-head"><text class="section-title">按成员</text></view>
+            <view class="bar-row {{index < 3 ? 'is-top' : ''}}" wx:for="{{sum.members}}" wx:key="id">
+              <text class="bar-name ellipsis">{{item.name}}</text>
+              <view class="bar-track"><view class="bar-fill" style="width:{{item.pct}}%"></view></view>
+              <view class="bar-val">
+                <text class="bar-amount num">{{item.amountText}}</text>
+                <text class="bar-pct num">{{item.pct}}%</text>
+              </view>
             </view>
           </view>
-        </view>
-
-        <view class="card">
-          <text class="section-title">按分类</text>
-          <view class="bar-row {{index < 3 ? 'is-top' : ''}}" wx:for="{{yearView.cats}}" wx:key="code">
-            <text class="bar-name ellipsis">{{item.name}}</text>
-            <view class="bar-track"><view class="bar-fill" style="width:{{item.pct}}%"></view></view>
-            <view class="bar-val">
-              <text class="bar-amount num">{{item.amountText}}</text>
-              <text class="bar-pct num">{{item.pct}}%</text>
+          <view class="card sum-card sum-card-cats">
+            <view class="card-head">
+              <text class="section-title">按分类</text>
+              <text class="text-muted text-small" wx:if="{{sum.pendingPct > 5}}">待整理占 {{sum.pendingPct}}%</text>
             </view>
+            <view class="bar-row {{index < 3 ? 'is-top' : ''}}" wx:for="{{sum.cats}}" wx:key="code">
+              <text class="bar-name ellipsis">{{item.name}}</text>
+              <view class="bar-track"><view class="bar-fill" style="width:{{item.pct}}%"></view></view>
+              <view class="bar-val">
+                <text class="bar-amount num">{{item.amountText}}</text>
+                <text class="bar-pct num">{{item.pct}}%</text>
+              </view>
+            </view>
+            <text class="hint-line" wx:if="{{sum.pendingPct > 5}}">「其他支出」占比已超过 5%，建议把待整理记录改成具体分类</text>
+          </view>
+        </block>
+        <view class="card" wx:else>
+          <view class="empty-block">
+            <view class="empty-mark"></view>
+            <text class="empty-title">本月还没有记账</text>
+            <text class="empty-desc">记一笔后，这里会按成员和分类汇总占比</text>
           </view>
         </view>
       </block>
-      <view class="card" wx:else>
-        <view class="empty-block">
-          <view class="empty-mark"></view>
-          <text class="empty-title">这一年还没有记账</text>
-          <text class="empty-desc">切换年份，或去「记一笔」记录第一笔</text>
+
+      <block wx:else>
+        <block wx:if="{{yearView.count > 0}}">
+          <view class="card sum-card sum-card-months">
+            <view class="card-head"><text class="section-title">按月</text></view>
+            <view class="bar-row {{index < 3 ? 'is-top' : ''}}" wx:for="{{yearView.months}}" wx:key="ym">
+              <text class="bar-name ellipsis">{{item.label}}</text>
+              <view class="bar-track"><view class="bar-fill" style="width:{{item.pct}}%"></view></view>
+              <view class="bar-val">
+                <text class="bar-amount num">{{item.amountText}}</text>
+                <text class="bar-pct num">{{item.pct}}%</text>
+              </view>
+            </view>
+          </view>
+          <view class="card sum-card sum-card-cats">
+            <view class="card-head"><text class="section-title">按分类</text></view>
+            <view class="bar-row {{index < 3 ? 'is-top' : ''}}" wx:for="{{yearView.cats}}" wx:key="code">
+              <text class="bar-name ellipsis">{{item.name}}</text>
+              <view class="bar-track"><view class="bar-fill" style="width:{{item.pct}}%"></view></view>
+              <view class="bar-val">
+                <text class="bar-amount num">{{item.amountText}}</text>
+                <text class="bar-pct num">{{item.pct}}%</text>
+              </view>
+            </view>
+          </view>
+        </block>
+        <view class="card" wx:else>
+          <view class="empty-block">
+            <view class="empty-mark"></view>
+            <text class="empty-title">这一年还没有记账</text>
+            <text class="empty-desc">切换年份，或点「记一笔」记录第一笔</text>
+          </view>
         </view>
-      </view>
+      </block>
     </block>
   </block>
+
+  <!-- ============ 记一笔 / 编辑：全局动作弹层 ============ -->
+  <view class="mask" wx:if="{{showForm}}" bindtap="closeForm">
+    <view class="sheet form-sheet" catchtap="noop">
+      <view class="sheet-head">
+        <text class="sheet-title">{{editingId ? '编辑这笔支出' : '记一笔'}}</text>
+        <view class="sheet-close" hover-class="ui-hover" bindtap="closeForm" aria-label="关闭">×</view>
+      </view>
+
+      <view class="edit-anchor" wx:if="{{editingId}}">正在修改 {{editingLabel}}，保存后覆盖原记录</view>
+
+      <!-- 组 1：这笔花在哪 -->
+      <view class="form-group">
+        <view class="form-group-head">
+          <text class="group-index">1</text>
+          <text class="group-label">这笔花在哪</text>
+        </view>
+        <view class="form-field">
+          <text class="field-label">日期</text>
+          <picker mode="date" value="{{form.date}}" bindchange="onDateChange">
+            <view class="field-input picker-view">{{form.date}} <text class="picker-arrow">›</text></view>
+          </picker>
+        </view>
+        <view class="form-field">
+          <text class="field-label">谁花的</text>
+          <view class="chip-row">
+            <view wx:for="{{memberChips}}" wx:key="id"
+                  class="chip {{form.member === item.id ? 'active' : ''}} {{publicOnly && item.id !== 'public' ? 'is-disabled' : ''}}"
+                  data-id="{{item.id}}" hover-class="{{publicOnly && item.id !== 'public' ? 'none' : 'ui-hover'}}"
+                  bindtap="pickMember">{{item.name}}</view>
+          </view>
+          <text class="hint-line" wx:if="{{publicOnly}}">居住类支出统一计入公共支出</text>
+        </view>
+        <view class="form-field">
+          <text class="field-label">一级分类</text>
+          <picker mode="selector" range="{{cat1Names}}" value="{{cat1Index}}" bindchange="onCat1Change">
+            <view class="field-input picker-view">{{cat1Names[cat1Index]}} <text class="picker-arrow">›</text></view>
+          </picker>
+          <text class="hint-line" wx:if="{{cat1Hint}}">{{cat1Hint}}</text>
+        </view>
+        <view class="form-field">
+          <text class="field-label">二级分类</text>
+          <picker mode="selector" range="{{cat2Names}}" value="{{cat2Index}}" bindchange="onCat2Change">
+            <view class="field-input picker-view">{{cat2Names[cat2Index]}} <text class="picker-arrow">›</text></view>
+          </picker>
+        </view>
+      </view>
+
+      <!-- 组 2：花了多少 -->
+      <view class="form-group">
+        <view class="form-group-head">
+          <text class="group-index">2</text>
+          <text class="group-label">花了多少</text>
+        </view>
+        <view class="form-field">
+          <text class="field-label">金额（元）</text>
+          <input class="field-input {{focusField === 'amount' ? 'is-focus' : ''}} {{amountError ? 'is-error' : ''}}" type="digit"
+                 value="{{form.amount}}" placeholder="如 35.50" data-field="amount"
+                 bindinput="onAmountInput" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
+          <text class="field-error" wx:if="{{amountError}}">{{amountError}}</text>
+        </view>
+        <view class="form-field">
+          <text class="field-label">备注（选填）</text>
+          <input class="field-input {{focusField === 'note' ? 'is-focus' : ''}}" value="{{form.note}}" maxlength="40"
+                 placeholder="如：周末超市采购" data-field="note"
+                 bindinput="onNoteInput" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
+        </view>
+        <view class="form-alert" wx:if="{{formError}}">{{formError}}</view>
+        <button class="btn btn-primary btn-block save-btn {{saving ? 'is-loading' : ''}}" bindtap="saveEntry">{{editingId ? '保存修改' : '保存这笔'}}</button>
+      </view>
+    </view>
+  </view>
 
 </view>

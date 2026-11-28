@@ -1,52 +1,103 @@
 <view class="page">
 
-  <view class="card">
-    <text class="section-title">体重与身高记录</text>
-    <view class="mode-row">
-      <view class="mode-chip {{metric === 'weight' ? 'active' : ''}}" data-metric="weight" hover-class="ui-hover" bindtap="switchMetric">体重</view>
-      <view class="mode-chip {{metric === 'height' ? 'active' : ''}}" data-metric="height" hover-class="ui-hover" bindtap="switchMetric">身高（果果）</view>
-    </view>
-    <view class="mode-row">
-      <view class="mode-chip {{mode === 'year' ? 'active' : ''}}" data-mode="year" hover-class="ui-hover" bindtap="switchMode">本年度</view>
-      <view class="mode-chip {{mode === 'cross' ? 'active' : ''}}" data-mode="cross" hover-class="ui-hover" bindtap="switchMode">跨年度</view>
-    </view>
-    <view class="year-nav" wx:if="{{mode === 'year'}}">
-      <text class="year-btn" bindtap="prevYear" hover-class="ui-hover">‹</text>
-      <text class="year-label">{{year}} 年</text>
-      <text class="year-btn" bindtap="nextYear" hover-class="ui-hover">›</text>
-    </view>
-
-    <view class="form-field">
-      <text class="field-label">记录月份</text>
-      <picker mode="selector" range="{{monthLabels}}" value="{{monthIndex}}" bindchange="onMonthChange">
-        <view class="field-input picker-view">{{monthLabels[monthIndex]}} <text class="picker-arrow">›</text></view>
-      </picker>
-    </view>
-    <view class="form-field">
-      <text class="field-label">成员</text>
-      <view class="chip-row">
-        <view wx:for="{{members}}" wx:key="id" class="chip {{form.memberId === item.id ? 'active' : ''}}"
-              data-id="{{item.id}}" hover-class="ui-hover" bindtap="chooseMember">{{item.name}}</view>
+  <!-- ===== 成长概览 hero ===== -->
+  <view class="weight-hero">
+    <view class="hero-deco hero-deco-a"></view>
+    <view class="hero-deco hero-deco-b"></view>
+    <text class="hero-eyebrow">成长刻度 · 果果</text>
+    <view class="hero-stats">
+      <view class="hero-stat">
+        <text class="hero-stat-label">最新体重</text>
+        <view class="hero-num-wrap">
+          <text class="hero-num">{{hero.weight}}</text><text class="hero-unit">kg</text>
+        </view>
+        <text class="hero-trend" wx:if="{{hero.weightTrend}}">{{hero.weightTrend}} 较上月</text>
+      </view>
+      <view class="hero-separator"></view>
+      <view class="hero-stat">
+        <text class="hero-stat-label">最新身高</text>
+        <view class="hero-num-wrap">
+          <text class="hero-num">{{hero.height}}</text><text class="hero-unit">cm</text>
+        </view>
+        <text class="hero-trend" wx:if="{{hero.heightTrend}}">{{hero.heightTrend}} 较上月</text>
       </view>
     </view>
-    <view class="form-field">
-      <text class="field-label">体重（kg，可留空）</text>
-      <input class="field-input {{focusField === 'weight' ? 'is-focus' : ''}}" type="digit" value="{{form.weight}}" bindinput="onWeightInput" placeholder="如 32.5" data-field="weight" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
-    </view>
-    <view class="form-field" wx:if="{{form.memberId === 'guoguo'}}">
-      <text class="field-label">果果身高（cm）</text>
-      <input class="field-input {{focusField === 'height' ? 'is-focus' : ''}}" type="digit" value="{{form.height}}" bindinput="onHeightInput" placeholder="如 128.5" data-field="height" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
-    </view>
-    <view class="form-field">
-      <text class="field-label">备注（选填）</text>
-      <input class="field-input {{focusField === 'note' ? 'is-focus' : ''}}" value="{{form.note}}" bindinput="onNoteInput" placeholder="如：体检数据" data-field="note" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
-    </view>
-    <button class="btn btn-primary btn-block" style="margin-top:28rpx" bindtap="save">保存记录</button>
-    <text class="text-muted text-small" style="display:block;margin-top:14rpx">体重与身高至少填一项；果果可同时记录。同成员同月只保留一条，未填的一项沿用上次数值</text>
+    <text class="hero-hint">每一次记录，都是长大的证据</text>
   </view>
 
+  <!-- ===== 记一笔 ===== -->
   <view class="card">
-    <text class="section-title">{{chartTitle}}</text>
+    <view class="card-head">
+      <text class="section-title">记一笔</text>
+      <text class="text-muted text-small">{{monthLabels[monthIndex]}}</text>
+    </view>
+
+    <view class="form-group">
+      <text class="group-label">记什么</text>
+      <view class="mode-row">
+        <view class="chip {{metric === 'weight' ? 'active' : ''}}" data-metric="weight" hover-class="ui-hover" bindtap="switchMetric">体重</view>
+        <view class="chip {{metric === 'height' ? 'active' : ''}}" data-metric="height" hover-class="ui-hover" bindtap="switchMetric">身高（果果）</view>
+      </view>
+    </view>
+
+    <view class="form-group">
+      <text class="group-label">看哪段</text>
+      <view class="mode-row">
+        <view class="chip {{mode === 'year' ? 'active' : ''}}" data-mode="year" hover-class="ui-hover" bindtap="switchMode">本年度</view>
+        <view class="chip {{mode === 'cross' ? 'active' : ''}}" data-mode="cross" hover-class="ui-hover" bindtap="switchMode">跨年度</view>
+      </view>
+      <view class="year-nav" wx:if="{{mode === 'year'}}">
+        <text class="year-btn" bindtap="prevYear" hover-class="ui-hover">‹</text>
+        <text class="year-label">{{year}} 年</text>
+        <text class="year-btn" bindtap="nextYear" hover-class="ui-hover">›</text>
+      </view>
+    </view>
+
+    <view class="form-group">
+      <text class="group-label">数据</text>
+      <view class="form-field">
+        <text class="field-label">记录月份</text>
+        <picker mode="selector" range="{{monthLabels}}" value="{{monthIndex}}" bindchange="onMonthChange">
+          <view class="field-input picker-view">{{monthLabels[monthIndex]}} <text class="picker-arrow">›</text></view>
+        </picker>
+      </view>
+      <view class="form-field">
+        <text class="field-label">成员</text>
+        <view class="chip-row">
+          <view wx:for="{{members}}" wx:key="id" class="chip {{form.memberId === item.id ? 'active' : ''}}"
+                data-id="{{item.id}}" hover-class="ui-hover" bindtap="chooseMember">{{item.name}}</view>
+        </view>
+      </view>
+      <view class="form-field">
+        <text class="field-label">体重（kg，可留空）</text>
+        <input class="field-input {{focusField === 'weight' ? 'is-focus' : ''}} {{errorField === 'weight' ? 'is-error' : ''}}" type="digit" value="{{form.weight}}" bindinput="onWeightInput" placeholder="如 32.5" data-field="weight" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
+        <text class="field-error" wx:if="{{errorField === 'weight'}}">{{formError}}</text>
+      </view>
+      <view class="form-field" wx:if="{{form.memberId === 'guoguo'}}">
+        <text class="field-label">果果身高（cm）</text>
+        <input class="field-input {{focusField === 'height' ? 'is-focus' : ''}} {{errorField === 'height' ? 'is-error' : ''}}" type="digit" value="{{form.height}}" bindinput="onHeightInput" placeholder="如 128.5" data-field="height" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
+        <text class="field-error" wx:if="{{errorField === 'height'}}">{{formError}}</text>
+      </view>
+      <text class="field-error field-error-standalone" wx:if="{{formError && !errorField}}">{{formError}}</text>
+    </view>
+
+    <view class="form-group">
+      <text class="group-label">备注</text>
+      <view class="form-field form-field-tight">
+        <input class="field-input {{focusField === 'note' ? 'is-focus' : ''}}" value="{{form.note}}" bindinput="onNoteInput" placeholder="如：体检数据" data-field="note" bindfocus="onFieldFocus" bindblur="onFieldBlur"/>
+      </view>
+    </view>
+
+    <button class="btn btn-primary btn-block {{saving ? 'is-loading' : ''}}" disabled="{{saving}}" bindtap="save">保存记录</button>
+    <text class="form-hint">体重与身高至少填一项；同成员同月只保留一条，未填项沿用上次数值</text>
+  </view>
+
+  <!-- ===== 曲线 ===== -->
+  <view class="card">
+    <view class="card-head">
+      <text class="section-title">{{chartTitle}}</text>
+      <text class="text-muted text-small">{{metric === 'weight' ? '点图例筛选' : '点圆点看数值'}}</text>
+    </view>
     <view class="legend">
       <view class="legend-item {{item.on ? '' : 'off'}}" wx:for="{{legend}}" wx:key="id"
             data-id="{{item.id}}" hover-class="ui-hover" bindtap="toggleMember">
@@ -54,9 +105,9 @@
         <text>{{item.name}}</text>
       </view>
     </view>
-    <text class="text-muted text-small" style="display:block;margin-bottom:12rpx">{{metric === 'weight' ? '点击图例可隐藏成员，点击圆点查看数值' : '仅果果记录身高，点击圆点查看数值'}}</text>
 
     <view class="chart-box" wx:if="{{!chart.empty}}">
+      <view class="chart-aura"></view>
       <view class="grid-line" wx:for="{{chart.gridLines}}" wx:key="key" style="top:{{item.top}}"></view>
       <text class="y-label" wx:for="{{chart.yLabels}}" wx:key="key" style="top:{{item.top}}">{{item.text}}</text>
       <view class="line-seg" wx:for="{{chart.segments}}" wx:key="key"
@@ -64,20 +115,26 @@
       <view class="dot" wx:for="{{chart.dots}}" wx:key="key"
             style="left:{{item.left}};top:{{item.top}};background:{{item.color}}"
             data-label="{{item.label}}" data-value="{{item.value}}" bindtap="onDotTap" hover-class="ui-hover"></view>
+      <text class="dot-value" wx:for="{{chart.dots}}" wx:key="key" wx:if="{{item.showLabel}}"
+            style="left:{{item.left}};top:{{item.top}};color:{{item.color}}">{{item.value}}</text>
       <text class="x-label" wx:for="{{chart.xLabels}}" wx:key="key" style="left:{{item.left}}">{{item.text}}</text>
     </view>
     <view class="empty-block compact" wx:else>
       <view class="empty-mark"></view>
       <text class="empty-title">{{metric === 'height' ? '还没有身高记录' : '还没有体重记录'}}</text>
-      <text class="empty-desc">{{metric === 'height' ? '在上方选择果果并填写身高，就能看到生长曲线' : '在上方记一笔，曲线会自动连起来'}}</text>
+      <text class="empty-desc">{{metric === 'height' ? '在上方选果果并填身高，就能看到生长曲线' : '在上方记一笔，曲线会自动连起来'}}</text>
     </view>
   </view>
 
+  <!-- ===== 逐月表格 ===== -->
   <view class="card">
-    <text class="section-title">{{tableTitle}}</text>
+    <view class="card-head">
+      <text class="section-title">{{tableTitle}}</text>
+      <text class="text-muted text-small">单位 {{metric === 'height' ? 'cm' : 'kg'}}</text>
+    </view>
     <view class="w-table" wx:if="{{metric === 'weight'}}">
       <view class="w-tr w-th">
-        <text class="w-td">月份</text>
+        <text class="w-td w-month">月份</text>
         <text class="w-td" wx:for="{{members}}" wx:key="id">{{item.name}}</text>
       </view>
       <view class="w-tr" wx:for="{{table}}" wx:key="ym">
@@ -87,8 +144,8 @@
     </view>
     <view class="w-table" wx:else>
       <view class="w-tr w-th">
-        <text class="w-td">月份</text>
-        <text class="w-td">果果身高（cm）</text>
+        <text class="w-td w-month">月份</text>
+        <text class="w-td">果果身高</text>
       </view>
       <view class="w-tr" wx:for="{{table}}" wx:key="ym">
         <text class="w-td w-month">{{item.label}}</text>
@@ -97,11 +154,16 @@
     </view>
   </view>
 
+  <!-- ===== 身高年度对比 ===== -->
   <view class="card" wx:if="{{metric === 'height'}}">
-    <text class="section-title">果果身高年度对比</text>
+    <view class="card-head">
+      <text class="section-title">年度对比</text>
+      <text class="text-muted text-small">果果 · 单位 cm</text>
+    </view>
     <view class="empty-block compact" wx:if="{{heightCompare.empty}}">
       <view class="empty-mark"></view>
       <text class="empty-title">还没有身高记录，无法做年度对比</text>
+      <text class="empty-desc">至少记录一个月的身高，就能看到年度增长</text>
     </view>
     <block wx:else>
       <view class="w-table">
@@ -113,11 +175,10 @@
           <text class="w-td">{{item.year}}</text>
           <text class="w-td">{{item.firstText}}</text>
           <text class="w-td">{{item.lastText}}</text>
-          <text class="w-td">{{item.growth}}</text>
+          <text class="w-td w-accent">{{item.growth}}</text>
           <text class="w-td">{{item.yoy}}</text>
         </view>
       </view>
-      <text class="text-muted text-small">单位 cm；「较上年」为当年末身高减上一年末身高</text>
       <view class="bars">
         <view class="bar-col" wx:for="{{heightCompare.rows}}" wx:key="year">
           <text class="bar-top">{{item.growth}} cm</text>
@@ -126,15 +187,20 @@
           <text class="bar-diff">年末 {{item.lastText}} cm</text>
         </view>
       </view>
-      <text class="text-muted text-small">柱高为当年内身高增长（cm），下方为当年末身高</text>
+      <text class="form-hint">柱高为当年内身高增长（cm），「较上年」为当年末减上一年末</text>
     </block>
   </view>
 
+  <!-- ===== 最近记录 ===== -->
   <view class="card">
-    <text class="section-title">最近记录</text>
+    <view class="card-head">
+      <text class="section-title">最近记录</text>
+      <text class="text-muted text-small">{{recent.length}} 条</text>
+    </view>
     <view class="empty-block compact" wx:if="{{recent.length === 0}}">
       <view class="empty-mark"></view>
       <text class="empty-title">暂无记录</text>
+      <text class="empty-desc">在上方记一笔，就会显示在这里</text>
     </view>
     <view class="rec-row" wx:for="{{recent}}" wx:key="id">
       <view class="col">
@@ -142,7 +208,7 @@
         <text class="text-muted text-small" wx:if="{{item.note}}">{{item.note}}</text>
       </view>
       <text class="rec-value">{{item.valueText}}</text>
-      <text class="rec-del" data-id="{{item.id}}" bindtap="removeWeight" hover-class="ui-hover">删除</text>
+      <view class="rec-del" data-id="{{item.id}}" bindtap="removeWeight" hover-class="ui-hover">删除</view>
     </view>
   </view>
 

@@ -12,6 +12,10 @@ Page({
   onFieldBlur() { if (this.data.focusField) this.setData({ focusField: '' }); },
   data: {
     focusField: '',        // 当前聚焦的字段名，避免多输入框串色
+    saving: false,         // UI：保存防重锁
+    formError: '',         // UI：校验失败行内提示，不改变业务判断
+    errorField: '',        // UI：当前报错字段
+    hero: { weight: '—', weightTrend: '', height: '—', heightTrend: '', hasData: false }, // UI：最新值卡
     year: Number(D.today().slice(0, 4)),
     years: [],
     mode: 'year',           // year | cross
@@ -29,6 +33,27 @@ Page({
     table: [],
     heightCompare: { empty: true, rows: [] },
     recent: [],
+  },
+
+  // 纯 UI 计算：取果果最新体重/身高与环比，读原始记录，不改 extra 算法
+  buildHero() {
+    const all = extra.getWeights();
+    const pick = key => all.filter(w => w.member_id === 'guoguo' && w[key] !== null && w[key] !== undefined && Number(w[key]) > 0)
+      .sort((a, b) => b.ym.localeCompare(a.ym));
+    const fmt = (arr, key, digits) => {
+      if (!arr.length) return { text: '—', trend: '' };
+      const cur = Number(arr[0][key]);
+      let trend = '';
+      if (arr.length > 1) {
+        const d = cur - Number(arr[1][key]);
+        if (isFinite(d) && Math.abs(d) >= 0.05) trend = (d > 0 ? '↑ ' : '↓ ') + Math.abs(d).toFixed(digits);
+      }
+      return { text: cur.toFixed(digits), trend: trend };
+    };
+    const w = fmt(pick('weight'), 'weight', 1);
+    const h = fmt(pick('height'), 'height', 0);
+    return { weight: w.text, weightTrend: w.trend, height: h.text, heightTrend: h.trend,
+      hasData: w.text !== '—' || h.text !== '—' };
   },
 
   onLoad() {
@@ -62,6 +87,14 @@ Page({
         ? extra.weightYearChart(year, this.data.visible)
         : extra.weightCrossChart(this.data.visible);
     }
+    // UI 增强：每条序列只给最后一个点标数值，避免折线图上数字堆叠
+    if (chart && !chart.empty && chart.dots && chart.dots.length) {
+      const last = {};
+      chart.dots.forEach(d => { last[d.color] = d.key; });
+      chart = Object.assign({}, chart, {
+        dots: chart.dots.map(d => Object.assign({}, d, { showLabel: d.key === last[d.color] }))
+      });
+    }
     const table = isHeight ? extra.heightTable(year) : extra.weightTable(year);
     const recent = extra.getWeights().slice()
       .sort((a, b) => b.ym.localeCompare(a.ym))
@@ -78,6 +111,7 @@ Page({
       });
     this.setData({
       years, year, chart, table, recent,
+      hero: this.buildHero(),
       heightCompare: extra.heightYearCompare(),
       chartTitle: isHeight
         ? (this.data.mode === 'year' ? year + ' 年果果身高曲线' : '果果跨年度身高曲线')
@@ -116,32 +150,46 @@ Page({
     this.setData({ monthIndex: i, 'form.ym': this.data.monthKeys[i] });
   },
   chooseMember(e) { this.setData({ 'form.memberId': e.currentTarget.dataset.id }); },
-  onWeightInput(e) { this.setData({ 'form.weight': e.detail.value }); },
-  onHeightInput(e) { this.setData({ 'form.height': e.detail.value }); },
+  onWeightInput(e) { this.setData({ 'form.weight': e.detail.value }, () => this.clearError('weight')); },
+  onHeightInput(e) { this.setData({ 'form.height': e.detail.value }, () => this.clearError('height')); },
   onNoteInput(e) { this.setData({ 'form.note': e.detail.value }); },
+  clearError(field) { if (this.data.errorField === field) this.setData({ formError: '', errorField: '' }); },
 
   save() {
-    const f = this.data.form;
-    const r = extra.saveWeight({
-      ym: f.ym, member_id: f.memberId,
-      weight: f.weight, height: f.height, note: f.note,
-    });
-    if (r.error) {
-      const msg = {
-        BAD_WEIGHT: '请输入有效体重（0-400kg）',
-        BAD_HEIGHT: '请输入有效身高（0-250cm）',
-        EMPTY_VALUE: '体重或身高至少填一项',
-        HEIGHT_ONLY_CHILD: '身高仅记录果果',
-      };
-      toast(msg[r.error] || '保存失败，请检查月份');
-      return;
+    if (this.data.saving) return;                    // UI 防重：同步上锁
+    this.data.saving = true;
+    this.setData({ saving: true, formError: '', errorField: '' });
+    try {
+      const f = this.data.form;
+      const r = extra.saveWeight({
+        ym: f.ym, member_id: f.memberId,
+        weight: f.weight, height: f.height, note: f.note,
+      });
+      if (r.error) {
+        const map = {
+          BAD_WEIGHT: { msg: '请输入有效体重（0-400kg）', field: 'weight' },
+          BAD_HEIGHT: { msg: '请输入有效身高（0-250cm）', field: 'height' },
+          EMPTY_VALUE: { msg: '体重或身高至少填一项', field: 'weight' },
+          HEIGHT_ONLY_CHILD: { msg: '身高仅记录果果', field: 'height' },
+        };
+        const hit = map[r.error] || { msg: '保存失败，请检查月份', field: '' };
+        this.setData({ formError: hit.msg, errorField: hit.field });
+        toast(hit.msg);
+        return;
+      }
+      this.setData({
+        'form.weight': '', 'form.height': '', 'form.note': '',
+        year: Number(f.ym.slice(0, 4)), mode: 'year',
+      });
+      toast('已保存');
+      this.refresh();
+    } catch (e) {
+      this.setData({ formError: '保存失败，请重试' });
+      toast('保存失败');
+    } finally {
+      this.data.saving = false;
+      this.setData({ saving: false });
     }
-    this.setData({
-      'form.weight': '', 'form.height': '', 'form.note': '',
-      year: Number(f.ym.slice(0, 4)), mode: 'year',
-    });
-    toast('已保存');
-    this.refresh();
   },
   removeWeight(e) {
     const id = e.currentTarget.dataset.id;
