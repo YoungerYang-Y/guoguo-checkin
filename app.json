@@ -12,9 +12,8 @@
     "pages/privacy/privacy",
     "pages/weight/weight",
     "pages/ledger/ledger",
-    "pages/poems/poems",
-    "pages/poem-library/poem-library",
-    "pages/words/words",
+    "pages/learn/learn",
+    "pages/learn-library/learn-library",
     "pages/family/family",
     "pages/guest/guest"
   ],

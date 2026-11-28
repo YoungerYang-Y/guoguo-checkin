@@ -2,11 +2,11 @@
   <view class="loading-block" wx:if="{{loading}}">正在汇总成长记录…</view>
 
   <block wx:else>
-    <!-- 概览 -->
+    <!-- 首屏：成长手账 hero（B 前视觉）+ 新学习体系数据 -->
     <view class="learn-hero">
       <view class="hero-copy">
         <text class="hero-title">成长</text>
-        <text class="hero-sub">{{weekLabel}} · 持续记录每一天</text>
+        <text class="hero-sub">{{planLabel}}</text>
       </view>
       <view class="hero-orb hero-orb-a"></view>
       <view class="hero-orb hero-orb-b"></view>
@@ -14,43 +14,35 @@
 
     <view class="stat-row">
       <view class="stat-item">
-        <text class="stat-num num">{{poem.learned}}</text>
-        <text class="stat-label">本周古诗</text>
+        <text class="stat-num num">{{stats.poemLearn}}</text>
+        <text class="stat-label">今日新诗</text>
       </view>
       <view class="stat-item">
-        <text class="stat-num num">{{word.learned}}</text>
-        <text class="stat-label">本周单词</text>
+        <text class="stat-num num">{{stats.englishLearn}}</text>
+        <text class="stat-label">今日英语</text>
       </view>
       <view class="stat-item">
-        <text class="stat-num num">{{poem.pending + word.pending}}</text>
-        <text class="stat-label">待复习</text>
+        <text class="stat-num num">{{stats.due}}</text>
+        <text class="stat-label">该复习</text>
       </view>
     </view>
 
-    <!-- 学习记录 -->
+    <!-- 学习：两个入口 -->
     <view class="card">
-      <text class="section-title">学习积累</text>
-      <view class="entry-card" hover-class="ui-hover" data-kind="poems" bindtap="goPoems">
-        <view class="entry-icon icon-poem">诗</view>
+      <text class="section-title">学习</text>
+      <view class="entry-card" hover-class="ui-hover" data-kind="learn" bindtap="goLearn">
+        <view class="entry-icon icon-poem">学</view>
         <view class="entry-main">
-          <text class="entry-title">古诗与每周复习</text>
-          <text class="entry-desc">本周 {{poem.learned}} 首 · 复习库 {{poem.bank}} 首</text>
+          <text class="entry-title">今日学习</text>
+          <text class="entry-desc">{{planLabel}} · 复习 {{stats.due}} 条</text>
         </view>
         <text class="entry-arrow">›</text>
       </view>
-      <view class="entry-card" hover-class="ui-hover" data-kind="poem-lib" bindtap="goPoemLibrary">
+      <view class="entry-card" hover-class="ui-hover" data-kind="lib" bindtap="goLibrary">
         <view class="entry-icon icon-lib">库</view>
         <view class="entry-main">
-          <text class="entry-title">诗词库</text>
-          <text class="entry-desc">{{poemLibCount}} 首 · 只读内容库，不进入复习</text>
-        </view>
-        <text class="entry-arrow">›</text>
-      </view>
-      <view class="entry-card" hover-class="ui-hover" data-kind="words" bindtap="goWords">
-        <view class="entry-icon icon-word">词</view>
-        <view class="entry-main">
-          <text class="entry-title">单词句子与复习</text>
-          <text class="entry-desc">本周 {{word.learned}} 条 · 复习库 {{word.bank}} 条</text>
+          <text class="entry-title">内容库</text>
+          <text class="entry-desc">{{libraryLabel}}</text>
         </view>
         <text class="entry-arrow">›</text>
       </view>
@@ -69,15 +61,15 @@
       </view>
     </view>
 
-    <!-- 本周待复习 -->
+    <!-- 今日待复习预览 -->
     <view class="card">
-      <view class="row-between" style="margin-bottom:8rpx">
-        <text class="section-title" style="margin:0">本周需复习</text>
-        <text class="text-muted text-small">{{poem.pending + word.pending}} 项</text>
+      <view class="card-head">
+        <text class="section-title">今日该复习</text>
+        <text class="text-muted text-small">{{stats.due}} 项</text>
       </view>
       <block wx:if="{{reviewItems.length > 0}}">
         <view class="review-line" wx:for="{{reviewItems}}" wx:key="id"
-              hover-class="ui-hover" data-module="{{item.module}}" bindtap="goReview">
+              hover-class="ui-hover" bindtap="goReview">
           <view class="review-dot"></view>
           <text class="review-label ellipsis">{{item.label}}</text>
           <text class="entry-arrow">›</text>
@@ -85,8 +77,8 @@
       </block>
       <view class="empty-block compact" wx:else>
         <view class="empty-mark"></view>
-        <text class="empty-title">本周没有待复习的内容</text>
-        <text class="empty-desc">古诗和单词标记「能完整背诵」后就会从这里移除</text>
+        <text class="empty-title">今天没有到期的复习</text>
+        <text class="empty-desc">按 1/3/7/14/30 天节奏，到期会自动出现在这里</text>
       </view>
     </view>
   </block>

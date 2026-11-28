@@ -1,0 +1,217 @@
+<view class="page">
+  <view class="card" wx:if="{{loading}}">
+    <view class="skeleton-row">
+      <view class="skeleton-block skeleton-mark"></view>
+      <view class="skeleton-block skeleton-title"></view>
+      <view class="skeleton-block skeleton-sub"></view>
+    </view>
+    <view class="skeleton-row">
+      <view class="skeleton-block skeleton-mark"></view>
+      <view class="skeleton-block skeleton-title"></view>
+      <view class="skeleton-block skeleton-sub"></view>
+    </view>
+    <view class="skeleton-row">
+      <view class="skeleton-block skeleton-mark"></view>
+      <view class="skeleton-block skeleton-title"></view>
+      <view class="skeleton-block skeleton-sub"></view>
+    </view>
+  </view>
+
+  <block wx:else>
+    <!-- ============ 详情 ============ -->
+    <block wx:if="{{view === 'detail' && detail}}">
+      <view class="card detail-card">
+        <view class="detail-back" hover-class="ui-hover" bindtap="backToList">‹ 返回内容库</view>
+        <view class="detail-hero">
+          <view class="detail-head">
+            <view class="type-tag type-{{detail.type}}">{{detail.type === 'poem' ? '诗' : '英'}}</view>
+            <text class="detail-title">{{detail.primary}}</text>
+          </view>
+          <text class="detail-sub" wx:if="{{detail.has.authorLine}}">{{detail.authorLine}}</text>
+        </view>
+
+        <!-- 诗词：正文 + 讲解/金句/提问/背景/线索/来源，按语义分底色卡 -->
+        <block wx:if="{{detail.type === 'poem'}}">
+          <view class="poem-body" wx:if="{{detail.has.lines}}">
+            <text class="poem-line" wx:for="{{detail.lines}}" wx:key="*this">{{item}}</text>
+          </view>
+          <view class="detail-section" wx:if="{{detail.has.explain}}">
+            <text class="detail-label">讲给果果听</text>
+            <text class="detail-text">{{detail.meta.explain}}</text>
+          </view>
+          <view class="detail-section quote-block" wx:if="{{detail.has.highlight}}">
+            <text class="detail-label">值得听的一句</text>
+            <text class="detail-text">{{detail.meta.highlight}}</text>
+          </view>
+          <view class="detail-section ask-block" wx:if="{{detail.has.question}}">
+            <text class="detail-label">可以问果果</text>
+            <text class="detail-text">{{detail.meta.question}}</text>
+          </view>
+          <view class="detail-section bg-block" wx:if="{{detail.has.background}}">
+            <text class="detail-label">故事背景</text>
+            <text class="detail-text">{{detail.meta.background}}</text>
+          </view>
+          <view class="detail-section" wx:if="{{detail.has.clues}}">
+            <text class="detail-label">查找线索</text>
+            <view class="chip-row">
+              <text class="tag tag-optional" wx:for="{{detail.meta.clues}}" wx:key="*this">{{item}}</text>
+            </view>
+          </view>
+          <view class="source-line" wx:if="{{detail.has.source}}">原文来源：{{detail.meta.source}}</view>
+        </block>
+
+        <!-- 英语：场景/说法/接话/换场景/提示，按语义分底色卡 -->
+        <block wx:else>
+          <view class="detail-section" wx:if="{{detail.has.scene}}">
+            <text class="detail-label">场景</text>
+            <text class="detail-text">{{detail.meta.scene || detail.body}}</text>
+          </view>
+          <view class="detail-section quote-block">
+            <text class="detail-label">可以这样说</text>
+            <text class="detail-text en-phrase">{{detail.primary}}</text>
+            <text class="detail-text en-trans" wx:if="{{detail.has.authorLine}}">{{detail.authorLine}}</text>
+          </view>
+          <view class="detail-section reply-block" wx:if="{{detail.has.reply}}">
+            <text class="detail-label">对方可以接</text>
+            <text class="detail-text">{{detail.meta.reply}}</text>
+          </view>
+          <view class="detail-section" wx:if="{{detail.has.alt}}">
+            <text class="detail-label">换个场景</text>
+            <text class="detail-text">{{detail.meta.alt}}</text>
+          </view>
+          <view class="detail-section ask-block" wx:if="{{detail.has.prompt}}">
+            <text class="detail-label">回忆提示</text>
+            <text class="detail-text">{{detail.meta.prompt}}</text>
+          </view>
+        </block>
+      </view>
+
+      <view class="detail-actions">
+        <view class="primary-btn {{canEdit ? '' : 'is-disabled'}}" hover-class="{{canEdit ? 'ui-hover' : 'none'}}" bindtap="addToLearn" data-id="{{detail.id}}"><text>加入学习</text></view>
+        <view class="ghost-btn" wx:if="{{detail.state === 'mastered' && canEdit}}" hover-class="ui-hover" bindtap="restartLearn" data-id="{{detail.id}}"><text>重新学习</text></view>
+      </view>
+      <view class="manage-actions" wx:if="{{canManage}}">
+        <view class="mini-action ghost" hover-class="ui-hover" bindtap="openForm" data-id="{{detail.id}}">编辑</view>
+        <view class="mini-action danger" hover-class="ui-hover" bindtap="removeContent" data-id="{{detail.id}}">删除</view>
+      </view>
+    </block>
+
+    <!-- ============ 列表 ============ -->
+    <block wx:else>
+      <!-- 品牌渐变 banner：建立视觉焦点 -->
+      <view class="lib-banner">
+        <view class="banner-mark">✦</view>
+        <view class="banner-title">{{showDeleted ? '误删的内容，在这里找回' : '把喜欢的，收进内容库'}}</view>
+        <view class="banner-sub">{{showDeleted ? '管理员可恢复' : '诗词和英语都在这里'}} · 共 {{total}} 条</view>
+      </view>
+
+      <!-- 工具卡：筛选控件收拢 -->
+      <view class="card tool-card">
+        <view class="card-head">
+          <text class="section-title">{{showDeleted ? '回收站' : '全部内容'}}</text>
+          <text class="text-muted text-small">{{showDeleted ? '仅管理档可见' : '按类型 / 标签筛选'}}</text>
+        </view>
+        <view class="chip-row filters">
+          <view class="chip {{typeFilter === item.key ? 'active' : ''}}" hover-class="ui-hover"
+                wx:for="{{typeFilters}}" wx:key="key"
+                data-type="{{item.key}}" bindtap="setTypeFilter">{{item.label}}</view>
+        </view>
+        <view class="recycle-toggle" wx:if="{{canManage}}" hover-class="ui-hover" bindtap="toggleDeleted">
+          <text>{{showDeleted ? '‹ 返回内容库' : '查看已删除 ›'}}</text>
+        </view>
+        <view class="form-field search-field" wx:if="{{!showDeleted}}">
+          <input class="field-input {{focusField === 'keyword' ? 'is-focus' : ''}}"
+                 value="{{keyword}}" data-field="keyword" bindinput="onKeywordInput"
+                 bindfocus="onFieldFocus" bindblur="onFieldBlur"
+                 placeholder="搜标题、首句、场景或标签" />
+          <view class="search-clear" wx:if="{{keyword}}" hover-class="ui-hover" bindtap="clearKeyword">清空</view>
+        </view>
+        <view class="chip-row tag-row" wx:if="{{!showDeleted && tags.length > 0}}">
+          <view class="chip tag-chip {{tag === item ? 'active' : ''}}" hover-class="ui-hover"
+                wx:for="{{visibleTags}}" wx:key="*this"
+                data-tag="{{item}}" bindtap="setTag">{{item}}</view>
+          <view class="chip tag-more" wx:if="{{hasMoreTags}}" hover-class="ui-hover" bindtap="toggleTags">{{tagsExpanded ? '收起' : '更多'}}</view>
+        </view>
+      </view>
+
+      <!-- 单卡包裹列表：避免 70 张卡叠加阴影，行间用分隔线 -->
+      <view class="card" wx:if="{{list.length > 0}}">
+        <view class="lib-item lib-{{item.type}}" wx:for="{{list}}" wx:key="id"
+              hover-class="{{showDeleted ? 'none' : 'ui-hover'}}"
+              data-id="{{item.id}}" bindtap="{{showDeleted ? 'noop' : 'openDetail'}}">
+          <view class="lib-rail"></view>
+          <view class="lib-body">
+            <view class="lib-head">
+              <view class="type-tag type-{{item.type}}">{{item.type === 'poem' ? '诗' : '英'}}</view>
+              <text class="lib-title ellipsis">{{item.primary}}</text>
+              <text class="state-badge" wx:if="{{item.state === 'mastered'}}">已掌握</text>
+              <text class="state-badge learning" wx:elif="{{item.state === 'learning'}}">学习中</text>
+              <text class="state-badge deleted" wx:if="{{showDeleted}}">已删除</text>
+            </view>
+            <text class="lib-sub ellipsis">{{item.type === 'poem' ? item.secondary : item.meta.title}}</text>
+            <text class="lib-first ellipsis">{{item.type === 'poem' ? item.firstLine : item.secondary}}</text>
+          </view>
+          <view class="recycle-actions" wx:if="{{showDeleted}}">
+            <view class="mini-action ghost" hover-class="ui-hover" data-id="{{item.id}}" catchtap="restoreItem">恢复到内容库</view>
+          </view>
+        </view>
+      </view>
+
+      <view class="card empty-block" wx:if="{{list.length === 0}}">
+        <view class="empty-mark"></view>
+        <text class="empty-title">{{showDeleted ? '回收站是空的' : '没有匹配的内容'}}</text>
+        <text class="empty-desc">{{showDeleted ? '误删的内容可以在这里找回' : '换个关键词或筛选条件试试'}}</text>
+      </view>
+
+      <view class="action-row" wx:if="{{canManage && !showDeleted}}">
+        <view class="primary-btn" hover-class="ui-hover" bindtap="openForm"><text>新增内容</text></view>
+      </view>
+    </block>
+  </block>
+
+  <!-- ============ 新增/编辑弹层 ============ -->
+  <view class="mask" wx:if="{{showForm}}" bindtap="closeForm">
+    <view class="sheet" catchtap="noop">
+      <view class="sheet-head">
+        <text class="sheet-title">{{formMode === 'edit' ? '编辑内容' : '新增内容'}}</text>
+        <text class="sheet-close" hover-class="ui-hover" bindtap="closeForm">×</text>
+      </view>
+      <view class="form-group">基本信息</view>
+      <view class="form-label">类型</view>
+      <view class="chip-row">
+        <view class="chip {{formType === 'poem' ? 'active' : ''}}" hover-class="ui-hover" data-type="poem" bindtap="setFormType">诗词</view>
+        <view class="chip {{formType === 'english' ? 'active' : ''}}" hover-class="ui-hover" data-type="english" bindtap="setFormType">英语</view>
+      </view>
+      <view class="form-field">
+        <text class="field-label">{{formType === 'poem' ? '诗词名' : '英文句子'}}</text>
+        <input class="field-input {{focusField === 'formPrimary' ? 'is-focus' : ''}} {{formError ? 'is-error' : ''}}"
+               value="{{formPrimary}}" data-field="formPrimary" bindinput="onFormInput"
+               bindfocus="onFieldFocus" bindblur="onFieldBlur" placeholder="必填" maxlength="40" />
+        <text class="field-error" wx:if="{{formError}}">{{formError}}</text>
+      </view>
+      <view class="form-field">
+        <text class="field-label">{{formType === 'poem' ? '作者' : '中文意思'}}</text>
+        <input class="field-input {{focusField === 'formSecondary' ? 'is-focus' : ''}}"
+               value="{{formSecondary}}" data-field="formSecondary" bindinput="onFormInput"
+               bindfocus="onFieldFocus" bindblur="onFieldBlur" placeholder="选填" />
+      </view>
+      <view class="form-group">内容正文</view>
+      <view class="form-field">
+        <text class="field-label">{{formType === 'poem' ? '诗文正文' : '场景/说明'}}</text>
+        <textarea class="field-input area {{focusField === 'formBody' ? 'is-focus' : ''}}"
+                  value="{{formBody}}" data-field="formBody" bindinput="onFormInput"
+                  bindfocus="onFieldFocus" bindblur="onFieldBlur" placeholder="选填" maxlength="2000" />
+      </view>
+      <view class="form-field">
+        <text class="field-label">标签</text>
+        <input class="field-input {{focusField === 'formTag' ? 'is-focus' : ''}}"
+               value="{{formTag}}" data-field="formTag" bindinput="onFormInput"
+               bindfocus="onFieldFocus" bindblur="onFieldBlur" placeholder="选填，如：穿衣和出门" />
+      </view>
+      <view class="sheet-actions">
+        <view class="ghost-btn" hover-class="ui-hover" bindtap="closeForm"><text>取消</text></view>
+        <view class="primary-btn {{saving ? 'is-disabled' : ''}}" hover-class="{{saving ? 'none' : 'ui-hover'}}" bindtap="saveForm"><text>{{saving ? '保存中…' : '保存'}}</text></view>
+      </view>
+    </view>
+  </view>
+</view>

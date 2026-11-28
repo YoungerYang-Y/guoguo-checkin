@@ -1,16 +1,16 @@
-// 成长 tab 落地页：三个模块的汇总视角 + 统一入口。
-// 数据全部取自现有模块（review / extra / date），不新造数据结构；三个二级页保持原样。
-const review = require('../../utils/review.js');
+// 成长 tab 落地页：学习体系（今日计划预览 + 唯一内容库入口）+ 体重身高。
+// 数据源统一 learning.js；旧 review / poem-library 页已不再引用。
+const learning = require('../../utils/learning.js');
 const extra = require('../../utils/extra.js');
 const D = require('../../utils/date.js');
-const poemLib = require('../../utils/poem-library.js');
+const app = getApp();
 
 Page({
   data: {
-    weekLabel: '',
-    poem: { learned: 0, pending: 0, bank: 0 },
-    poemLibCount: 0,
-    word: { learned: 0, pending: 0, bank: 0 },
+    date: '',
+    planLabel: '',
+    stats: { poemLearn: 0, englishLearn: 0, due: 0 },
+    libraryLabel: '',
     heightLatest: '',
     weightLatest: '',
     reviewItems: [],
@@ -21,11 +21,12 @@ Page({
 
   build() {
     try {
-      const poems = review.overview('poems');
-      const words = review.overview('words');
+      const plan = learning.todayPlan();
+      const ov = learning.overview();
+      const d = plan.date || D.today();
 
-      // 体重/身高：取果果最近一条有值的月份（weightTable 返回按月份 1-12）
-      const year = Number(D.today().slice(0, 4));
+      // 体重/身高：取果果最近一条有值的月份
+      const year = Number(d.slice(0, 4));
       const table = extra.weightTable(year);
       let weightLatest = '';
       let heightLatest = '';
@@ -36,7 +37,6 @@ Page({
           weightLatest = guoguo.value + 'kg';
         }
       }
-      // 身高存在 gg_weights 的 height 字段，weightTable 只取 weight；有值时一并展示
       const weights = extra.getWeights();
       const heightRows = weights.filter(w => w.member_id === 'guoguo' && w.height);
       if (heightRows.length) {
@@ -44,41 +44,34 @@ Page({
         heightLatest = latest.height + 'cm';
       }
 
-      // 本周待复习：合并古诗/单词，最多 3 条
-      const pr = review.weeklyReview('poems');
-      const wr = review.weeklyReview('words');
-      const reviewItems = []
-        .concat(pr.items.filter(x => x.state === 'pending' || x.state === 'failed').map(x => ({
-          id: x.id, module: 'poems', label: x.label || x.title || x.text || '古诗',
-        })))
-        .concat(wr.items.filter(x => x.state === 'pending' || x.state === 'failed').map(x => ({
-          id: x.id, module: 'words', label: x.label || x.title || x.text || '单词',
-        })))
-        .slice(0, 3);
+      const reviewItems = (plan.review || []).slice(0, 3).map(x => ({
+        id: x.id, label: x.label || x.primary || '待复习',
+      }));
 
       this.setData({
-        weekLabel: poems.weekLabel || wr.weekLabel || '',
-        poem: { learned: poems.learnedThisWeek, pending: poems.pending, bank: poems.bankCount },
-        word: { learned: words.learnedThisWeek, pending: words.pending, bank: words.bankCount },
+        date: d,
+        planLabel: '今天可以学：诗词 ' + plan.stats.poemLearn + ' 首 · 英语 ' + plan.stats.englishLearn + ' 卡',
+        stats: plan.stats,
+        libraryLabel: '诗词 ' + ov.library.poem + ' 首 · 英语 ' + ov.library.english + ' 卡 · 可新增',
         weightLatest,
         heightLatest,
         reviewItems,
-        poemLibCount: poemLib.all().length,
         loading: false,
       });
     } catch (e) {
-      // 任何一个模块读失败都不拖垮落地页，入口仍然可用
       this.setData({ loading: false });
     }
   },
 
-  goPoems() { wx.navigateTo({ url: '/pages/poems/poems' }); },
-  goPoemLibrary() { wx.navigateTo({ url: '/pages/poem-library/poem-library' }); },
-  goWords() { wx.navigateTo({ url: '/pages/words/words' }); },
+  goLearn() {
+    // switchTab 不支持 query，用 globalData 一次性信号定位 tab（参照 reportView）
+    if (app && app.globalData) app.globalData.learnTab = 'today';
+    wx.navigateTo({ url: '/pages/learn/learn' });
+  },
+  goLibrary() { wx.navigateTo({ url: '/pages/learn-library/learn-library' }); },
   goWeight() { wx.navigateTo({ url: '/pages/weight/weight' }); },
-  goReview(e) {
-    const module = e.currentTarget.dataset.module;
-    const url = module === 'poems' ? '/pages/poems/poems' : '/pages/words/words';
-    wx.navigateTo({ url: url + '?tab=review' });
+  goReview() {
+    if (app && app.globalData) app.globalData.learnTab = 'today';
+    wx.navigateTo({ url: '/pages/learn/learn' });
   },
 });

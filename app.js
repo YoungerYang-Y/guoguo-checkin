@@ -2,6 +2,8 @@ const store = require('./utils/store.js');
 const cloudstore = require('./utils/cloudstore.js');
 const wxCompat = require('./utils/wx-compat.js');
 const ledgerMigrate = require('./utils/ledger-migrate.js');
+const learning = require('./utils/learning.js');
+const learningMigrate = require('./utils/learning-migrate.js');
 
 // 预览面板只模拟了部分微信 API，先补齐缺失项，避免交互中断
 wxCompat.install();
@@ -19,6 +21,10 @@ App({
     wxCompat.install();
     // 本地初始化保证首屏立即可用
     store.initFamily();
+    // 学习体系：initFamily 会把新键重建为空数组，种子与迁移必须在其后；
+    // 且三者都要在 bootstrap 前完成，才能随首轮同步上传。每步独立容错，不阻断启动。
+    try { this.seedResult = learning.ensureSeeded(); } catch (e) { this.seedResult = null; }
+    try { this.learningMigration = learningMigrate.migrate(); } catch (e) { this.learningMigration = null; }
     // 历史培训费并入记账：必须在 bootstrap 之前跑，新增账目才能随首轮同步上传；
     // 完成标记阻止删除后的重放，云端旧费用在成功接入家庭后另行迁移。
     try { this.feeMigration = ledgerMigrate.migrateFees(); } catch (e) { this.feeMigration = null; }

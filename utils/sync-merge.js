@@ -69,6 +69,8 @@ function merge(key, base, local, remote) {
       else if (key === 'gg_ledger' && isFeeSource(right) && isDeleted(right)) value = right;
       else if (same(left, before)) value = right;
       else if (same(right, before) || same(left, right)) value = left;
+      // N1：学习三键的软删除（deleted_at）优先于同期更新，避免撤销被另一侧旧进度救活。
+      else if ((key === 'gg_progress' || key === 'gg_content' || key === 'gg_study_logs') && isDeleted(left) !== isDeleted(right)) value = isDeleted(left) ? left : right;
       else if (!left || !right) value = left; // An explicit local deletion wins a concurrent edit.
       else if (key === '__history') value = merge('history-version', before, left, right);
       else if (left.updated_at || right.updated_at) value = String(left.updated_at || '') >= String(right.updated_at || '') ? left : right;

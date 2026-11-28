@@ -73,39 +73,3 @@ test('诗词库是纯数据模块，不依赖 store / 复习库，不会写入�
   assert.ok(!/require\s*\(/.test(src), '诗词库不应 require 任何模块');
   assert.ok(!/\bsetItem\b|\bwx\.setStorage\b/.test(src), '诗词库不应写本地存储');
 });
-
-
-test('诗词库页面 mock 冒烟：检索与详情字段对齐 WXML', () => {
-  const vm = require('node:vm');
-  const source = fs.readFileSync(path.join(root, 'pages/poem-library/poem-library.js'), 'utf8');
-  let def;
-  vm.runInNewContext(source, {
-    Page(v) { def = v; },
-    wx: { showToast() {}, pageScrollTo() {} },
-    require(name) {
-      if (name === '../../utils/poem-library.js') return lib;
-      throw new Error('unexpected module ' + name);
-    },
-    Object, String, Number, Array, Error, Date, Math,
-  }, { filename: path.join(root, 'pages/poem-library/poem-library.js') });
-  const page = Object.assign({}, def, {
-    data: structuredClone(def.data),
-    setData(v) { Object.assign(this.data, v); },
-  });
-  page.onLoad();
-  assert.equal(page.data.libTotal, 20);
-  assert.equal(page.data.total, 20);
-  assert.equal(page.data.list.length, 20);
-  page.refresh('白玉盘');
-  assert.equal(page.data.total, 1);
-  assert.equal(page.data.list[0].id, 'gulangyuexing');
-  page.openDetail({ currentTarget: { dataset: { id: 'momei' } } });
-  assert.equal(page.data.view, 'detail');
-  assert.equal(page.data.detail.title, '墨梅');
-  assert.equal(page.data.detail.contentLines.length, 4);
-  ['title', 'dynasty', 'author', 'variant', 'explain', 'highlight', 'question', 'clues', 'source']
-    .forEach(k => assert.ok(k in page.data.detail, k));
-  page.backToList();
-  assert.equal(page.data.view, 'list');
-  assert.equal(page.data.detail, null);
-});

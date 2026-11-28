@@ -2,7 +2,7 @@
 const { getCloud, ensureSession, getLastAuthError, describeCloudError } = require('./cloud.js');
 const family = require('./family.js');
 const { merge, mergeRecords } = require('./sync-merge.js');
-const DOC_KEYS = ['gg_family', 'gg_records', 'gg_schedule', 'gg_targets', 'gg_custom', 'gg_settings', 'gg_snapshots', 'gg_weights', 'gg_extra_settings', 'gg_poems', 'gg_words', 'gg_logs', 'gg_ledger'];
+const DOC_KEYS = ['gg_family', 'gg_records', 'gg_schedule', 'gg_targets', 'gg_custom', 'gg_settings', 'gg_snapshots', 'gg_weights', 'gg_extra_settings', 'gg_poems', 'gg_words', 'gg_logs', 'gg_ledger', 'gg_content', 'gg_progress', 'gg_study_logs'];
 const META_KEY = 'gg_reset_state';
 const PENDING_KEY = 'gg_pending_keys';
 const BASE_KEY = 'gg_sync_base';
@@ -197,6 +197,16 @@ function markDirty(key) {
     Promise.resolve().then(() => { _scheduled = false; return flush(); }).catch(() => {});
   }
 }
+
+// 重置路径（R1）：clearLocal + initFamily(true) 会把新键重建为空数组，必须重新播种。
+// 由调用点延迟 require，避免 store/cloudstore/learning 顶层循环依赖。
+function reseedLearning() {
+  try {
+    const learning = require('./learning.js');
+    learning.ensureSeeded();
+    learning.migrate();
+  } catch (e) {}
+}
 function bootstrap() {
   if (!_bootstrap) _bootstrap = enqueue(async () => { try { return await runSync(true, true); } finally { _ready = true; saveState(); } });
   return _bootstrap;
@@ -216,6 +226,7 @@ function adoptCreatedFamily(id) {
       _initializing = true;
       try { clearLocal(); require('./store.js').initFamily(true); }
       finally { _initializing = false; }
+      reseedLearning();
     }
     put(ADOPTED_KEY, _familyId); put(EPOCH_KEY, _epoch); put(BASE_KEY, {}); stampFamily();
     put(PENDING_KEY, DOC_KEYS.filter(key => read(key, undefined) !== undefined));
@@ -256,6 +267,7 @@ async function resetFamilyData() {
       _initializing = true;
       try { clearLocal(); require('./store.js').initFamily(true); }
       finally { _initializing = false; }
+      reseedLearning();
     }
     _state.lastError = ''; saveState();
     return { data: require('./store.js').getFamily(), error: null };
@@ -269,6 +281,7 @@ function forgetFamily() {
   _initializing = true;
   try { clearLocal(); require('./store.js').initFamily(true); }
   finally { _initializing = false; }
+  reseedLearning();
   saveState();
 }
 

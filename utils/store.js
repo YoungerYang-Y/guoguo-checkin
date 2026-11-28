@@ -20,6 +20,9 @@ const KEYS = {
   WORDS: 'gg_words',
   LOGS: 'gg_logs',
   LEDGER: 'gg_ledger',
+  CONTENT: 'gg_content',
+  PROGRESS: 'gg_progress',
+  STUDY_LOGS: 'gg_study_logs',
 };
 
 function read(key, fallback) {
@@ -67,6 +70,9 @@ function initFamily(force) {
   if (!read(KEYS.CUSTOM, null)) write(KEYS.CUSTOM, []);
   if (!read(KEYS.LOGS, null)) write(KEYS.LOGS, []);
   if (!read(KEYS.LEDGER, null)) write(KEYS.LEDGER, []);
+  if (!read(KEYS.CONTENT, null)) write(KEYS.CONTENT, []);
+  if (!read(KEYS.PROGRESS, null)) write(KEYS.PROGRESS, []);
+  if (!read(KEYS.STUDY_LOGS, null)) write(KEYS.STUDY_LOGS, []);
   if (!read(KEYS.SETTINGS, null)) {
     write(KEYS.SETTINGS, { remindTime: '20:30', remindEnabled: false, weekRemind: true });
   }
